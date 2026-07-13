@@ -3,6 +3,7 @@ import { ArrowLeft, Minus, Plus, CreditCard, Banknote, MapPin, Calendar, User, M
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { dataService, EventRecord } from "../../services/dataService";
+import { supabase } from "../../services/supabaseClient";
 
 export default function UserCheckout() {
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ export default function UserCheckout() {
   const [paymentMethod, setPaymentMethod] = useState<"card" | "transfer" | "cash" | null>(null);
   const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [purchaseError, setPurchaseError] = useState("");
   const [formErrors, setFormErrors] = useState({ name: false, email: false, phone: false });
 
   const setQty = (typeId: string, qty: number, max: number) => {
@@ -71,34 +73,54 @@ export default function UserCheckout() {
     if (!event || !paymentMethod || totalQuantity === 0 || !validateForm()) return;
 
     setIsProcessing(true);
+    setPurchaseError("");
 
-    // Real payment processing (Stripe) + order/ticket creation lands in the
-    // next phase; this still simulates the purchase but against real
-    // event + ticket-type data and real per-type availability.
-    await register(formData.name, formData.email, "Blessing2026!");
-    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      // Payment gateway integration is pending (no provider chosen yet), so
+      // the charge itself is still simulated. What's real from here on: the
+      // buyer account, and the order/tickets/inventory decrement below,
+      // which runs through the same atomic RPC a real gateway webhook would
+      // call — no separate "demo mode" data path.
+      await register(formData.name, formData.email, "Blessing2026!");
 
-    const ticketId = `TKT_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      const { data: { user: authedUser } } = await supabase.auth.getUser();
+      if (!authedUser) throw new Error("No se pudo autenticar al comprador");
 
-    navigate(`/ticket/${ticketId}`, {
-      state: {
-        event: {
-          name: event.name,
-          date: new Date(event.date).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
-          time: '',
-          venue: event.venueName,
-        },
-        quantity: totalQuantity,
-        ticketBreakdown: event.ticketTypes
-          .filter((t) => (selection[t.id] || 0) > 0)
-          .map((t) => ({ name: t.name, quantity: selection[t.id] })),
-        paymentMethod,
-        total,
-        purchaseDate: new Date().toISOString(),
-        customerInfo: formData,
-        isGuest: false,
-      },
-    });
+      await new Promise((r) => setTimeout(r, 1500));
+
+      const items = event.ticketTypes
+        .filter((t) => (selection[t.id] || 0) > 0)
+        .map((t) => ({ ticket_type_id: t.id, quantity: selection[t.id] }));
+
+      const { data: orderId, error } = await supabase.rpc('create_order_and_tickets', {
+        p_event_id: event.id,
+        p_organization_id: event.organizationId,
+        p_user_id: authedUser.id,
+        p_customer_name: formData.name,
+        p_customer_email: formData.email,
+        p_customer_phone: formData.phone,
+        p_stripe_payment_intent_id: `sim_${authedUser.id}_${Date.now()}`,
+        p_items: items,
+      });
+
+      if (error) {
+        if (error.message.includes('SOLD_OUT')) {
+          setPurchaseError('Uno de los tipos de boleto se agotó justo ahora. Ajusta tu selección e intenta de nuevo.');
+          const refreshed = await dataService.getEventById(event.id);
+          setEvent(refreshed);
+          setSelection({});
+        } else {
+          setPurchaseError(error.message);
+        }
+        return;
+      }
+
+      navigate(`/ticket/${orderId}`);
+    } catch (err: any) {
+      setPurchaseError(err.message || 'Ocurrió un error al procesar tu compra');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (loading) {
@@ -310,6 +332,12 @@ export default function UserCheckout() {
                 <span style={{ fontSize: '18px', fontWeight: 800 }}>Total</span>
                 <span style={{ fontSize: '28px', fontWeight: 900, color: '#a78bfa' }}>${total.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: 600 }}>MXN</span></span>
               </div>
+
+              {purchaseError && (
+                <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '12px', background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)', color: '#f43f5e', fontSize: '13px' }}>
+                  {purchaseError}
+                </div>
+              )}
 
               <button
                 onClick={handlePurchase}

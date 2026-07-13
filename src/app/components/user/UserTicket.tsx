@@ -1,68 +1,89 @@
-import { Link, useLocation, useParams } from "react-router";
+import { Link, useParams } from "react-router";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Calendar,
   MapPin,
-  Clock,
-  User,
-  Hash,
   CheckCircle2,
-  Download,
   Share2,
-  CreditCard,
-  Banknote,
   Sparkles
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { supabase } from "../../services/supabaseClient";
+
+interface OrderView {
+  id: string;
+  total: number;
+  customer_name: string;
+  customer_email: string;
+  created_at: string;
+  events: { name: string; event_date: string; venues: { name: string } | null } | null;
+}
+
+interface TicketView {
+  id: string;
+  qr_code: string;
+  status: string;
+  event_ticket_types: { name: string } | null;
+}
 
 export default function UserTicket() {
-  const { ticketId } = useParams();
-  const location = useLocation();
+  const { ticketId: orderId } = useParams();
+  const [order, setOrder] = useState<OrderView | null>(null);
+  const [tickets, setTickets] = useState<TicketView[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Get data from navigation state (passed from UserCheckout)
-  const ticketData = location.state || {
-    event: {
-      name: "Festival Aura 2026",
-      date: "Viernes, 22 de Mayo 2026",
-      time: "14:00 hrs",
-      venue: "Estadio Azteca, CDMX",
-      price: 1850,
-    },
-    quantity: 1,
-    paymentMethod: "card",
-    total: 1998,
-    purchaseDate: new Date().toISOString(),
-    customerInfo: {
-      name: "Invitado TicketBlessing",
-      email: "guest@example.com",
-      phone: "55 0000 0000"
-    },
-    isGuest: true
-  };
+  useEffect(() => {
+    if (!orderId) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const [{ data: orderData, error: orderError }, { data: ticketData, error: ticketError }] = await Promise.all([
+        supabase.from('orders').select('id, total, customer_name, customer_email, created_at, events(name, event_date, venues(name))').eq('id', orderId).single(),
+        supabase.from('tickets').select('id, qr_code, status, event_ticket_types(name)').eq('order_id', orderId).order('created_at'),
+      ]);
+      if (cancelled) return;
+      if (orderError || !orderData) {
+        setError('No encontramos esta orden. Verifica el enlace o inicia sesión con la cuenta que hizo la compra.');
+      } else {
+        setOrder(orderData as any);
+        setTickets((ticketData as any) || []);
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [orderId]);
 
   const handleAddToAppleWallet = () => {
-    alert("Función de Apple Wallet (requiere archivo .pkpass en producción)");
-  };
-
-  const handleAddToGoogleWallet = () => {
-    alert("Función de Google Wallet (requiere integración con API)");
+    alert("Función de Apple Wallet (pendiente: requiere cuenta Apple Developer y certificados)");
   };
 
   const handleAddToGoogleCalendar = () => {
-    const event = {
-      title: ticketData.event.name,
-      details: `Boleto TicketBlessing #${ticketId} para ${ticketData.customerInfo.name}`,
-      location: ticketData.event.venue,
-      start: "20260522T140000",
-      end: "20260523T020000",
-    };
+    if (!order?.events) return;
+    const start = order.events.event_date.replace(/-/g, '');
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-      event.title
-    )}&dates=${event.start}/${event.end}&details=${encodeURIComponent(
-      event.details
-    )}&location=${encodeURIComponent(event.location)}`;
+      order.events.name
+    )}&dates=${start}/${start}&location=${encodeURIComponent(order.events.venues?.name || '')}`;
     window.open(url, "_blank");
   };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0d0b1e', color: '#f0edff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        Cargando boleto...
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0d0b1e', color: '#f0edff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '24px', textAlign: 'center' }}>
+        <p>{error}</p>
+        <Link to="/" style={{ color: '#a78bfa' }}>Volver al inicio</Link>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#0d0b1e', color: '#f0edff', padding: '40px 20px', fontFamily: 'Inter, sans-serif' }}>
@@ -75,14 +96,9 @@ export default function UserTicket() {
             <ArrowLeft size={18} />
             Inicio
           </Link>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px', borderRadius: '10px', cursor: 'pointer' }} title="Compartir">
-              <Share2 size={18} />
-            </button>
-            <button style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px', borderRadius: '10px', cursor: 'pointer' }} title="Descargar PDF">
-              <Download size={18} />
-            </button>
-          </div>
+          <button style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px', borderRadius: '10px', cursor: 'pointer' }} title="Compartir">
+            <Share2 size={18} />
+          </button>
         </div>
 
         {/* Ticket Card Container */}
@@ -95,11 +111,10 @@ export default function UserTicket() {
               <CheckCircle2 size={14} />
               BOLETO CONFIRMADO
             </div>
-            <h1 style={{ fontSize: '28px', fontWeight: 900, textShadow: '0 2px 10px rgba(0,0,0,0.3)', marginBottom: '8px' }}>{ticketData.event.name}</h1>
-            <p style={{ fontSize: '14px', opacity: 0.8, fontWeight: 500 }}>ID: {ticketId}</p>
+            <h1 style={{ fontSize: '28px', fontWeight: 900, textShadow: '0 2px 10px rgba(0,0,0,0.3)', marginBottom: '8px' }}>{order.events?.name}</h1>
+            <p style={{ fontSize: '14px', opacity: 0.8, fontWeight: 500 }}>Orden: {order.id.slice(0, 8).toUpperCase()}</p>
           </div>
 
-          {/* Scalloped edge simulation */}
           <div style={{ height: '32px', position: 'relative', background: 'rgba(19,16,42,1)', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', left: '-16px', width: '32px', height: '32px', borderRadius: '50%', background: '#0d0b1e', border: '1px solid rgba(139,92,246,0.25)' }} />
             <div style={{ flex: 1, borderTop: '2px dashed rgba(139,92,246,0.2)', margin: '0 16px' }} />
@@ -114,35 +129,29 @@ export default function UserTicket() {
                 <p style={{ fontSize: '11px', color: 'rgba(240,237,255,0.4)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px' }}>Fecha</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
                   <Calendar size={14} color="#a78bfa" />
-                  {ticketData.event.date}
+                  {order.events && new Date(order.events.event_date).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </div>
               </div>
-              <div>
-                <p style={{ fontSize: '11px', color: 'rgba(240,237,255,0.4)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px' }}>Hora</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
-                  <Clock size={14} color="#a78bfa" />
-                  {ticketData.event.time}
-                </div>
-              </div>
-              <div style={{ gridColumn: 'span 2' }}>
+              <div style={{ gridColumn: 'span 1' }}>
                 <p style={{ fontSize: '11px', color: 'rgba(240,237,255,0.4)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px' }}>Lugar</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
                   <MapPin size={14} color="#a78bfa" />
-                  {ticketData.event.venue}
+                  {order.events?.venues?.name}
                 </div>
               </div>
             </div>
 
-            {/* QR Code Section */}
-            <div style={{ marginTop: '32px', padding: '24px', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', textAlign: 'center' }}>
-              <div style={{ background: 'white', padding: '16px', borderRadius: '16px', display: 'inline-block', marginBottom: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-                <QRCodeSVG
-                  value={`TB-${ticketId}-${ticketData.customerInfo.email}`}
-                  size={160}
-                  level="H"
-                />
-              </div>
-              <p style={{ fontSize: '12px', color: 'rgba(240,237,255,0.4)', fontWeight: 600 }}>Presenta este código al ingresar</p>
+            {/* QR Codes — one per ticket in this order */}
+            <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {tickets.map((t, i) => (
+                <div key={t.id} style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', textAlign: 'center' }}>
+                  <div style={{ background: 'white', padding: '16px', borderRadius: '16px', display: 'inline-block', marginBottom: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                    <QRCodeSVG value={t.qr_code} size={160} level="H" />
+                  </div>
+                  <p style={{ fontSize: '13px', fontWeight: 700, color: '#a78bfa' }}>{t.event_ticket_types?.name || 'Boleto'} #{i + 1}</p>
+                  <p style={{ fontSize: '12px', color: 'rgba(240,237,255,0.4)', fontWeight: 600 }}>Presenta este código al ingresar</p>
+                </div>
+              ))}
             </div>
 
             {/* Customer & Payment Info */}
@@ -150,23 +159,18 @@ export default function UserTicket() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <p style={{ fontSize: '11px', color: 'rgba(240,237,255,0.4)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>Titular</p>
-                  <p style={{ fontSize: '15px', fontWeight: 700 }}>{ticketData.customerInfo.name}</p>
+                  <p style={{ fontSize: '15px', fontWeight: 700 }}>{order.customer_name}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontSize: '11px', color: 'rgba(240,237,255,0.4)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>Boletos</p>
-                  <p style={{ fontSize: '15px', fontWeight: 700 }}>{ticketData.quantity} x General</p>
+                  <p style={{ fontSize: '15px', fontWeight: 700 }}>{tickets.length}</p>
                 </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(139,92,246,0.05)', borderRadius: '16px', border: '1px solid rgba(139,92,246,0.1)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a78bfa' }}>
-                    {ticketData.paymentMethod === 'card' ? <CreditCard size={20} /> : <Banknote size={20} />}
-                  </div>
-                  <div>
-                    <p style={{ fontSize: '10px', color: 'rgba(240,237,255,0.4)', fontWeight: 700 }}>Pagado vía {ticketData.paymentMethod === 'card' ? 'Tarjeta' : 'Efectivo/SPEI'}</p>
-                    <p style={{ fontSize: '16px', fontWeight: 900, color: '#a78bfa' }}>${ticketData.total} <span style={{ fontSize: '12px' }}>MXN</span></p>
-                  </div>
+                <div>
+                  <p style={{ fontSize: '10px', color: 'rgba(240,237,255,0.4)', fontWeight: 700 }}>Total pagado</p>
+                  <p style={{ fontSize: '16px', fontWeight: 900, color: '#a78bfa' }}>${Number(order.total).toLocaleString()} <span style={{ fontSize: '12px' }}>MXN</span></p>
                 </div>
                 <div style={{ color: '#10b981', fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
