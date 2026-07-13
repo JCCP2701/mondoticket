@@ -55,7 +55,7 @@ export default function CreateOrganization() {
     setShowPreview(true);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const org = {
       name: formData.organizationName,
       legalName: formData.legalName,
@@ -69,11 +69,10 @@ export default function CreateOrganization() {
       contractNotes: formData.contractNotes,
     };
 
-    import("../../services/dataService").then(({ dataService }) => {
-      dataService.saveOrganization(org);
-      alert(`Organización "${formData.organizationName}" registrada exitosamente`);
-      navigate("/admin");
-    });
+    const { dataService } = await import("../../services/dataService");
+    await dataService.createOrganization(org);
+    alert(`Organización "${formData.organizationName}" registrada exitosamente`);
+    navigate("/admin");
   };
 
   return (

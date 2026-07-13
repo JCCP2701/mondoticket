@@ -1,116 +1,60 @@
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, Minus, Plus, CreditCard, Banknote, MapPin, Calendar, Clock, User, Mail, Phone, Ticket, ShieldCheck, Sparkles } from "lucide-react";
-import { useState, useMemo } from "react";
+import { ArrowLeft, Minus, Plus, CreditCard, Banknote, MapPin, Calendar, User, Mail, Phone, Ticket, ShieldCheck, Sparkles } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
-
-// The 6 diverse event examples for the full experience
-const EVENTS_DATABASE: Record<string, any> = {
-  "evt_aura_2026": {
-    id: "evt_aura_2026",
-    name: "Festival Aura 2026",
-    category: "Música / Festival",
-    date: "Viernes, 22 de Mayo 2026",
-    time: "14:00 hrs",
-    venue: "Estadio Azteca, CDMX",
-    price: 1850,
-    availableTickets: 1240,
-    image: "https://images.unsplash.com/photo-1459749411177-042180ce673c?w=1200",
-    gradient: "from-indigo-600/20 to-purple-600/20",
-    accent: "#6366f1"
-  },
-  "evt_copa_mx": {
-    id: "evt_copa_mx",
-    name: "Final Copa MX: Águilas vs Rayados",
-    category: "Deportes / Fútbol",
-    date: "Domingo, 12 de Abril 2026",
-    time: "20:00 hrs",
-    venue: "Estadio Akron, Guadalajara",
-    price: 950,
-    availableTickets: 450,
-    image: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1200",
-    gradient: "from-blue-600/20 to-cyan-600/20",
-    accent: "#2563eb"
-  },
-  "evt_fantasma_opera": {
-    id: "evt_fantasma_opera",
-    name: "El Fantasma de la Ópera",
-    category: "Teatro / Musical",
-    date: "Jueves, 04 de Junio 2026",
-    time: "20:30 hrs",
-    venue: "Teatro Telcel, CDMX",
-    price: 1200,
-    availableTickets: 120,
-    image: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=1200",
-    gradient: "from-red-600/20 to-rose-900/20",
-    accent: "#be123c"
-  },
-  "evt_tech_summit": {
-    id: "evt_tech_summit",
-    name: "Tech Summit Blessing 2026",
-    category: "Conferencia / Tech",
-    date: "Miércoles, 15 de Julio 2026",
-    time: "09:00 hrs",
-    venue: "WTC, Ciudad de México",
-    price: 3500,
-    availableTickets: 300,
-    image: "https://images.unsplash.com/photo-1540575861501-7ad0582371f3?w=1200",
-    gradient: "from-violet-600/20 to-fuchsia-600/20",
-    accent: "#8b5cf6"
-  },
-  "evt_art_soumaya": {
-    id: "evt_art_soumaya",
-    name: "Avant-Garde Art Exhibition",
-    category: "Arte / Exposición",
-    date: "Sábado, 08 de Agosto 2026",
-    time: "11:00 hrs",
-    venue: "Museo Soumaya, CDMX",
-    price: 450,
-    availableTickets: 200,
-    image: "https://images.unsplash.com/photo-1492691523567-6170c367314e?w=1200",
-    gradient: "from-amber-600/20 to-orange-600/20",
-    accent: "#d97706"
-  },
-  "evt_cinema_stars": {
-    id: "evt_cinema_stars",
-    name: "Cinema Under the Stars",
-    category: "Cine / Experiencia",
-    date: "Viernes, 18 de Septiembre 2026",
-    time: "19:30 hrs",
-    venue: "Cineteca Nacional, CDMX",
-    price: 250,
-    availableTickets: 150,
-    image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1200",
-    gradient: "from-teal-600/20 to-emerald-600/20",
-    accent: "#059669"
-  }
-};
+import { dataService, EventRecord } from "../../services/dataService";
 
 export default function UserCheckout() {
   const navigate = useNavigate();
   const { eventId } = useParams();
   const { register } = useAuth();
 
-  // Load event or default to first one
-  const event = useMemo(() => {
-    return (eventId && EVENTS_DATABASE[eventId]) || EVENTS_DATABASE["evt_aura_2026"];
+  const [event, setEvent] = useState<EventRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setLoadError("");
+      try {
+        // Landing-page showcase cards use illustrative IDs that don't exist
+        // in the DB yet — fall back to the first real event so checkout
+        // always has real, purchasable inventory behind it.
+        const byId = eventId ? await dataService.getEventById(eventId) : null;
+        const resolved = byId ?? (await dataService.getEvents())[0] ?? null;
+        if (!cancelled) setEvent(resolved);
+      } catch (err: any) {
+        if (!cancelled) setLoadError(err.message || "No se pudo cargar el evento");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [eventId]);
 
-  const [quantity, setQuantity] = useState(1);
+  const [selection, setSelection] = useState<Record<string, number>>({});
   const [paymentMethod, setPaymentMethod] = useState<"card" | "transfer" | "cash" | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-  });
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
   const [isProcessing, setIsProcessing] = useState(false);
-  const [formErrors, setFormErrors] = useState({
-    name: false,
-    email: false,
-    phone: false,
-  });
+  const [formErrors, setFormErrors] = useState({ name: false, email: false, phone: false });
 
-  const subtotal = quantity * event.price;
-  const serviceFee = subtotal * 0.08; // 8% service fee for TicketBlessing premium
+  const setQty = (typeId: string, qty: number, max: number) => {
+    setSelection((prev) => ({ ...prev, [typeId]: Math.max(0, Math.min(max, qty)) }));
+  };
+
+  const totalQuantity = useMemo(
+    () => Object.values(selection).reduce((sum, q) => sum + q, 0),
+    [selection]
+  );
+
+  const subtotal = useMemo(() => {
+    if (!event) return 0;
+    return event.ticketTypes.reduce((sum, t) => sum + (selection[t.id] || 0) * t.price, 0);
+  }, [event, selection]);
+
+  const serviceFee = subtotal * 0.08;
   const total = subtotal + serviceFee;
 
   const validateForm = () => {
@@ -124,34 +68,55 @@ export default function UserCheckout() {
   };
 
   const handlePurchase = async () => {
-    if (!paymentMethod || !validateForm()) return;
+    if (!event || !paymentMethod || totalQuantity === 0 || !validateForm()) return;
 
     setIsProcessing(true);
 
-    // Auto-registration logic:
-    // Create a "user" account if the email is new, so they have a wallet.
-    // In a real app, you'd check if the email exists first.
-    // For this simulation, we'll just attempt to register.
-    // If it's already registered, it'll just fail silently or update state.
+    // Real payment processing (Stripe) + order/ticket creation lands in the
+    // next phase; this still simulates the purchase but against real
+    // event + ticket-type data and real per-type availability.
     await register(formData.name, formData.email, "Blessing2026!");
-
-    // Simulate payment processing delay
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 2000));
 
     const ticketId = `TKT_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
     navigate(`/ticket/${ticketId}`, {
       state: {
-        event,
-        quantity,
+        event: {
+          name: event.name,
+          date: new Date(event.date).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+          time: '',
+          venue: event.venueName,
+        },
+        quantity: totalQuantity,
+        ticketBreakdown: event.ticketTypes
+          .filter((t) => (selection[t.id] || 0) > 0)
+          .map((t) => ({ name: t.name, quantity: selection[t.id] })),
         paymentMethod,
         total,
         purchaseDate: new Date().toISOString(),
         customerInfo: formData,
-        isGuest: false // Now they are a registered user
+        isGuest: false,
       },
     });
   };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0d0b1e', color: '#f0edff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        Cargando evento...
+      </div>
+    );
+  }
+
+  if (loadError || !event) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0d0b1e', color: '#f0edff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+        <p>{loadError || 'No hay eventos disponibles todavía.'}</p>
+        <Link to="/" style={{ color: '#a78bfa' }}>Volver al inicio</Link>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#0d0b1e', color: '#f0edff', fontFamily: 'Inter, sans-serif' }}>
@@ -182,52 +147,65 @@ export default function UserCheckout() {
 
             {/* 1. Event Selection (Visual confirmation) */}
             <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', overflow: 'hidden' }}>
-              <div style={{ height: '160px', position: 'relative' }}>
-                <img src={event.image} alt={event.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to top, #0d0b1e, transparent)` }} />
-                <div style={{ position: 'absolute', bottom: '16px', left: '24px' }}>
-                  <span style={{ background: 'rgba(124,58,237,0.8)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px', display: 'inline-block' }}>{event.category}</span>
-                  <h1 style={{ fontSize: '24px', fontWeight: 900 }}>{event.name}</h1>
-                </div>
-              </div>
-              <div style={{ padding: '20px 24px', display: 'flex', gap: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(240,237,255,0.6)', fontSize: '13px' }}>
-                  <Calendar size={14} color="#a78bfa" />
-                  {event.date}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(240,237,255,0.6)', fontSize: '13px' }}>
-                  <MapPin size={14} color="#a78bfa" />
-                  {event.venue}
+              <div style={{ padding: '24px' }}>
+                <span style={{ background: 'rgba(124,58,237,0.8)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '12px', display: 'inline-block' }}>{event.category || 'Evento'}</span>
+                <h1 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '16px' }}>{event.name}</h1>
+                <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(240,237,255,0.6)', fontSize: '13px' }}>
+                    <Calendar size={14} color="#a78bfa" />
+                    {new Date(event.date).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(240,237,255,0.6)', fontSize: '13px' }}>
+                    <MapPin size={14} color="#a78bfa" />
+                    {event.venueName}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* 2. Tickets Quantity */}
+            {/* 2. Ticket Type Selection — per-type availability */}
             <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', padding: '24px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>1</span>
-                Selecciona la cantidad
+                Elige tus boletos
               </h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <Minus size={18} />
-                  </button>
-                  <span style={{ fontSize: '24px', fontWeight: 800, minWidth: '30px', textAlign: 'center' }}>{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(Math.min(10, quantity + 1))}
-                    style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <Plus size={18} />
-                  </button>
-                </div>
-                <div style={{ fontSize: '14px', color: 'rgba(240,237,255,0.5)' }}>
-                  <p style={{ fontWeight: 600, color: '#f0edff' }}>Precio unitario: ${event.price} MXN</p>
-                  <p>{event.availableTickets} disponibles</p>
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {event.ticketTypes.map((t) => {
+                  const available = t.capacity - t.sold;
+                  const qty = selection[t.id] || 0;
+                  const soldOut = available <= 0;
+                  return (
+                    <div key={t.id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
+                      padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                      opacity: soldOut ? 0.5 : 1,
+                    }}>
+                      <div>
+                        <p style={{ fontWeight: 700, fontSize: '15px' }}>{t.name}</p>
+                        <p style={{ fontSize: '13px', color: 'rgba(240,237,255,0.5)' }}>
+                          ${t.price.toLocaleString()} MXN · {soldOut ? 'Agotado' : `${available} disponibles`}
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <button
+                          onClick={() => setQty(t.id, qty - 1, available)}
+                          disabled={qty === 0}
+                          style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', cursor: qty === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: qty === 0 ? 0.4 : 1 }}
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <span style={{ fontSize: '16px', fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{qty}</span>
+                        <button
+                          onClick={() => setQty(t.id, qty + 1, available)}
+                          disabled={soldOut || qty >= available}
+                          style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', border: 'none', color: 'white', cursor: (soldOut || qty >= available) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (soldOut || qty >= available) ? 0.4 : 1 }}
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -319,7 +297,7 @@ export default function UserCheckout() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: 'rgba(240,237,255,0.5)' }}>Subtotal ({quantity} boletos)</span>
+                  <span style={{ color: 'rgba(240,237,255,0.5)' }}>Subtotal ({totalQuantity} boletos)</span>
                   <span style={{ fontWeight: 600 }}>${subtotal.toLocaleString()} MXN</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
@@ -335,11 +313,11 @@ export default function UserCheckout() {
 
               <button
                 onClick={handlePurchase}
-                disabled={isProcessing || !paymentMethod}
+                disabled={isProcessing || !paymentMethod || totalQuantity === 0}
                 style={{
                   width: '100%', padding: '16px', borderRadius: '16px', border: 'none',
-                  background: paymentMethod ? 'linear-gradient(135deg, #7c3aed, #8b5cf6)' : 'rgba(255,255,255,0.1)',
-                  color: 'white', fontWeight: 800, fontSize: '16px', cursor: (isProcessing || !paymentMethod) ? 'not-allowed' : 'pointer',
+                  background: (paymentMethod && totalQuantity > 0) ? 'linear-gradient(135deg, #7c3aed, #8b5cf6)' : 'rgba(255,255,255,0.1)',
+                  color: 'white', fontWeight: 800, fontSize: '16px', cursor: (isProcessing || !paymentMethod || totalQuantity === 0) ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: paymentMethod ? '0 10px 20px rgba(124,58,237,0.3)' : 'none', transition: 'all 0.3s'
                 }}
               >

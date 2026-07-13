@@ -8,7 +8,7 @@ export default function AdminOrganizations() {
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
-        setOrgs(dataService.getOrganizations());
+        dataService.getOrganizations().then(setOrgs);
     }, []);
 
     const filteredOrgs = orgs.filter(org =>

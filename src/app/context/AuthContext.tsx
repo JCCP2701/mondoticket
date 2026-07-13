@@ -11,6 +11,7 @@ export interface AuthUser {
   role: UserRole;
   avatar?: string;
   organizationName?: string;
+  organizationId?: string;
 }
 
 interface AuthState {
@@ -48,6 +49,7 @@ async function loadProfile(userId: string): Promise<AuthUser | null> {
     role: data.role as UserRole,
     avatar: data.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2),
     organizationName: (data as any).organizations?.name,
+    organizationId: data.organization_id ?? undefined,
   };
 }
 

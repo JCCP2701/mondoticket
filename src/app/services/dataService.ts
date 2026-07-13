@@ -1,4 +1,5 @@
-import { AuthUser, UserRole } from "../context/AuthContext";
+import { supabase } from './supabaseClient';
+import { AuthUser, UserRole } from '../context/AuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -18,151 +19,218 @@ export interface Organization {
     createdAt: string;
 }
 
-export interface Event {
+export interface TicketType {
+    id: string;
+    name: string;
+    description: string | null;
+    price: number;
+    capacity: number;
+    sold: number;
+}
+
+export interface EventRecord {
     id: string;
     organizationId: string;
     name: string;
+    description: string | null;
+    category: string | null;
+    venueId: string;
+    venueName: string;
     date: string;
-    venue: string;
-    totalCapacity: number;
-    sold: number;
-    price: number;
-    status: 'upcoming' | 'ongoing' | 'completed';
+    status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+    ticketTypes: TicketType[];
 }
 
-export interface Ticket {
-    id: string;
-    eventId: string;
-    userId: string;
-    purchaseDate: string;
-    price: number;
-    status: 'valid' | 'used' | 'cancelled';
+// ─── Mapping helpers ────────────────────────────────────────────────────────
+
+function mapOrganization(row: any): Organization {
+    return {
+        id: row.id,
+        name: row.name,
+        legalName: row.legal_name,
+        rfc: row.rfc,
+        address: row.address,
+        contactName: row.contact_name,
+        contactEmail: row.contact_email,
+        contactPhone: row.contact_phone,
+        feePercentage: Number(row.fee_percentage),
+        paymentTerms: row.payment_terms,
+        contractNotes: row.contract_notes ?? undefined,
+        status: row.status,
+        createdAt: row.created_at,
+    };
 }
 
-// ─── Keys ─────────────────────────────────────────────────────────────────────
-const KEYS = {
-    ORGANIZATIONS: 'tb_organizations',
-    EVENTS: 'tb_events',
-    TICKETS: 'tb_tickets',
-    USERS: 'tb_registered_users', // Matches AuthContext LS_REGISTERED_KEY
-};
+function mapEvent(row: any): EventRecord {
+    return {
+        id: row.id,
+        organizationId: row.organization_id,
+        name: row.name,
+        description: row.description,
+        category: row.category,
+        venueId: row.venue_id,
+        venueName: row.venues?.name ?? '',
+        date: row.event_date,
+        status: row.status,
+        ticketTypes: (row.event_ticket_types ?? []).map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            description: t.description,
+            price: Number(t.price),
+            capacity: t.capacity,
+            sold: t.sold,
+        })),
+    };
+}
 
-// ─── Persistence Helpers ──────────────────────────────────────────────────────
-const get = <T>(key: string, defaultValue: T): T => {
-    try {
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) : defaultValue;
-    } catch {
-        return defaultValue;
-    }
-};
-
-const save = <T>(key: string, data: T) => {
-    localStorage.setItem(key, JSON.stringify(data));
-};
-
-// ─── Initial Data (if empty) ──────────────────────────────────────────────────
-const INITIAL_ORGANIZATIONS: Organization[] = [
-    {
-        id: "ORG001",
-        name: "EventPro México",
-        legalName: "EventPro México S.A. de C.V.",
-        rfc: "EPM950101ABC",
-        address: "Av. Reforma 123, CDMX",
-        contactName: "Juan Pérez",
-        contactEmail: "juan@eventpro.mx",
-        contactPhone: "5512345678",
-        feePercentage: 10,
-        paymentTerms: 15,
-        status: "active",
-        createdAt: new Date().toISOString(),
-    }
-];
-
-const INITIAL_EVENTS: Event[] = [
-    {
-        id: "EVT001",
-        organizationId: "ORG001",
-        name: "Festival Indie CDMX 2026",
-        date: "2026-03-15",
-        venue: "Foro Sol",
-        totalCapacity: 5000,
-        sold: 4200,
-        price: 1200,
-        status: "upcoming",
-    }
-];
+const EVENT_SELECT = 'id, organization_id, name, description, category, venue_id, event_date, status, venues(name), event_ticket_types(id, name, description, price, capacity, sold)';
 
 // ─── Data Service ─────────────────────────────────────────────────────────────
 export const dataService = {
     // Organizations
-    getOrganizations: (): Organization[] => {
-        const orgs = get<Organization[]>(KEYS.ORGANIZATIONS, []);
-        if (orgs.length === 0) {
-            save(KEYS.ORGANIZATIONS, INITIAL_ORGANIZATIONS);
-            return INITIAL_ORGANIZATIONS;
-        }
-        return orgs;
+    async getOrganizations(): Promise<Organization[]> {
+        const { data, error } = await supabase.from('organizations').select('*').order('created_at');
+        if (error) throw error;
+        return (data ?? []).map(mapOrganization);
     },
 
-    saveOrganization: (org: Omit<Organization, 'id' | 'createdAt' | 'status'>) => {
-        const orgs = dataService.getOrganizations();
-        const newOrg: Organization = {
-            ...org,
-            id: `ORG_${Date.now()}`,
-            status: 'active',
-            createdAt: new Date().toISOString(),
-        };
-        orgs.push(newOrg);
-        save(KEYS.ORGANIZATIONS, orgs);
-        return newOrg;
+    async createOrganization(org: {
+        name: string; legalName: string; rfc: string; address: string;
+        contactName: string; contactEmail: string; contactPhone: string; feePercentage: number;
+        paymentTerms: number; contractNotes?: string;
+    }): Promise<Organization> {
+        const { data, error } = await supabase
+            .from('organizations')
+            .insert({
+                name: org.name,
+                legal_name: org.legalName,
+                rfc: org.rfc,
+                address: org.address,
+                contact_name: org.contactName,
+                contact_email: org.contactEmail,
+                contact_phone: org.contactPhone,
+                fee_percentage: org.feePercentage,
+                payment_terms: org.paymentTerms,
+                contract_notes: org.contractNotes ?? null,
+            })
+            .select('*')
+            .single();
+        if (error) throw error;
+        return mapOrganization(data);
     },
 
-    updateOrganizationFee: (id: string, fee: number) => {
-        const orgs = dataService.getOrganizations();
-        const updated = orgs.map(o => o.id === id ? { ...o, feePercentage: fee } : o);
-        save(KEYS.ORGANIZATIONS, updated);
+    async updateOrganizationFee(id: string, fee: number): Promise<void> {
+        const { error } = await supabase.from('organizations').update({ fee_percentage: fee }).eq('id', id);
+        if (error) throw error;
     },
 
     // Events
-    getEvents: (): Event[] => {
-        const events = get<Event[]>(KEYS.EVENTS, []);
-        if (events.length === 0) {
-            save(KEYS.EVENTS, INITIAL_EVENTS);
-            return INITIAL_EVENTS;
-        }
-        return events;
+    async getEvents(): Promise<EventRecord[]> {
+        const { data, error } = await supabase.from('events').select(EVENT_SELECT).order('event_date');
+        if (error) throw error;
+        return (data ?? []).map(mapEvent);
     },
 
-    getEventsByOrganization: (orgId: string): Event[] => {
-        return dataService.getEvents().filter(e => e.organizationId === orgId);
+    async getEventsByOrganization(orgId: string): Promise<EventRecord[]> {
+        const { data, error } = await supabase
+            .from('events')
+            .select(EVENT_SELECT)
+            .eq('organization_id', orgId)
+            .order('event_date');
+        if (error) throw error;
+        return (data ?? []).map(mapEvent);
     },
 
-    // Tickets
-    getTickets: (): Ticket[] => get<Ticket[]>(KEYS.TICKETS, []),
+    async getEventById(id: string): Promise<EventRecord | null> {
+        const { data, error } = await supabase.from('events').select(EVENT_SELECT).eq('id', id).single();
+        if (error) return null;
+        return mapEvent(data);
+    },
 
-    // Users
-    getUsers: (): AuthUser[] => {
-        const registered = get<(AuthUser & { password?: string })[]>(KEYS.USERS, []);
-        // Include mock users from AuthContext logic if needed, but LS_REGISTERED_KEY is enough for dynamic ones
-        return registered.map(({ password, ...user }) => user as AuthUser);
+    async createEvent(input: {
+        organizationId: string;
+        name: string;
+        description: string;
+        category: string;
+        venueName: string;
+        venueAddress: string;
+        date: string;
+        instructions?: string;
+        ticketTypes: { name: string; description?: string; price: number; capacity: number }[];
+    }): Promise<EventRecord> {
+        const { data: venue, error: venueError } = await supabase
+            .from('venues')
+            .insert({ organization_id: input.organizationId, name: input.venueName, address: input.venueAddress })
+            .select('*')
+            .single();
+        if (venueError) throw venueError;
+
+        const { data: event, error: eventError } = await supabase
+            .from('events')
+            .insert({
+                organization_id: input.organizationId,
+                venue_id: venue.id,
+                name: input.name,
+                description: input.description,
+                category: input.category,
+                event_date: input.date,
+                instructions: input.instructions,
+            })
+            .select('*')
+            .single();
+        if (eventError) throw eventError;
+
+        const { error: typesError } = await supabase.from('event_ticket_types').insert(
+            input.ticketTypes.map((t, i) => ({
+                event_id: event.id,
+                name: t.name,
+                description: t.description ?? null,
+                price: t.price,
+                capacity: t.capacity,
+                sort_order: i,
+            }))
+        );
+        if (typesError) throw typesError;
+
+        const created = await dataService.getEventById(event.id);
+        if (!created) throw new Error('Failed to load created event');
+        return created;
+    },
+
+    // Users (profiles) — readable by the profile owner or a superadmin (RLS-enforced)
+    async getUsers(): Promise<AuthUser[]> {
+        const { data, error } = await supabase.from('profiles').select('id, name, email, role, organizations(name)');
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            role: row.role as UserRole,
+            avatar: row.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2),
+            organizationName: row.organizations?.name,
+        }));
     },
 
     // Global Stats for Super Admin
-    getGlobalStats: () => {
-        const events = dataService.getEvents();
-        const orgs = dataService.getOrganizations();
+    async getGlobalStats() {
+        const [events, orgs] = await Promise.all([dataService.getEvents(), dataService.getOrganizations()]);
 
-        const totalSold = events.reduce((sum, e) => sum + e.sold, 0);
-        const totalCapacity = events.reduce((sum, e) => sum + e.totalCapacity, 0);
-        const totalRevenue = events.reduce((sum, e) => sum + (e.sold * e.price), 0);
+        let totalSold = 0;
+        let totalCapacity = 0;
+        let totalRevenue = 0;
+        let totalProfit = 0;
 
-        // Profit is based on each organization's fee percentage
-        const totalProfit = events.reduce((sum, e) => {
-            const org = orgs.find(o => o.id === e.organizationId);
+        for (const event of events) {
+            const org = orgs.find((o) => o.id === event.organizationId);
             const fee = org ? org.feePercentage : 10;
-            return sum + (e.sold * e.price * fee / 100);
-        }, 0);
+            for (const type of event.ticketTypes) {
+                totalSold += type.sold;
+                totalCapacity += type.capacity;
+                const revenue = type.sold * type.price;
+                totalRevenue += revenue;
+                totalProfit += (revenue * fee) / 100;
+            }
+        }
 
         return {
             totalSold,
@@ -170,7 +238,7 @@ export const dataService = {
             totalRevenue,
             totalProfit,
             orgCount: orgs.length,
-            eventCount: events.length
+            eventCount: events.length,
         };
-    }
+    },
 };

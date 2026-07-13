@@ -8,10 +8,10 @@ export default function OrganizationContract() {
     const [org, setOrg] = useState<Organization | null>(null);
 
     useEffect(() => {
-        // In a real app, we'd fetch the specific org for the logged-in user
-        const allOrgs = dataService.getOrganizations();
-        const myOrg = allOrgs.find(o => o.name === user?.organizationName) || allOrgs[0];
-        setOrg(myOrg);
+        dataService.getOrganizations().then((allOrgs) => {
+            const myOrg = allOrgs.find(o => o.id === user?.organizationId) || allOrgs[0];
+            setOrg(myOrg ?? null);
+        });
     }, [user]);
 
     if (!org) return <div>Cargando contrato...</div>;

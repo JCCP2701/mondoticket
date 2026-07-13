@@ -3,10 +3,10 @@ import { dataService } from "../../services/dataService";
 import { useEffect, useState } from "react";
 
 export default function AdminFinances() {
-    const [stats, setStats] = useState(dataService.getGlobalStats());
+    const [stats, setStats] = useState({ totalSold: 0, totalCapacity: 0, totalRevenue: 0, totalProfit: 0, orgCount: 0, eventCount: 0 });
 
     useEffect(() => {
-        setStats(dataService.getGlobalStats());
+        dataService.getGlobalStats().then(setStats);
     }, []);
 
     return (

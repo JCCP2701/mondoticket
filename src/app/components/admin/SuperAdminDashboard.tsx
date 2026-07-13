@@ -2,23 +2,23 @@ import { Link } from "react-router";
 import { ArrowLeft, DollarSign, AlertCircle, TrendingUp, Plus, Users, Ticket, FileText } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { useState, useEffect } from "react";
-import { dataService, Organization, Event } from "../../services/dataService";
+import { dataService, Organization, EventRecord } from "../../services/dataService";
 
 export default function SuperAdminDashboard() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<EventRecord[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [stats, setStats] = useState({ totalSold: 0, totalCapacity: 0, totalRevenue: 0, totalProfit: 0, orgCount: 0, eventCount: 0 });
 
   useEffect(() => {
-    setOrganizations(dataService.getOrganizations());
-    setEvents(dataService.getEvents());
+    dataService.getOrganizations().then(setOrganizations);
+    dataService.getEvents().then(setEvents);
+    dataService.getGlobalStats().then(setStats);
   }, []);
 
-  const stats = dataService.getGlobalStats();
-
-  const handleFeeChange = (id: string, newFee: number) => {
-    dataService.updateOrganizationFee(id, newFee);
-    setOrganizations(dataService.getOrganizations());
+  const handleFeeChange = async (id: string, newFee: number) => {
+    await dataService.updateOrganizationFee(id, newFee);
+    setOrganizations(await dataService.getOrganizations());
   };
 
   // Prepare chart data from real events (grouped by month or similar)
@@ -78,7 +78,7 @@ export default function SuperAdminDashboard() {
               {stats.totalSold.toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground mt-2">
-              {((stats.totalSold / stats.totalCapacity) * 100).toFixed(1)}% de ocupación total
+              {(stats.totalCapacity ? (stats.totalSold / stats.totalCapacity) * 100 : 0).toFixed(1)}% de ocupación total
             </p>
           </div>
 
@@ -181,9 +181,9 @@ export default function SuperAdminDashboard() {
               <tbody className="divide-y divide-border">
                 {organizations.map((org) => {
                   const orgEvents = events.filter(e => e.organizationId === org.id);
-                  const sold = orgEvents.reduce((sum, e) => sum + e.sold, 0);
-                  const total = orgEvents.reduce((sum, e) => sum + e.totalCapacity, 0);
-                  const revenue = orgEvents.reduce((sum, e) => sum + (e.sold * e.price), 0);
+                  const sold = orgEvents.reduce((sum, e) => sum + e.ticketTypes.reduce((s, t) => s + t.sold, 0), 0);
+                  const total = orgEvents.reduce((sum, e) => sum + e.ticketTypes.reduce((s, t) => s + t.capacity, 0), 0);
+                  const revenue = orgEvents.reduce((sum, e) => sum + e.ticketTypes.reduce((s, t) => s + t.sold * t.price, 0), 0);
                   const profit = (revenue * org.feePercentage) / 100;
                   const toDeliver = revenue - profit;
 

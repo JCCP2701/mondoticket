@@ -9,9 +9,7 @@ export default function AdminUserManagement() {
     const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
 
     useEffect(() => {
-        // In a real app, we'd fetch from an API. 
-        // Here we use dataService which pulls from localStorage.
-        setUsers(dataService.getUsers());
+        dataService.getUsers().then(setUsers);
     }, []);
 
     const filteredUsers = users.filter(user => {

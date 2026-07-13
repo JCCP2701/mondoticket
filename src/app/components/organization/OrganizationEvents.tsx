@@ -1,63 +1,36 @@
 import { Link } from "react-router";
 import { Eye, Plus, Search, Filter, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
-import { dataService } from "../../services/dataService";
-
-interface Event {
-    id: string;
-    name: string;
-    date: string;
-    venue: string;
-    totalCapacity: number;
-    sold: number;
-    presaleActive: boolean;
-    revenue: number;
-    platformFee: number;
-    status: "upcoming" | "ongoing" | "completed";
-}
-
-// Mock data integration similar to dashboard
-const mockEvents: Event[] = [
-    {
-        id: "EVT001",
-        name: "Festival Indie CDMX 2026",
-        date: "2026-03-15",
-        venue: "Foro Sol",
-        totalCapacity: 5000,
-        sold: 4200,
-        presaleActive: true,
-        revenue: 840000,
-        platformFee: 84000,
-        status: "upcoming",
-    },
-    {
-        id: "EVT002",
-        name: "Concierto Rock Nacional",
-        date: "2026-02-28",
-        venue: "Palacio de los Deportes",
-        totalCapacity: 3000,
-        sold: 3000,
-        presaleActive: false,
-        revenue: 450000,
-        platformFee: 45000,
-        status: "completed",
-    },
-    {
-        id: "EVT003",
-        name: "Jazz Night Premium",
-        date: "2026-03-01",
-        venue: "Teatro Metropólitan",
-        totalCapacity: 1500,
-        sold: 890,
-        presaleActive: true,
-        revenue: 267000,
-        platformFee: 26700,
-        status: "ongoing",
-    },
-];
+import { dataService, EventRecord } from "../../services/dataService";
+import { useAuth } from "../../context/AuthContext";
 
 export default function OrganizationEvents() {
+    const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState("");
+    const [events, setEvents] = useState<EventRecord[]>([]);
+
+    useEffect(() => {
+        if (!user?.organizationId) return;
+        dataService.getEventsByOrganization(user.organizationId).then(setEvents);
+    }, [user]);
+
+    const mockEvents = events.map((e) => {
+        const sold = e.ticketTypes.reduce((s, t) => s + t.sold, 0);
+        const totalCapacity = e.ticketTypes.reduce((s, t) => s + t.capacity, 0);
+        const revenue = e.ticketTypes.reduce((s, t) => s + t.sold * t.price, 0);
+        return {
+            id: e.id,
+            name: e.name,
+            date: e.date,
+            venue: e.venueName,
+            totalCapacity,
+            sold,
+            presaleActive: e.status === "upcoming",
+            revenue,
+            platformFee: revenue * 0.1,
+            status: e.status,
+        };
+    });
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 text-foreground">
@@ -108,7 +81,7 @@ export default function OrganizationEvents() {
                         </thead>
                         <tbody className="divide-y divide-border">
                             {mockEvents.map((event) => {
-                                const occupancyPercent = (event.sold / event.totalCapacity) * 100;
+                                const occupancyPercent = event.totalCapacity ? (event.sold / event.totalCapacity) * 100 : 0;
                                 return (
                                     <tr key={event.id} className="hover:bg-secondary/10 transition-colors group">
                                         <td className="px-6 py-4">
