@@ -2,14 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { Ticket, Shield, RefreshCw, ArrowRight, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { QRCodeSVG } from 'qrcode.react';
-
-const TOTP_ISSUER = 'TicketBlessing';
-const TOTP_SECRET = 'JBSWY3DPEHPK3PXP'; // demo only — generate per user in production
 
 export default function MFAPage() {
     const navigate = useNavigate();
-    const { user, verifyMFA, logout } = useAuth();
+    const { user, verifyMFA, logout, isFirstMFASetup, mfaQrCode } = useAuth();
     const [code, setCode] = useState(['', '', '', '', '', '']);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -66,21 +62,18 @@ export default function MFAPage() {
             return;
         }
         setLoading(true);
-        await new Promise((r) => setTimeout(r, 600));
-        const ok = verifyMFA(fullCode);
+        const ok = await verifyMFA(fullCode);
         setLoading(false);
         if (ok) {
             const dest =
                 user?.role === 'superadmin' ? '/admin' : user?.role === 'organization' ? '/organization' : '/wallet';
             navigate(dest);
         } else {
-            setError('Código incorrecto. En demo usa: 123456 o cualquier 6 dígitos.');
+            setError('Código incorrecto. Verifica el código de tu app autenticadora.');
             setCode(['', '', '', '', '', '']);
             inputRefs.current[0]?.focus();
         }
     };
-
-    const otpAuthUrl = `otpauth://totp/${TOTP_ISSUER}:${user?.email || 'demo'}?secret=${TOTP_SECRET}&issuer=${TOTP_ISSUER}&algorithm=SHA1&digits=6&period=30`;
 
     const timerPercent = (timeLeft / 30) * 100;
     const timerColor = timeLeft > 10 ? '#10b981' : timeLeft > 5 ? '#f59e0b' : '#f43f5e';
@@ -131,40 +124,40 @@ export default function MFAPage() {
                         </p>
                     </div>
 
-                    {/* QR Code section */}
-                    <div style={{ marginBottom: '28px' }}>
-                        <button
-                            onClick={() => setShowQR(!showQR)}
-                            style={{
-                                width: '100%', padding: '10px', borderRadius: '10px',
-                                background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
-                                color: '#a78bfa', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                transition: 'all 0.2s', marginBottom: '12px',
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139,92,246,0.15)'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(139,92,246,0.08)'}
-                        >
-                            {showQR ? 'Ocultar' : 'Configurar'} Google Authenticator (primera vez)
-                        </button>
+                    {/* QR Code section — only shown on first-time TOTP enrollment */}
+                    {isFirstMFASetup && mfaQrCode && (
+                        <div style={{ marginBottom: '28px' }}>
+                            <button
+                                onClick={() => setShowQR(!showQR)}
+                                style={{
+                                    width: '100%', padding: '10px', borderRadius: '10px',
+                                    background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
+                                    color: '#a78bfa', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                    transition: 'all 0.2s', marginBottom: '12px',
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139,92,246,0.15)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(139,92,246,0.08)'}
+                            >
+                                {showQR ? 'Ocultar' : 'Configurar'} app autenticadora (primera vez)
+                            </button>
 
-                        {showQR && (
-                            <div style={{
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
-                                padding: '20px', borderRadius: '14px',
-                                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(139,92,246,0.15)',
-                            }}>
-                                <div style={{ padding: '12px', background: 'white', borderRadius: '12px' }}>
-                                    <QRCodeSVG value={otpAuthUrl} size={140} level="M" />
+                            {showQR && (
+                                <div style={{
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
+                                    padding: '20px', borderRadius: '14px',
+                                    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(139,92,246,0.15)',
+                                }}>
+                                    <div style={{ padding: '12px', background: 'white', borderRadius: '12px' }}
+                                        dangerouslySetInnerHTML={{ __html: mfaQrCode }}
+                                    />
+                                    <p style={{ fontSize: '12px', color: 'rgba(240,237,255,0.45)', textAlign: 'center', lineHeight: 1.6 }}>
+                                        Escanea con Google Authenticator, Authy o cualquier app TOTP y luego ingresa el código de 6 dígitos.
+                                    </p>
                                 </div>
-                                <p style={{ fontSize: '12px', color: 'rgba(240,237,255,0.45)', textAlign: 'center', lineHeight: 1.6 }}>
-                                    Escanea con Google Authenticator, Authy o cualquier app TOTP.
-                                    <br />
-                                    <span style={{ color: '#f59e0b', fontWeight: 600 }}>Demo: usa código "123456"</span>
-                                </p>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Timer */}
                     <div style={{ marginBottom: '24px' }}>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '../services/supabaseClient';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type UserRole = 'superadmin' | 'organization' | 'user';
@@ -22,149 +23,141 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  verifyMFA: (code: string) => boolean;
+  verifyMFA: (code: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   isFirstMFASetup: boolean;
+  mfaQrCode: string | null;
 }
-
-// ─── Mock Users DB ────────────────────────────────────────────────────────────
-const MOCK_USERS: (AuthUser & { password: string })[] = [
-  {
-    id: 'usr_admin_001',
-    name: 'Carlos Mendoza',
-    email: 'admin@ticketblessing.com',
-    password: 'Admin123!',
-    role: 'superadmin',
-    avatar: 'CM',
-  },
-  {
-    id: 'usr_org_001',
-    name: 'Festival Conexión MX',
-    email: 'org@ticketblessing.com',
-    password: 'Org123!',
-    role: 'organization',
-    organizationName: 'Festival Conexión MX',
-    avatar: 'FC',
-  },
-  {
-    id: 'usr_end_001',
-    name: 'Sofía Ramírez',
-    email: 'user@ticketblessing.com',
-    password: 'User123!',
-    role: 'user',
-    avatar: 'SR',
-  },
-];
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const STORAGE_KEY = 'tb_auth_state';
-const LS_REGISTERED_KEY = 'tb_registered_users';
+async function loadProfile(userId: string): Promise<AuthUser | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, name, email, role, organization_id, organizations(name)')
+    .eq('id', userId)
+    .single();
 
-function loadState(): AuthState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { }
-  return { user: null, isAuthenticated: false, mfaVerified: false, pendingRole: null };
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    name: data.name,
+    email: data.email,
+    role: data.role as UserRole,
+    avatar: data.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2),
+    organizationName: (data as any).organizations?.name,
+  };
 }
 
-function saveState(state: AuthState) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
+const initialState: AuthState = {
+  user: null,
+  isAuthenticated: false,
+  mfaVerified: false,
+  pendingRole: null,
+};
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>(loadState);
-  const [isFirstMFASetup] = useState(false);
+  const [state, setState] = useState<AuthState>(initialState);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaQrCode, setMfaQrCode] = useState<string | null>(null);
+  const [isFirstMFASetup, setIsFirstMFASetup] = useState(false);
 
+  // Restore session (e.g. after a page refresh) and re-sync MFA/aal status.
   useEffect(() => {
-    saveState(state);
-  }, [state]);
+    const restore = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData.session;
+      if (!session) return;
+
+      const profile = await loadProfile(session.user.id);
+      if (!profile) return;
+
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      const mfaVerified = aal?.currentLevel === 'aal2';
+
+      setState({
+        user: profile,
+        isAuthenticated: mfaVerified,
+        mfaVerified,
+        pendingRole: profile.role,
+      });
+    };
+    restore();
+  }, []);
+
+  const beginMfaStep = async (profile: AuthUser) => {
+    const { data: factorsData } = await supabase.auth.mfa.listFactors();
+    const verifiedTotp = factorsData?.totp?.find((f) => f.status === 'verified');
+
+    if (verifiedTotp) {
+      setMfaFactorId(verifiedTotp.id);
+      setMfaQrCode(null);
+      setIsFirstMFASetup(false);
+    } else {
+      const { data: enrollData, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+      if (error) throw error;
+      setMfaFactorId(enrollData.id);
+      setMfaQrCode(enrollData.totp.qr_code);
+      setIsFirstMFASetup(true);
+    }
+
+    setState({ user: profile, isAuthenticated: false, mfaVerified: false, pendingRole: profile.role });
+  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Check mock users first
-    let found = MOCK_USERS.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) return false;
 
-    if (!found) {
-      // Check dynamically registered users
-      try {
-        const registered = JSON.parse(localStorage.getItem(LS_REGISTERED_KEY) || '[]');
-        found = registered.find(
-          (u: AuthUser & { password: string }) =>
-            u.email.toLowerCase() === email.toLowerCase() && u.password === password
-        );
-      } catch { }
-    }
+    const profile = await loadProfile(data.user.id);
+    if (!profile) return false;
 
-    if (found) {
-      const { password: _pw, ...user } = found;
-      setState({ user, isAuthenticated: false, mfaVerified: false, pendingRole: user.role });
-      return true;
-    }
-
-    return false;
-  };
-
-  const verifyMFA = (code: string): boolean => {
-    // Simulated: accept "123456" in dev, or any 6-digit code
-    const isValid = code === '123456' || (code.length === 6 && /^\d{6}$/.test(code));
-    if (isValid && state.user) {
-      setState((prev) => ({ ...prev, isAuthenticated: true, mfaVerified: true }));
-      return true;
-    }
-    return false;
-  };
-
-  const logout = () => {
-    setState({ user: null, isAuthenticated: false, mfaVerified: false, pendingRole: null });
-    localStorage.removeItem(STORAGE_KEY);
+    await beginMfaStep(profile);
+    return true;
   };
 
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
-    try {
-      const existing = JSON.parse(localStorage.getItem(LS_REGISTERED_KEY) || '[]');
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    });
+    if (error || !data.user) return false;
 
-      // Check if user already exists (in mocks or dynamic)
-      const isMock = MOCK_USERS.some(u => u.email.toLowerCase() === email.toLowerCase());
-      const isDynamic = existing.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+    // profiles row is auto-created by the handle_new_user() DB trigger.
+    const profile = await loadProfile(data.user.id);
+    if (!profile) return false;
 
-      if (isMock || isDynamic) {
-        if (isDynamic) {
-          const { password: _pw, ...user } = isDynamic;
-          setState({ user, isAuthenticated: false, mfaVerified: false, pendingRole: 'user' });
-        } else {
-          const mockUser = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase())!;
-          const { password: _pw, ...user } = mockUser;
-          setState({ user, isAuthenticated: false, mfaVerified: false, pendingRole: user.role });
-        }
-        return true; // Already exists, treat as "registered" and set state
-      }
+    await beginMfaStep(profile);
+    return true;
+  };
 
-      const newUser: AuthUser & { password: string } = {
-        id: `usr_${Date.now()}`,
-        name,
-        email,
-        password,
-        role: 'user',
-        avatar: name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),
-      };
+  const verifyMFA = async (code: string): Promise<boolean> => {
+    if (!mfaFactorId) return false;
 
-      existing.push(newUser);
-      localStorage.setItem(LS_REGISTERED_KEY, JSON.stringify(existing));
-      const { password: _pw, ...user } = newUser;
-      setState({ user, isAuthenticated: false, mfaVerified: false, pendingRole: 'user' });
-      return true;
-    } catch {
-      return false;
-    }
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: mfaFactorId, code });
+    if (error) return false;
+
+    setState((prev) => ({ ...prev, isAuthenticated: true, mfaVerified: true }));
+    setMfaQrCode(null);
+    setIsFirstMFASetup(false);
+    return true;
+  };
+
+  const logout = () => {
+    supabase.auth.signOut();
+    setState(initialState);
+    setMfaFactorId(null);
+    setMfaQrCode(null);
+    setIsFirstMFASetup(false);
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, verifyMFA, register, isFirstMFASetup }}>
+    <AuthContext.Provider
+      value={{ ...state, login, logout, verifyMFA, register, isFirstMFASetup, mfaQrCode }}
+    >
       {children}
     </AuthContext.Provider>
   );
