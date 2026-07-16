@@ -97,7 +97,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .eq('id', created.user.id);
 
   if (updateError) {
-    res.status(500).json({ error: 'Account created but failed to assign role: ' + updateError.message });
+    await serviceClient.auth.admin.deleteUser(created.user.id);
+    res.status(500).json({ error: 'Failed to assign role, account rolled back: ' + updateError.message });
     return;
   }
 
@@ -106,7 +107,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .insert(organizationIds.map((organizationId: string) => ({ profile_id: created.user.id, organization_id: organizationId })));
 
   if (membershipError) {
-    res.status(500).json({ error: 'Account created but failed to assign organization(s): ' + membershipError.message });
+    await serviceClient.auth.admin.deleteUser(created.user.id);
+    res.status(500).json({ error: 'Failed to assign organization(s), account rolled back: ' + membershipError.message });
     return;
   }
 
