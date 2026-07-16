@@ -15,11 +15,15 @@ export interface SelectedSeat {
 interface SeatMapPickerProps {
     eventId: string;
     ticketTypes: TicketType[];
+    // Scope the picker to a single ticket type's seats — an event can mix
+    // seat-mapped types with plain quantity-based ones, so checkout renders
+    // one picker per seat-mapped type rather than one for the whole event.
+    ticketTypeId?: string;
     onSelectionChange: (seats: SelectedSeat[]) => void;
     onError?: (message: string) => void;
 }
 
-export default function SeatMapPicker({ eventId, ticketTypes, onSelectionChange, onError }: SeatMapPickerProps) {
+export default function SeatMapPicker({ eventId, ticketTypes, ticketTypeId, onSelectionChange, onError }: SeatMapPickerProps) {
     const [seats, setSeats] = useState<SeatRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -32,8 +36,8 @@ export default function SeatMapPicker({ eventId, ticketTypes, onSelectionChange,
 
     const refreshSeats = useCallback(async () => {
         const data = await dataService.getSeatMap(eventId);
-        setSeats(data);
-    }, [eventId]);
+        setSeats(ticketTypeId ? data.filter((s) => s.ticketTypeId === ticketTypeId) : data);
+    }, [eventId, ticketTypeId]);
 
     useEffect(() => {
         (async () => {

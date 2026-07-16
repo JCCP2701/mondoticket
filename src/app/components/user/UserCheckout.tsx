@@ -37,7 +37,7 @@ export default function UserCheckout() {
   }, [eventId]);
 
   const [selection, setSelection] = useState<Record<string, number>>({});
-  const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
+  const [selectedSeatsByType, setSelectedSeatsByType] = useState<Record<string, SelectedSeat[]>>({});
   const [seatError, setSeatError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"card" | "transfer" | "cash" | null>(null);
   const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
@@ -45,19 +45,27 @@ export default function UserCheckout() {
   const [purchaseError, setPurchaseError] = useState("");
   const [formErrors, setFormErrors] = useState({ name: false, email: false, phone: false });
 
+  const selectedSeats = useMemo(
+    () => Object.values(selectedSeatsByType).flat(),
+    [selectedSeatsByType]
+  );
+
   const setQty = (typeId: string, qty: number, max: number) => {
     setSelection((prev) => ({ ...prev, [typeId]: Math.max(0, Math.min(max, qty)) }));
   };
 
-  const totalQuantity = useMemo(() => {
-    if (event?.hasSeatMap) return selectedSeats.length;
-    return Object.values(selection).reduce((sum, q) => sum + q, 0);
-  }, [selection, selectedSeats, event]);
+  const totalQuantity = useMemo(
+    () => Object.values(selection).reduce((sum, q) => sum + q, 0) + selectedSeats.length,
+    [selection, selectedSeats]
+  );
 
   const subtotal = useMemo(() => {
     if (!event) return 0;
-    if (event.hasSeatMap) return selectedSeats.reduce((sum, s) => sum + s.price, 0);
-    return event.ticketTypes.reduce((sum, t) => sum + (selection[t.id] || 0) * t.price, 0);
+    const quantitySubtotal = event.ticketTypes
+      .filter((t) => !t.hasSeatMap)
+      .reduce((sum, t) => sum + (selection[t.id] || 0) * t.price, 0);
+    const seatSubtotal = selectedSeats.reduce((sum, s) => sum + s.price, 0);
+    return quantitySubtotal + seatSubtotal;
   }, [event, selection, selectedSeats]);
 
   const serviceFee = subtotal * 0.08;
@@ -96,6 +104,10 @@ export default function UserCheckout() {
 
       if (!isFree) await new Promise((r) => setTimeout(r, 1500));
 
+      const items = event.ticketTypes
+        .filter((t) => !t.hasSeatMap && (selection[t.id] || 0) > 0)
+        .map((t) => ({ ticketTypeId: t.id, quantity: selection[t.id] }));
+
       const orderId = await dataService.createOrder({
         eventId: event.id,
         organizationId: event.organizationId,
@@ -104,10 +116,8 @@ export default function UserCheckout() {
         customerEmail: formData.email,
         customerPhone: formData.phone,
         paymentIntentId: `sim_${authedUser.id}_${Date.now()}`,
-        items: event.hasSeatMap ? undefined : event.ticketTypes
-          .filter((t) => (selection[t.id] || 0) > 0)
-          .map((t) => ({ ticketTypeId: t.id, quantity: selection[t.id] })),
-        seatIds: event.hasSeatMap ? selectedSeats.map((s) => s.seatId) : undefined,
+        items: items.length > 0 ? items : undefined,
+        seatIds: selectedSeats.length > 0 ? selectedSeats.map((s) => s.seatId) : undefined,
       });
 
       navigate(`/ticket/${orderId}`);
@@ -118,7 +128,7 @@ export default function UserCheckout() {
         setSelection({});
       } else if (message.includes('HOLD_EXPIRED')) {
         setPurchaseError('Tu reserva de asientos expiró. Vuelve a seleccionarlos.');
-        setSelectedSeats([]);
+        setSelectedSeatsByType({});
       } else {
         setPurchaseError(message || 'Ocurrió un error al procesar tu compra');
       }
@@ -191,69 +201,76 @@ export default function UserCheckout() {
               </div>
             </div>
 
-            {/* 2. Ticket/Seat Selection — per-type availability, or a visual seat map */}
+            {/* 2. Ticket/Seat Selection — an event can mix seat-mapped types with plain quantity-based ones */}
             <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', padding: '24px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>1</span>
-                {event.hasSeatMap ? 'Elige tus asientos' : 'Elige tus boletos'}
+                Elige tus boletos
               </h3>
 
-              {event.hasSeatMap ? (
-                <div style={{ color: '#0d0b1e' }}>
-                  {seatError && (
-                    <div style={{ marginBottom: '16px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)', color: '#fca5a5', fontSize: '13px' }}>
-                      {seatError}
-                    </div>
-                  )}
-                  <div style={{ background: 'white', borderRadius: '16px', padding: '16px' }}>
-                    <SeatMapPicker
-                      eventId={event.id}
-                      ticketTypes={event.ticketTypes}
-                      onSelectionChange={setSelectedSeats}
-                      onError={setSeatError}
-                    />
-                  </div>
+              {seatError && (
+                <div style={{ marginBottom: '16px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)', color: '#fca5a5', fontSize: '13px' }}>
+                  {seatError}
                 </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {event.ticketTypes.map((t) => {
-                    const available = t.capacity - t.sold;
-                    const qty = selection[t.id] || 0;
-                    const soldOut = available <= 0;
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {event.ticketTypes.map((t) => {
+                  if (t.hasSeatMap) {
                     return (
-                      <div key={t.id} style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
-                        padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                        opacity: soldOut ? 0.5 : 1,
-                      }}>
-                        <div>
-                          <p style={{ fontWeight: 700, fontSize: '15px' }}>{t.name}</p>
-                          <p style={{ fontSize: '13px', color: 'rgba(240,237,255,0.5)' }}>
-                            {t.price === 0 ? 'Gratis' : `$${t.price.toLocaleString()} MXN`} · {soldOut ? 'Agotado' : `${available} disponibles`}
-                          </p>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                          <button
-                            onClick={() => setQty(t.id, qty - 1, available)}
-                            disabled={qty === 0}
-                            style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', cursor: qty === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: qty === 0 ? 0.4 : 1 }}
-                          >
-                            <Minus size={14} />
-                          </button>
-                          <span style={{ fontSize: '16px', fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{qty}</span>
-                          <button
-                            onClick={() => setQty(t.id, qty + 1, available)}
-                            disabled={soldOut || qty >= available}
-                            style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', border: 'none', color: 'white', cursor: (soldOut || qty >= available) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (soldOut || qty >= available) ? 0.4 : 1 }}
-                          >
-                            <Plus size={14} />
-                          </button>
+                      <div key={t.id}>
+                        <p style={{ fontWeight: 700, fontSize: '15px', marginBottom: '10px' }}>
+                          {t.name} — {t.price === 0 ? 'Gratis' : `$${t.price.toLocaleString()} MXN`}
+                        </p>
+                        <div style={{ background: 'white', borderRadius: '16px', padding: '16px' }}>
+                          <SeatMapPicker
+                            eventId={event.id}
+                            ticketTypeId={t.id}
+                            ticketTypes={[t]}
+                            onSelectionChange={(seats) => setSelectedSeatsByType((prev) => ({ ...prev, [t.id]: seats }))}
+                            onError={setSeatError}
+                          />
                         </div>
                       </div>
                     );
-                  })}
-                </div>
-              )}
+                  }
+
+                  const available = t.capacity - t.sold;
+                  const qty = selection[t.id] || 0;
+                  const soldOut = available <= 0;
+                  return (
+                    <div key={t.id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
+                      padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                      opacity: soldOut ? 0.5 : 1,
+                    }}>
+                      <div>
+                        <p style={{ fontWeight: 700, fontSize: '15px' }}>{t.name}</p>
+                        <p style={{ fontSize: '13px', color: 'rgba(240,237,255,0.5)' }}>
+                          {t.price === 0 ? 'Gratis' : `$${t.price.toLocaleString()} MXN`} · {soldOut ? 'Agotado' : `${available} disponibles`}
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <button
+                          onClick={() => setQty(t.id, qty - 1, available)}
+                          disabled={qty === 0}
+                          style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', cursor: qty === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: qty === 0 ? 0.4 : 1 }}
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <span style={{ fontSize: '16px', fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{qty}</span>
+                        <button
+                          onClick={() => setQty(t.id, qty + 1, available)}
+                          disabled={soldOut || qty >= available}
+                          style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', border: 'none', color: 'white', cursor: (soldOut || qty >= available) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (soldOut || qty >= available) ? 0.4 : 1 }}
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* 3. Customer Info */}

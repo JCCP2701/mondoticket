@@ -26,6 +26,7 @@ export interface TicketType {
     price: number;
     capacity: number;
     sold: number;
+    hasSeatMap: boolean;
 }
 
 export interface EventRecord {
@@ -106,8 +107,13 @@ function mapEvent(row: any): EventRecord {
             price: Number(t.price),
             capacity: t.capacity,
             sold: t.sold,
+            hasSeatMap: (t.event_seats?.[0]?.count ?? 0) > 0,
         })),
-        hasSeatMap: (row.event_seats?.[0]?.count ?? 0) > 0,
+        // True if ANY ticket type has a seat map — used only where a
+        // per-event summary is useful (e.g. showing the "seat map" button).
+        // Checkout/taquilla must branch per ticket type, not on this,
+        // since a single event can mix seat-mapped and quantity-based types.
+        hasSeatMap: (row.event_ticket_types ?? []).some((t: any) => (t.event_seats?.[0]?.count ?? 0) > 0),
     };
 }
 
@@ -124,7 +130,7 @@ function mapSeat(row: any): SeatRecord {
     };
 }
 
-const EVENT_SELECT = 'id, organization_id, name, description, category, venue_id, event_date, status, venues(name), event_ticket_types(id, name, description, price, capacity, sold), event_seats(count)';
+const EVENT_SELECT = 'id, organization_id, name, description, category, venue_id, event_date, status, venues(name), event_ticket_types(id, name, description, price, capacity, sold, event_seats(count))';
 
 // ─── Data Service ─────────────────────────────────────────────────────────────
 export const dataService = {

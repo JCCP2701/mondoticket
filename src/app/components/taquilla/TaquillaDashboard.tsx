@@ -11,7 +11,7 @@ export default function TaquillaDashboard() {
   const [loading, setLoading] = useState(true);
 
   const [selection, setSelection] = useState<Record<string, number>>({});
-  const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
+  const [selectedSeatsByType, setSelectedSeatsByType] = useState<Record<string, SelectedSeat[]>>({});
   const [seatError, setSeatError] = useState("");
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
   const [paymentNote, setPaymentNote] = useState<"cash" | "card">("cash");
@@ -30,24 +30,31 @@ export default function TaquillaDashboard() {
 
   const event = events.find((e) => e.id === selectedEventId) ?? null;
 
+  const selectedSeats = useMemo(
+    () => Object.values(selectedSeatsByType).flat(),
+    [selectedSeatsByType]
+  );
+
   const setQty = (typeId: string, qty: number, max: number) => {
     setSelection((prev) => ({ ...prev, [typeId]: Math.max(0, Math.min(max, qty)) }));
   };
 
-  const totalQuantity = useMemo(() => {
-    if (event?.hasSeatMap) return selectedSeats.length;
-    return Object.values(selection).reduce((sum, q) => sum + q, 0);
-  }, [selection, selectedSeats, event]);
+  const totalQuantity = useMemo(
+    () => Object.values(selection).reduce((sum, q) => sum + q, 0) + selectedSeats.length,
+    [selection, selectedSeats]
+  );
 
   const total = useMemo(() => {
     if (!event) return 0;
-    if (event.hasSeatMap) return selectedSeats.reduce((sum, s) => sum + s.price, 0);
-    return event.ticketTypes.reduce((sum, t) => sum + (selection[t.id] || 0) * t.price, 0);
+    const quantityTotal = event.ticketTypes
+      .filter((t) => !t.hasSeatMap)
+      .reduce((sum, t) => sum + (selection[t.id] || 0) * t.price, 0);
+    return quantityTotal + selectedSeats.reduce((sum, s) => sum + s.price, 0);
   }, [event, selection, selectedSeats]);
 
   const resetSelection = () => {
     setSelection({});
-    setSelectedSeats([]);
+    setSelectedSeatsByType({});
   };
 
   const handleSell = async () => {
@@ -56,6 +63,10 @@ export default function TaquillaDashboard() {
     setSellError("");
     setLastSaleOrderId(null);
     try {
+      const items = event.ticketTypes
+        .filter((t) => !t.hasSeatMap && (selection[t.id] || 0) > 0)
+        .map((t) => ({ ticketTypeId: t.id, quantity: selection[t.id] }));
+
       const orderId = await dataService.createOrder({
         eventId: event.id,
         organizationId: event.organizationId,
@@ -64,10 +75,8 @@ export default function TaquillaDashboard() {
         customerEmail: customer.email || "sin-correo@taquilla.local",
         customerPhone: customer.phone,
         paymentIntentId: `taquilla_${paymentNote}_${Date.now()}`,
-        items: event.hasSeatMap ? undefined : event.ticketTypes
-          .filter((t) => (selection[t.id] || 0) > 0)
-          .map((t) => ({ ticketTypeId: t.id, quantity: selection[t.id] })),
-        seatIds: event.hasSeatMap ? selectedSeats.map((s) => s.seatId) : undefined,
+        items: items.length > 0 ? items : undefined,
+        seatIds: selectedSeats.length > 0 ? selectedSeats.map((s) => s.seatId) : undefined,
       });
       setLastSaleOrderId(orderId);
       resetSelection();
@@ -121,33 +130,41 @@ export default function TaquillaDashboard() {
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-card p-6 rounded-2xl border border-border">
-                <h3 className="font-bold mb-4">{event.hasSeatMap ? "Selecciona asientos" : "Selecciona boletos"}</h3>
-                {event.hasSeatMap ? (
-                  <>
-                    {seatError && <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{seatError}</div>}
-                    <SeatMapPicker eventId={event.id} ticketTypes={event.ticketTypes} onSelectionChange={setSelectedSeats} onError={setSeatError} />
-                  </>
-                ) : (
-                  <div className="space-y-4">
-                    {event.ticketTypes.map((t) => {
-                      const available = t.capacity - t.sold;
-                      const qty = selection[t.id] || 0;
+                <h3 className="font-bold mb-4">Selecciona boletos</h3>
+                {seatError && <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{seatError}</div>}
+                <div className="space-y-4">
+                  {event.ticketTypes.map((t) => {
+                    if (t.hasSeatMap) {
                       return (
-                        <div key={t.id} className="flex items-center justify-between p-4 rounded-xl border border-border">
-                          <div>
-                            <p className="font-bold">{t.name}</p>
-                            <p className="text-xs text-muted-foreground">{t.price === 0 ? 'Gratis' : `$${t.price.toLocaleString()}`} · {available} disponibles</p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <button onClick={() => setQty(t.id, qty - 1, available)} disabled={qty === 0} className="w-8 h-8 rounded-lg border border-border disabled:opacity-40"><Minus className="w-4 h-4 mx-auto" /></button>
-                            <span className="font-bold w-6 text-center">{qty}</span>
-                            <button onClick={() => setQty(t.id, qty + 1, available)} disabled={qty >= available} className="w-8 h-8 rounded-lg bg-primary text-white disabled:opacity-40"><Plus className="w-4 h-4 mx-auto" /></button>
-                          </div>
+                        <div key={t.id}>
+                          <p className="font-bold mb-2">{t.name} — {t.price === 0 ? 'Gratis' : `$${t.price.toLocaleString()}`}</p>
+                          <SeatMapPicker
+                            eventId={event.id}
+                            ticketTypeId={t.id}
+                            ticketTypes={[t]}
+                            onSelectionChange={(seats) => setSelectedSeatsByType((prev) => ({ ...prev, [t.id]: seats }))}
+                            onError={setSeatError}
+                          />
                         </div>
                       );
-                    })}
-                  </div>
-                )}
+                    }
+                    const available = t.capacity - t.sold;
+                    const qty = selection[t.id] || 0;
+                    return (
+                      <div key={t.id} className="flex items-center justify-between p-4 rounded-xl border border-border">
+                        <div>
+                          <p className="font-bold">{t.name}</p>
+                          <p className="text-xs text-muted-foreground">{t.price === 0 ? 'Gratis' : `$${t.price.toLocaleString()}`} · {available} disponibles</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => setQty(t.id, qty - 1, available)} disabled={qty === 0} className="w-8 h-8 rounded-lg border border-border disabled:opacity-40"><Minus className="w-4 h-4 mx-auto" /></button>
+                          <span className="font-bold w-6 text-center">{qty}</span>
+                          <button onClick={() => setQty(t.id, qty + 1, available)} disabled={qty >= available} className="w-8 h-8 rounded-lg bg-primary text-white disabled:opacity-40"><Plus className="w-4 h-4 mx-auto" /></button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="bg-card p-6 rounded-2xl border border-border space-y-4">
