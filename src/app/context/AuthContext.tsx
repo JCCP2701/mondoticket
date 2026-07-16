@@ -126,7 +126,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: { data: { name } },
     });
-    if (error || !data.user) return false;
+
+    if (error) {
+      // A returning guest-checkout customer hits this every time (their
+      // email is already registered from a prior purchase, always with
+      // this same fixed password) — fall back to signing them in instead
+      // of failing outright. If it's a real account with a different
+      // password (e.g. org/admin/user, or someone who registered via
+      // /register with their own password), the login attempt below just
+      // fails too and the caller sees register() return false as before.
+      if (error.message?.toLowerCase().includes('already registered') || (error as any).code === 'user_already_exists') {
+        return login(email, password);
+      }
+      return false;
+    }
+    if (!data.user) return false;
 
     // profiles row is auto-created by the handle_new_user() DB trigger.
     const profile = await loadProfile(data.user.id);

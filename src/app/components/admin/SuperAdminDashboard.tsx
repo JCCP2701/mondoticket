@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { ArrowLeft, DollarSign, AlertCircle, TrendingUp, Plus, Users, Ticket, FileText } from "lucide-react";
+import { ArrowLeft, DollarSign, AlertCircle, TrendingUp, Plus, Users, Ticket, FileText, Gift, RotateCcw } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { useState, useEffect } from "react";
 import { dataService, Organization, EventRecord } from "../../services/dataService";
@@ -9,10 +9,14 @@ export default function SuperAdminDashboard() {
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [stats, setStats] = useState({ totalSold: 0, totalCapacity: 0, totalRevenue: 0, totalProfit: 0, orgCount: 0, eventCount: 0 });
+  const [statsByEvent, setStatsByEvent] = useState<Record<string, { courtesyCount: number; refundedCount: number }>>({});
 
   useEffect(() => {
     dataService.getOrganizations().then(setOrganizations);
-    dataService.getEvents().then(setEvents);
+    dataService.getEvents().then((evs) => {
+      setEvents(evs);
+      dataService.getEventStatsSummary(evs.map((e) => e.id)).then(setStatsByEvent);
+    });
     dataService.getGlobalStats().then(setStats);
   }, []);
 
@@ -174,6 +178,9 @@ export default function SuperAdminDashboard() {
                     Ganancia (Fee)
                   </th>
                   <th className="text-center px-6 py-4 text-sm font-medium text-muted-foreground">
+                    Cortesías / Reembolsos
+                  </th>
+                  <th className="text-center px-6 py-4 text-sm font-medium text-muted-foreground">
                     Fee %
                   </th>
                 </tr>
@@ -186,6 +193,8 @@ export default function SuperAdminDashboard() {
                   const revenue = orgEvents.reduce((sum, e) => sum + e.ticketTypes.reduce((s, t) => s + t.sold * t.price, 0), 0);
                   const profit = (revenue * org.feePercentage) / 100;
                   const toDeliver = revenue - profit;
+                  const courtesyCount = orgEvents.reduce((sum, e) => sum + (statsByEvent[e.id]?.courtesyCount ?? 0), 0);
+                  const refundedCount = orgEvents.reduce((sum, e) => sum + (statsByEvent[e.id]?.refundedCount ?? 0), 0);
 
                   return (
                     <tr
@@ -212,6 +221,16 @@ export default function SuperAdminDashboard() {
                       </td>
                       <td className="px-6 py-4 text-right text-primary font-bold">
                         ${profit.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-4">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-violet-600" title="Cortesías">
+                            <Gift className="w-3.5 h-3.5" /> {courtesyCount}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600" title="Reembolsos">
+                            <RotateCcw className="w-3.5 h-3.5" /> {refundedCount}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">

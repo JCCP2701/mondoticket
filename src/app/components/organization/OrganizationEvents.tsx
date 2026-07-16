@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Eye, Plus, Search, Filter, Calendar } from "lucide-react";
+import { Eye, Plus, Search, Filter, Calendar, Gift, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { dataService, EventRecord } from "../../services/dataService";
 import { useAuth } from "../../context/AuthContext";
@@ -8,10 +8,14 @@ export default function OrganizationEvents() {
     const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState("");
     const [events, setEvents] = useState<EventRecord[]>([]);
+    const [statsByEvent, setStatsByEvent] = useState<Record<string, { courtesyCount: number; refundedCount: number }>>({});
 
     useEffect(() => {
         if (!user?.organizationId) return;
-        dataService.getEventsByOrganization(user.organizationId).then(setEvents);
+        dataService.getEventsByOrganization(user.organizationId).then((evs) => {
+            setEvents(evs);
+            dataService.getEventStatsSummary(evs.map((e) => e.id)).then(setStatsByEvent);
+        });
     }, [user]);
 
     const mockEvents = events.map((e) => {
@@ -29,6 +33,8 @@ export default function OrganizationEvents() {
             revenue,
             platformFee: revenue * 0.1,
             status: e.status,
+            courtesyCount: statsByEvent[e.id]?.courtesyCount ?? 0,
+            refundedCount: statsByEvent[e.id]?.refundedCount ?? 0,
         };
     });
 
@@ -75,6 +81,7 @@ export default function OrganizationEvents() {
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground text-center">Ocupación</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground text-center">Preventa</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground text-right">Revenue</th>
+                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground text-center">Cortesías / Reembolsos</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground text-center">Estado</th>
                                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted-foreground text-center">Acciones</th>
                             </tr>
@@ -115,6 +122,16 @@ export default function OrganizationEvents() {
                                         <td className="px-6 py-4 text-right">
                                             <p className="font-bold text-foreground">${event.revenue.toLocaleString()}</p>
                                             <p className="text-[10px] text-primary lowercase font-medium">Fee: ${event.platformFee.toLocaleString()}</p>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center justify-center gap-4">
+                                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-violet-600" title="Cortesías">
+                                                    <Gift className="w-3.5 h-3.5" /> {event.courtesyCount}
+                                                </span>
+                                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600" title="Reembolsos">
+                                                    <RotateCcw className="w-3.5 h-3.5" /> {event.refundedCount}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${event.status === "completed" ? "bg-gray-200 text-gray-700" : event.status === "ongoing" ? "bg-blue-100 text-blue-700" : "bg-violet-100 text-violet-700"

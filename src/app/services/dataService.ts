@@ -410,6 +410,28 @@ export const dataService = {
         }));
     },
 
+    // Courtesy ($0 ticket) and refund counts across many events in one
+    // query, for org/superadmin dashboards that list several events at once
+    // (avoids an N+1 per-event round trip).
+    async getEventStatsSummary(eventIds: string[]): Promise<Record<string, { courtesyCount: number; refundedCount: number }>> {
+        const result: Record<string, { courtesyCount: number; refundedCount: number }> = {};
+        for (const id of eventIds) result[id] = { courtesyCount: 0, refundedCount: 0 };
+        if (eventIds.length === 0) return result;
+
+        const { data, error } = await supabase
+            .from('tickets')
+            .select('event_id, status, event_ticket_types(price)')
+            .in('event_id', eventIds);
+        if (error) throw error;
+
+        for (const row of (data ?? []) as any[]) {
+            const bucket = result[row.event_id] ?? (result[row.event_id] = { courtesyCount: 0, refundedCount: 0 });
+            if (Number(row.event_ticket_types?.price ?? 0) === 0) bucket.courtesyCount++;
+            if (row.status === 'cancelled') bucket.refundedCount++;
+        }
+        return result;
+    },
+
     async refundTickets(ticketIds: string[]): Promise<void> {
         const { error } = await supabase.rpc('refund_tickets', { p_ticket_ids: ticketIds });
         if (error) throw error;

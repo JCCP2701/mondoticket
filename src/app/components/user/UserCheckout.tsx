@@ -45,6 +45,57 @@ export default function UserCheckout() {
   const [purchaseError, setPurchaseError] = useState("");
   const [formErrors, setFormErrors] = useState({ name: false, email: false, phone: false });
 
+  // Holding a seat (or even reserving general-admission inventory
+  // atomically) requires an authenticated session — the anon role can't call
+  // hold_event_seats. Real ticketeras (Ticketmaster, AXS) gate the seat map
+  // behind login/guest-checkout for the same reason (anti-bot/fraud), so
+  // contact info comes first, creates the session invisibly, and only then
+  // does the ticket/seat picker unlock.
+  const [sessionReady, setSessionReady] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [registering, setRegistering] = useState(false);
+  const [registerError, setRegisterError] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: { user: authedUser } } = await supabase.auth.getUser();
+        setFormData((prev) => ({
+          ...prev,
+          name: prev.name || (authedUser?.user_metadata?.name as string) || "",
+          email: prev.email || authedUser?.email || "",
+        }));
+        setSessionReady(true);
+      }
+      setCheckingSession(false);
+    })();
+  }, []);
+
+  const handleContinue = async () => {
+    if (sessionReady) return;
+    if (!validateForm()) return;
+    setRegistering(true);
+    setRegisterError("");
+    try {
+      // register() transparently signs the buyer in instead if this email
+      // is already registered from a previous purchase (same fixed guest
+      // password each time) — it only returns false when that email
+      // belongs to a real account with a different password.
+      const ok = await register(formData.name, formData.email, "Blessing2026!");
+      if (!ok) {
+        throw new Error("Este correo ya tiene una cuenta con otra contraseña. Inicia sesión desde /login para continuar con esta compra.");
+      }
+      const { data: { user: authedUser } } = await supabase.auth.getUser();
+      if (!authedUser) throw new Error("No se pudo iniciar tu sesión de compra");
+      setSessionReady(true);
+    } catch (err: any) {
+      setRegisterError(err.message || "No se pudo continuar con estos datos");
+    } finally {
+      setRegistering(false);
+    }
+  };
+
   const selectedSeats = useMemo(
     () => Object.values(selectedSeatsByType).flat(),
     [selectedSeatsByType]
@@ -83,7 +134,7 @@ export default function UserCheckout() {
   };
 
   const handlePurchase = async () => {
-    if (!event || totalQuantity === 0 || !validateForm()) return;
+    if (!event || !sessionReady || totalQuantity === 0 || !validateForm()) return;
     if (!isFree && !paymentMethod) return;
 
     setIsProcessing(true);
@@ -92,15 +143,14 @@ export default function UserCheckout() {
     try {
       // Payment gateway integration is pending (no provider chosen yet), so
       // any non-$0 charge is still simulated. What's real from here on: the
-      // buyer account, and the order/tickets/inventory decrement below,
-      // which runs through the same atomic RPC a real gateway webhook would
-      // call — no separate "demo mode" data path. A $0 selection (e.g. a
-      // free/courtesy ticket type) skips the simulated delay entirely since
-      // there's nothing to "pay."
-      await register(formData.name, formData.email, "Blessing2026!");
-
+      // order/tickets/inventory decrement below, which runs through the
+      // same atomic RPC a real gateway webhook would call — no separate
+      // "demo mode" data path. A $0 selection (e.g. a free/courtesy ticket
+      // type) skips the simulated delay entirely since there's nothing to
+      // "pay." The buyer's session was already created in step 1, before
+      // ticket/seat selection.
       const { data: { user: authedUser } } = await supabase.auth.getUser();
-      if (!authedUser) throw new Error("No se pudo autenticar al comprador");
+      if (!authedUser) throw new Error("Tu sesión expiró, recarga la página e intenta de nuevo");
 
       if (!isFree) await new Promise((r) => setTimeout(r, 1500));
 
@@ -201,13 +251,92 @@ export default function UserCheckout() {
               </div>
             </div>
 
-            {/* 2. Ticket/Seat Selection — an event can mix seat-mapped types with plain quantity-based ones */}
+            {/* 2. Customer Info — comes first: creates the buyer's session so
+                 the seat picker below can hold seats (anon sessions can't). */}
             <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', padding: '24px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>1</span>
+                Tus datos para el boleto
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }} className="form-grid">
+                <div>
+                  <label style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)', marginBottom: '6px', display: 'block' }}>Nombre Completo</label>
+                  <div style={{ position: 'relative' }}>
+                    <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(240,237,255,0.3)' }} />
+                    <input
+                      type="text"
+                      placeholder="Ej. Juan Pérez"
+                      value={formData.name}
+                      disabled={sessionReady}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      style={{ width: '100%', padding: '12px 12px 12px 36px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${formErrors.name ? '#f43f5e' : 'rgba(255,255,255,0.1)'}`, color: 'white', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box', opacity: sessionReady ? 0.6 : 1 }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)', marginBottom: '6px', display: 'block' }}>Correo Electrónico</label>
+                  <div style={{ position: 'relative' }}>
+                    <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(240,237,255,0.3)' }} />
+                    <input
+                      type="email"
+                      placeholder="juan@ejemplo.com"
+                      value={formData.email}
+                      disabled={sessionReady}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      style={{ width: '100%', padding: '12px 12px 12px 36px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${formErrors.email ? '#f43f5e' : 'rgba(255,255,255,0.1)'}`, color: 'white', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box', opacity: sessionReady ? 0.6 : 1 }}
+                    />
+                  </div>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)', marginBottom: '6px', display: 'block' }}>Teléfono de contacto</label>
+                  <div style={{ position: 'relative' }}>
+                    <Phone size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(240,237,255,0.3)' }} />
+                    <input
+                      type="tel"
+                      placeholder="55 1234 5678"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      style={{ width: '100%', padding: '12px 12px 12px 36px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${formErrors.phone ? '#f43f5e' : 'rgba(255,255,255,0.1)'}`, color: 'white', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {registerError && (
+                <div style={{ marginTop: '16px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)', color: '#fca5a5', fontSize: '13px' }}>
+                  {registerError}
+                </div>
+              )}
+
+              {!sessionReady && (
+                <button
+                  onClick={handleContinue}
+                  disabled={registering || checkingSession}
+                  style={{
+                    marginTop: '20px', width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
+                    background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', color: 'white', fontWeight: 700, fontSize: '15px',
+                    cursor: (registering || checkingSession) ? 'not-allowed' : 'pointer', opacity: (registering || checkingSession) ? 0.7 : 1,
+                  }}
+                >
+                  {registering ? 'Continuando...' : 'Continuar'}
+                </button>
+              )}
+            </div>
+
+            {/* 3. Ticket/Seat Selection — locked until step 1 creates a session;
+                 an event can mix seat-mapped types with plain quantity-based ones. */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', padding: '24px', opacity: sessionReady ? 1 : 0.4 }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>2</span>
                 Elige tus boletos
               </h3>
 
+              {!sessionReady ? (
+                <p style={{ fontSize: '13px', color: 'rgba(240,237,255,0.4)' }}>
+                  Completa tus datos de contacto arriba para ver la disponibilidad y elegir tus boletos.
+                </p>
+              ) : (
+              <>
               {seatError && (
                 <div style={{ marginBottom: '16px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)', color: '#fca5a5', fontSize: '13px' }}>
                   {seatError}
@@ -271,55 +400,8 @@ export default function UserCheckout() {
                   );
                 })}
               </div>
-            </div>
-
-            {/* 3. Customer Info */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', padding: '24px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>2</span>
-                Tus datos para el boleto
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }} className="form-grid">
-                <div>
-                  <label style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)', marginBottom: '6px', display: 'block' }}>Nombre Completo</label>
-                  <div style={{ position: 'relative' }}>
-                    <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(240,237,255,0.3)' }} />
-                    <input
-                      type="text"
-                      placeholder="Ej. Juan Pérez"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      style={{ width: '100%', padding: '12px 12px 12px 36px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${formErrors.name ? '#f43f5e' : 'rgba(255,255,255,0.1)'}`, color: 'white', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)', marginBottom: '6px', display: 'block' }}>Correo Electrónico</label>
-                  <div style={{ position: 'relative' }}>
-                    <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(240,237,255,0.3)' }} />
-                    <input
-                      type="email"
-                      placeholder="juan@ejemplo.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      style={{ width: '100%', padding: '12px 12px 12px 36px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${formErrors.email ? '#f43f5e' : 'rgba(255,255,255,0.1)'}`, color: 'white', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)', marginBottom: '6px', display: 'block' }}>Teléfono de contacto</label>
-                  <div style={{ position: 'relative' }}>
-                    <Phone size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(240,237,255,0.3)' }} />
-                    <input
-                      type="tel"
-                      placeholder="55 1234 5678"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      style={{ width: '100%', padding: '12px 12px 12px 36px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${formErrors.phone ? '#f43f5e' : 'rgba(255,255,255,0.1)'}`, color: 'white', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                </div>
-              </div>
+              </>
+              )}
             </div>
 
             {/* 4. Payment Method — not needed for a $0 (free/courtesy) selection */}
@@ -388,7 +470,7 @@ export default function UserCheckout() {
               )}
 
               {(() => {
-                const canPurchase = totalQuantity > 0 && (isFree || !!paymentMethod);
+                const canPurchase = sessionReady && totalQuantity > 0 && (isFree || !!paymentMethod);
                 return (
               <button
                 onClick={handlePurchase}
