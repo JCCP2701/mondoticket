@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router';
-import { useAuth, UserRole } from '../../context/AuthContext';
+import { useAuth, UserRole, dashboardPathForRole } from '../../context/AuthContext';
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -28,13 +28,7 @@ export default function ProtectedRoute({
 
     // Wrong role → go to their correct dashboard
     if (requiredRole && user?.role !== requiredRole) {
-        const dashboardPath =
-            user?.role === 'superadmin'
-                ? '/admin'
-                : user?.role === 'organization'
-                    ? '/organization'
-                    : '/wallet';
-        return <Navigate to={dashboardPath} replace />;
+        return <Navigate to={dashboardPathForRole(user?.role)} replace />;
     }
 
     return <>{children}</>;

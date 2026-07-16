@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { dataService, EventRecord } from "../../services/dataService";
 import { supabase } from "../../services/supabaseClient";
+import SeatMapPicker, { SelectedSeat } from "./SeatMapPicker";
 
 export default function UserCheckout() {
   const navigate = useNavigate();
@@ -36,6 +37,8 @@ export default function UserCheckout() {
   }, [eventId]);
 
   const [selection, setSelection] = useState<Record<string, number>>({});
+  const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
+  const [seatError, setSeatError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"card" | "transfer" | "cash" | null>(null);
   const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
   const [isProcessing, setIsProcessing] = useState(false);
@@ -46,18 +49,20 @@ export default function UserCheckout() {
     setSelection((prev) => ({ ...prev, [typeId]: Math.max(0, Math.min(max, qty)) }));
   };
 
-  const totalQuantity = useMemo(
-    () => Object.values(selection).reduce((sum, q) => sum + q, 0),
-    [selection]
-  );
+  const totalQuantity = useMemo(() => {
+    if (event?.hasSeatMap) return selectedSeats.length;
+    return Object.values(selection).reduce((sum, q) => sum + q, 0);
+  }, [selection, selectedSeats, event]);
 
   const subtotal = useMemo(() => {
     if (!event) return 0;
+    if (event.hasSeatMap) return selectedSeats.reduce((sum, s) => sum + s.price, 0);
     return event.ticketTypes.reduce((sum, t) => sum + (selection[t.id] || 0) * t.price, 0);
-  }, [event, selection]);
+  }, [event, selection, selectedSeats]);
 
   const serviceFee = subtotal * 0.08;
   const total = subtotal + serviceFee;
+  const isFree = totalQuantity > 0 && total === 0;
 
   const validateForm = () => {
     const errors = {
@@ -70,54 +75,55 @@ export default function UserCheckout() {
   };
 
   const handlePurchase = async () => {
-    if (!event || !paymentMethod || totalQuantity === 0 || !validateForm()) return;
+    if (!event || totalQuantity === 0 || !validateForm()) return;
+    if (!isFree && !paymentMethod) return;
 
     setIsProcessing(true);
     setPurchaseError("");
 
     try {
       // Payment gateway integration is pending (no provider chosen yet), so
-      // the charge itself is still simulated. What's real from here on: the
+      // any non-$0 charge is still simulated. What's real from here on: the
       // buyer account, and the order/tickets/inventory decrement below,
       // which runs through the same atomic RPC a real gateway webhook would
-      // call — no separate "demo mode" data path.
+      // call — no separate "demo mode" data path. A $0 selection (e.g. a
+      // free/courtesy ticket type) skips the simulated delay entirely since
+      // there's nothing to "pay."
       await register(formData.name, formData.email, "Blessing2026!");
 
       const { data: { user: authedUser } } = await supabase.auth.getUser();
       if (!authedUser) throw new Error("No se pudo autenticar al comprador");
 
-      await new Promise((r) => setTimeout(r, 1500));
+      if (!isFree) await new Promise((r) => setTimeout(r, 1500));
 
-      const items = event.ticketTypes
-        .filter((t) => (selection[t.id] || 0) > 0)
-        .map((t) => ({ ticket_type_id: t.id, quantity: selection[t.id] }));
-
-      const { data: orderId, error } = await supabase.rpc('create_order_and_tickets', {
-        p_event_id: event.id,
-        p_organization_id: event.organizationId,
-        p_user_id: authedUser.id,
-        p_customer_name: formData.name,
-        p_customer_email: formData.email,
-        p_customer_phone: formData.phone,
-        p_stripe_payment_intent_id: `sim_${authedUser.id}_${Date.now()}`,
-        p_items: items,
+      const orderId = await dataService.createOrder({
+        eventId: event.id,
+        organizationId: event.organizationId,
+        userId: authedUser.id,
+        customerName: formData.name,
+        customerEmail: formData.email,
+        customerPhone: formData.phone,
+        paymentIntentId: `sim_${authedUser.id}_${Date.now()}`,
+        items: event.hasSeatMap ? undefined : event.ticketTypes
+          .filter((t) => (selection[t.id] || 0) > 0)
+          .map((t) => ({ ticketTypeId: t.id, quantity: selection[t.id] })),
+        seatIds: event.hasSeatMap ? selectedSeats.map((s) => s.seatId) : undefined,
       });
-
-      if (error) {
-        if (error.message.includes('SOLD_OUT')) {
-          setPurchaseError('Uno de los tipos de boleto se agotó justo ahora. Ajusta tu selección e intenta de nuevo.');
-          const refreshed = await dataService.getEventById(event.id);
-          setEvent(refreshed);
-          setSelection({});
-        } else {
-          setPurchaseError(error.message);
-        }
-        return;
-      }
 
       navigate(`/ticket/${orderId}`);
     } catch (err: any) {
-      setPurchaseError(err.message || 'Ocurrió un error al procesar tu compra');
+      const message: string = err.message || '';
+      if (message.includes('SOLD_OUT')) {
+        setPurchaseError('Uno de los tipos de boleto se agotó justo ahora. Ajusta tu selección e intenta de nuevo.');
+        setSelection({});
+      } else if (message.includes('HOLD_EXPIRED')) {
+        setPurchaseError('Tu reserva de asientos expiró. Vuelve a seleccionarlos.');
+        setSelectedSeats([]);
+      } else {
+        setPurchaseError(message || 'Ocurrió un error al procesar tu compra');
+      }
+      const refreshed = await dataService.getEventById(event.id);
+      setEvent(refreshed);
     } finally {
       setIsProcessing(false);
     }
@@ -185,50 +191,69 @@ export default function UserCheckout() {
               </div>
             </div>
 
-            {/* 2. Ticket Type Selection — per-type availability */}
+            {/* 2. Ticket/Seat Selection — per-type availability, or a visual seat map */}
             <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', padding: '24px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>1</span>
-                Elige tus boletos
+                {event.hasSeatMap ? 'Elige tus asientos' : 'Elige tus boletos'}
               </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {event.ticketTypes.map((t) => {
-                  const available = t.capacity - t.sold;
-                  const qty = selection[t.id] || 0;
-                  const soldOut = available <= 0;
-                  return (
-                    <div key={t.id} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
-                      padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                      opacity: soldOut ? 0.5 : 1,
-                    }}>
-                      <div>
-                        <p style={{ fontWeight: 700, fontSize: '15px' }}>{t.name}</p>
-                        <p style={{ fontSize: '13px', color: 'rgba(240,237,255,0.5)' }}>
-                          ${t.price.toLocaleString()} MXN · {soldOut ? 'Agotado' : `${available} disponibles`}
-                        </p>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <button
-                          onClick={() => setQty(t.id, qty - 1, available)}
-                          disabled={qty === 0}
-                          style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', cursor: qty === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: qty === 0 ? 0.4 : 1 }}
-                        >
-                          <Minus size={14} />
-                        </button>
-                        <span style={{ fontSize: '16px', fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{qty}</span>
-                        <button
-                          onClick={() => setQty(t.id, qty + 1, available)}
-                          disabled={soldOut || qty >= available}
-                          style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', border: 'none', color: 'white', cursor: (soldOut || qty >= available) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (soldOut || qty >= available) ? 0.4 : 1 }}
-                        >
-                          <Plus size={14} />
-                        </button>
-                      </div>
+
+              {event.hasSeatMap ? (
+                <div style={{ color: '#0d0b1e' }}>
+                  {seatError && (
+                    <div style={{ marginBottom: '16px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)', color: '#fca5a5', fontSize: '13px' }}>
+                      {seatError}
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+                  <div style={{ background: 'white', borderRadius: '16px', padding: '16px' }}>
+                    <SeatMapPicker
+                      eventId={event.id}
+                      ticketTypes={event.ticketTypes}
+                      onSelectionChange={setSelectedSeats}
+                      onError={setSeatError}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {event.ticketTypes.map((t) => {
+                    const available = t.capacity - t.sold;
+                    const qty = selection[t.id] || 0;
+                    const soldOut = available <= 0;
+                    return (
+                      <div key={t.id} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
+                        padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                        opacity: soldOut ? 0.5 : 1,
+                      }}>
+                        <div>
+                          <p style={{ fontWeight: 700, fontSize: '15px' }}>{t.name}</p>
+                          <p style={{ fontSize: '13px', color: 'rgba(240,237,255,0.5)' }}>
+                            {t.price === 0 ? 'Gratis' : `$${t.price.toLocaleString()} MXN`} · {soldOut ? 'Agotado' : `${available} disponibles`}
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          <button
+                            onClick={() => setQty(t.id, qty - 1, available)}
+                            disabled={qty === 0}
+                            style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', cursor: qty === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: qty === 0 ? 0.4 : 1 }}
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span style={{ fontSize: '16px', fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{qty}</span>
+                          <button
+                            onClick={() => setQty(t.id, qty + 1, available)}
+                            disabled={soldOut || qty >= available}
+                            style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', border: 'none', color: 'white', cursor: (soldOut || qty >= available) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (soldOut || qty >= available) ? 0.4 : 1 }}
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* 3. Customer Info */}
@@ -280,7 +305,12 @@ export default function UserCheckout() {
               </div>
             </div>
 
-            {/* 4. Payment Method */}
+            {/* 4. Payment Method — not needed for a $0 (free/courtesy) selection */}
+            {isFree ? (
+              <div style={{ background: 'rgba(16,185,129,0.08)', borderRadius: '24px', border: '1px solid rgba(16,185,129,0.25)', padding: '24px', color: '#34d399', fontSize: '14px', fontWeight: 600 }}>
+                Esta selección es gratuita — no se requiere método de pago.
+              </div>
+            ) : (
             <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', padding: '24px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>3</span>
@@ -310,6 +340,7 @@ export default function UserCheckout() {
                 ))}
               </div>
             </div>
+            )}
           </div>
 
 
@@ -339,14 +370,17 @@ export default function UserCheckout() {
                 </div>
               )}
 
+              {(() => {
+                const canPurchase = totalQuantity > 0 && (isFree || !!paymentMethod);
+                return (
               <button
                 onClick={handlePurchase}
-                disabled={isProcessing || !paymentMethod || totalQuantity === 0}
+                disabled={isProcessing || !canPurchase}
                 style={{
                   width: '100%', padding: '16px', borderRadius: '16px', border: 'none',
-                  background: (paymentMethod && totalQuantity > 0) ? 'linear-gradient(135deg, #7c3aed, #8b5cf6)' : 'rgba(255,255,255,0.1)',
-                  color: 'white', fontWeight: 800, fontSize: '16px', cursor: (isProcessing || !paymentMethod || totalQuantity === 0) ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: paymentMethod ? '0 10px 20px rgba(124,58,237,0.3)' : 'none', transition: 'all 0.3s'
+                  background: canPurchase ? 'linear-gradient(135deg, #7c3aed, #8b5cf6)' : 'rgba(255,255,255,0.1)',
+                  color: 'white', fontWeight: 800, fontSize: '16px', cursor: (isProcessing || !canPurchase) ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: canPurchase ? '0 10px 20px rgba(124,58,237,0.3)' : 'none', transition: 'all 0.3s'
                 }}
               >
                 {isProcessing ? 'Procesando...' : (
@@ -356,6 +390,8 @@ export default function UserCheckout() {
                   </>
                 )}
               </button>
+                );
+              })()}
 
               <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', color: 'rgba(16,185,129,0.8)', fontSize: '12px', fontWeight: 600 }}>
                 <ShieldCheck size={16} />

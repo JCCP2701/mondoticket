@@ -23,6 +23,7 @@ import VenueDesigner from "./components/organization/VenueDesigner";
 import OrganizationContract from "./components/organization/OrganizationContract";
 import OrganizationSettings from "./components/organization/OrganizationSettings";
 import OrganizationEvents from "./components/organization/OrganizationEvents";
+import TaquillaDashboard from "./components/taquilla/TaquillaDashboard";
 
 export const router = createBrowserRouter([
     {
@@ -67,7 +68,7 @@ export const router = createBrowserRouter([
                     { index: true, Component: OrganizationDashboard },
                     { path: "events", Component: OrganizationEvents },
                     { path: "create-event", Component: CreateEvent },
-                    { path: "venue-designer", Component: VenueDesigner },
+                    { path: "event/:eventId/venue-designer", Component: VenueDesigner },
                     { path: "contract", Component: OrganizationContract },
                     { path: "settings", Component: OrganizationSettings },
                     { path: "event/:eventId", Component: EventDetail },
@@ -80,6 +81,16 @@ export const router = createBrowserRouter([
                 element: (
                     <ProtectedRoute requiredRole="user">
                         <UserWallet />
+                    </ProtectedRoute>
+                ),
+            },
+
+            // Taquilla (box office) routes (protected)
+            {
+                path: "taquilla",
+                element: (
+                    <ProtectedRoute requiredRole="taquilla">
+                        <TaquillaDashboard />
                     </ProtectedRoute>
                 ),
             },

@@ -2,7 +2,6 @@ import { Link, useLocation } from "react-router";
 import {
     LayoutDashboard,
     Calendar,
-    Map as VenueIcon,
     FileText,
     Settings,
     LogOut,
@@ -13,7 +12,6 @@ import { useAuth } from "../../context/AuthContext";
 const MENU_ITEMS = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/organization' },
     { id: 'events', label: 'Mis Eventos', icon: Calendar, path: '/organization/events' },
-    { id: 'venue', label: 'Diseñador de Auditorios', icon: VenueIcon, path: '/organization/venue-designer' },
     { id: 'contract', label: 'Mi Contrato', icon: FileText, path: '/organization/contract' },
     { id: 'settings', label: 'Configuración', icon: Settings, path: '/organization/settings' },
 ];

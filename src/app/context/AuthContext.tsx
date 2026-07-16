@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { supabase } from '../services/supabaseClient';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-export type UserRole = 'superadmin' | 'organization' | 'user';
+export type UserRole = 'superadmin' | 'organization' | 'user' | 'taquilla';
 
 export interface AuthUser {
   id: string;
@@ -163,6 +163,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function dashboardPathForRole(role: UserRole | undefined): string {
+  switch (role) {
+    case 'superadmin': return '/admin';
+    case 'organization': return '/organization';
+    case 'taquilla': return '/taquilla';
+    default: return '/wallet';
+  }
 }
 
 export function useAuth() {

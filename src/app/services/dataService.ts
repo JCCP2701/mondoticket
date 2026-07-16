@@ -39,6 +39,33 @@ export interface EventRecord {
     date: string;
     status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
     ticketTypes: TicketType[];
+    hasSeatMap: boolean;
+}
+
+export interface SeatRecord {
+    id: string;
+    ticketTypeId: string;
+    section: string | null;
+    rowLabel: string;
+    seatNumber: string;
+    rowIndex: number;
+    colIndex: number;
+    status: 'available' | 'held' | 'sold';
+}
+
+export interface TicketRecord {
+    id: string;
+    orderId: string;
+    ticketTypeId: string;
+    ticketTypeName: string;
+    unitPrice: number;
+    status: 'valid' | 'used' | 'cancelled';
+    seatLabel: string | null;
+    refundedAt: string | null;
+    customerName: string;
+    customerEmail: string;
+    orderTotal: number;
+    createdAt: string;
 }
 
 // ─── Mapping helpers ────────────────────────────────────────────────────────
@@ -80,10 +107,24 @@ function mapEvent(row: any): EventRecord {
             capacity: t.capacity,
             sold: t.sold,
         })),
+        hasSeatMap: (row.event_seats?.[0]?.count ?? 0) > 0,
     };
 }
 
-const EVENT_SELECT = 'id, organization_id, name, description, category, venue_id, event_date, status, venues(name), event_ticket_types(id, name, description, price, capacity, sold)';
+function mapSeat(row: any): SeatRecord {
+    return {
+        id: row.id,
+        ticketTypeId: row.ticket_type_id,
+        section: row.section,
+        rowLabel: row.row_label,
+        seatNumber: row.seat_number,
+        rowIndex: row.row_index,
+        colIndex: row.col_index,
+        status: row.status,
+    };
+}
+
+const EVENT_SELECT = 'id, organization_id, name, description, category, venue_id, event_date, status, venues(name), event_ticket_types(id, name, description, price, capacity, sold), event_seats(count)';
 
 // ─── Data Service ─────────────────────────────────────────────────────────────
 export const dataService = {
@@ -240,5 +281,147 @@ export const dataService = {
             orgCount: orgs.length,
             eventCount: events.length,
         };
+    },
+
+    // Seat map
+    async getSeatMap(eventId: string): Promise<SeatRecord[]> {
+        const { data, error } = await supabase
+            .from('event_seats')
+            .select('*')
+            .eq('event_id', eventId)
+            .order('row_index')
+            .order('col_index');
+        if (error) throw error;
+        return (data ?? []).map(mapSeat);
+    },
+
+    async saveSeatMap(
+        eventId: string,
+        seats: { rowIndex: number; colIndex: number; rowLabel: string; seatNumber: string; ticketTypeId: string; section?: string }[]
+    ): Promise<void> {
+        const existing = await dataService.getSeatMap(eventId);
+        const key = (rowIndex: number, colIndex: number) => `${rowIndex}-${colIndex}`;
+        const existingByPos = new Map(existing.map((s) => [key(s.rowIndex, s.colIndex), s]));
+        const newPositions = new Set(seats.map((s) => key(s.rowIndex, s.colIndex)));
+
+        const toDelete = existing.filter((s) => !newPositions.has(key(s.rowIndex, s.colIndex))).map((s) => s.id);
+        if (toDelete.length) {
+            const { error } = await supabase.from('event_seats').delete().in('id', toDelete);
+            if (error) throw error;
+        }
+
+        const toInsert = seats.filter((s) => !existingByPos.has(key(s.rowIndex, s.colIndex)));
+        if (toInsert.length) {
+            const { error } = await supabase.from('event_seats').insert(
+                toInsert.map((s) => ({
+                    event_id: eventId,
+                    ticket_type_id: s.ticketTypeId,
+                    section: s.section ?? null,
+                    row_label: s.rowLabel,
+                    seat_number: s.seatNumber,
+                    row_index: s.rowIndex,
+                    col_index: s.colIndex,
+                }))
+            );
+            if (error) throw error;
+        }
+
+        for (const s of seats) {
+            const prior = existingByPos.get(key(s.rowIndex, s.colIndex));
+            if (prior && prior.ticketTypeId !== s.ticketTypeId) {
+                const { error } = await supabase
+                    .from('event_seats')
+                    .update({ ticket_type_id: s.ticketTypeId, section: s.section ?? null })
+                    .eq('id', prior.id);
+                if (error) throw error;
+            }
+        }
+    },
+
+    async holdSeats(eventId: string, seatIds: string[]): Promise<{ seatId: string; holdExpiresAt: string }[]> {
+        const { data, error } = await supabase.rpc('hold_event_seats', { p_event_id: eventId, p_seat_ids: seatIds });
+        if (error) throw error;
+        return (data ?? []).map((r: any) => ({ seatId: r.seat_id, holdExpiresAt: r.hold_expires_at }));
+    },
+
+    async releaseSeats(seatIds: string[]): Promise<void> {
+        const { error } = await supabase.rpc('release_event_seats', { p_seat_ids: seatIds });
+        if (error) throw error;
+    },
+
+    // Purchase — covers online self-checkout, $0 courtesy tickets, and
+    // taquilla walk-in sales; the RPC's own authorization decides what a
+    // given caller/userId combination is allowed to do.
+    async createOrder(input: {
+        eventId: string;
+        organizationId: string;
+        userId: string | null;
+        customerName: string;
+        customerEmail: string;
+        customerPhone: string;
+        paymentIntentId: string;
+        items?: { ticketTypeId: string; quantity: number }[];
+        seatIds?: string[];
+    }): Promise<string> {
+        const { data, error } = await supabase.rpc('create_order_and_tickets', {
+            p_event_id: input.eventId,
+            p_organization_id: input.organizationId,
+            p_user_id: input.userId,
+            p_customer_name: input.customerName,
+            p_customer_email: input.customerEmail,
+            p_customer_phone: input.customerPhone,
+            p_stripe_payment_intent_id: input.paymentIntentId,
+            p_items: input.items ? input.items.map((i) => ({ ticket_type_id: i.ticketTypeId, quantity: i.quantity })) : null,
+            p_seat_ids: input.seatIds ?? null,
+        });
+        if (error) throw error;
+        return data as string;
+    },
+
+    // Orders/tickets for an event (organizer/superadmin view — RLS-scoped)
+    async getTicketsForEvent(eventId: string): Promise<TicketRecord[]> {
+        const { data, error } = await supabase
+            .from('tickets')
+            .select(
+                'id, order_id, ticket_type_id, status, refunded_at, created_at, event_ticket_types(name, price), event_seats(row_label, seat_number), orders(customer_name, customer_email, total)'
+            )
+            .eq('event_id', eventId)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            id: row.id,
+            orderId: row.order_id,
+            ticketTypeId: row.ticket_type_id,
+            ticketTypeName: row.event_ticket_types?.name ?? '',
+            unitPrice: Number(row.event_ticket_types?.price ?? 0),
+            status: row.status,
+            seatLabel: row.event_seats ? `${row.event_seats.row_label}-${row.event_seats.seat_number}` : null,
+            refundedAt: row.refunded_at,
+            customerName: row.orders?.customer_name ?? '',
+            customerEmail: row.orders?.customer_email ?? '',
+            orderTotal: Number(row.orders?.total ?? 0),
+            createdAt: row.created_at,
+        }));
+    },
+
+    async refundTickets(ticketIds: string[]): Promise<void> {
+        const { error } = await supabase.rpc('refund_tickets', { p_ticket_ids: ticketIds });
+        if (error) throw error;
+    },
+
+    // Box-office (taquilla) staff account creation — goes through a
+    // serverless function since creating a real auth user needs the
+    // service-role key, which must never reach the browser.
+    async inviteStaff(name: string, email: string): Promise<{ email: string; temporaryPassword: string }> {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Not authenticated');
+        const res = await fetch('/api/organization/invite-staff', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ name, email }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to invite staff');
+        return json;
     },
 };

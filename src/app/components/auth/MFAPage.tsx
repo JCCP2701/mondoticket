@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { Ticket, Shield, RefreshCw, ArrowRight, LogOut } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, dashboardPathForRole } from '../../context/AuthContext';
 
 export default function MFAPage() {
     const navigate = useNavigate();
@@ -65,9 +65,7 @@ export default function MFAPage() {
         const ok = await verifyMFA(fullCode);
         setLoading(false);
         if (ok) {
-            const dest =
-                user?.role === 'superadmin' ? '/admin' : user?.role === 'organization' ? '/organization' : '/wallet';
-            navigate(dest);
+            navigate(dashboardPathForRole(user?.role));
         } else {
             setError('Código incorrecto. Verifica el código de tu app autenticadora.');
             setCode(['', '', '', '', '', '']);
