@@ -4,15 +4,15 @@ import { dataService, Organization } from "../../services/dataService";
 import { useAuth } from "../../context/AuthContext";
 
 export default function OrganizationContract() {
-    const { user } = useAuth();
+    const { activeOrganizationId } = useAuth();
     const [org, setOrg] = useState<Organization | null>(null);
 
     useEffect(() => {
+        if (!activeOrganizationId) { setOrg(null); return; }
         dataService.getOrganizations().then((allOrgs) => {
-            const myOrg = allOrgs.find(o => o.id === user?.organizationId) || allOrgs[0];
-            setOrg(myOrg ?? null);
+            setOrg(allOrgs.find(o => o.id === activeOrganizationId) ?? null);
         });
-    }, [user]);
+    }, [activeOrganizationId]);
 
     if (!org) return <div>Cargando contrato...</div>;
 

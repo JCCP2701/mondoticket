@@ -96,7 +96,9 @@ export default function AdminUserManagement() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-sm text-muted-foreground">
-                                        {user.organizationName || <span className="italic">N/A</span>}
+                                        {user.organizations.length > 0
+                                            ? user.organizations.map(o => o.name).join(', ')
+                                            : <span className="italic">N/A</span>}
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">

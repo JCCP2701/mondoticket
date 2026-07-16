@@ -3,9 +3,10 @@ import { Ticket, LogOut, Minus, Plus, ShoppingCart, CheckCircle2 } from "lucide-
 import { useAuth } from "../../context/AuthContext";
 import { dataService, EventRecord } from "../../services/dataService";
 import SeatMapPicker, { SelectedSeat } from "../user/SeatMapPicker";
+import OrgSwitcher from "../shared/OrgSwitcher";
 
 export default function TaquillaDashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, activeOrganizationId } = useAuth();
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -20,13 +21,14 @@ export default function TaquillaDashboard() {
   const [lastSaleOrderId, setLastSaleOrderId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user?.organizationId) return;
-    dataService.getEventsByOrganization(user.organizationId).then((evs) => {
+    if (!activeOrganizationId) return;
+    setLoading(true);
+    dataService.getEventsByOrganization(activeOrganizationId).then((evs) => {
       setEvents(evs);
-      if (evs.length > 0) setSelectedEventId(evs[0].id);
+      setSelectedEventId(evs.length > 0 ? evs[0].id : "");
       setLoading(false);
     });
-  }, [user]);
+  }, [activeOrganizationId]);
 
   const event = events.find((e) => e.id === selectedEventId) ?? null;
 
@@ -81,7 +83,7 @@ export default function TaquillaDashboard() {
       setLastSaleOrderId(orderId);
       resetSelection();
       setCustomer({ name: "", email: "", phone: "" });
-      const refreshed = user?.organizationId ? await dataService.getEventsByOrganization(user.organizationId) : [];
+      const refreshed = activeOrganizationId ? await dataService.getEventsByOrganization(activeOrganizationId) : [];
       setEvents(refreshed);
     } catch (err: any) {
       setSellError(err.message || "No se pudo completar la venta");
@@ -105,9 +107,12 @@ export default function TaquillaDashboard() {
               <p className="text-xs text-muted-foreground">{user?.name}</p>
             </div>
           </div>
-          <button onClick={() => logout()} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border hover:bg-secondary text-sm font-bold">
-            <LogOut className="w-4 h-4" /> Salir
-          </button>
+          <div className="flex items-center gap-3">
+            <OrgSwitcher />
+            <button onClick={() => logout()} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border hover:bg-secondary text-sm font-bold">
+              <LogOut className="w-4 h-4" /> Salir
+            </button>
+          </div>
         </div>
       </header>
 

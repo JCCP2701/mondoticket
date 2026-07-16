@@ -12,7 +12,7 @@ interface TicketTypeForm {
 
 export default function CreateEvent() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { activeOrganizationId } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     venue: "",
@@ -62,7 +62,7 @@ export default function CreateEvent() {
       return;
     }
 
-    if (!user?.organizationId) {
+    if (!activeOrganizationId) {
       setSubmitError("Tu cuenta no está asociada a una organización.");
       return;
     }
@@ -70,7 +70,7 @@ export default function CreateEvent() {
     setSubmitting(true);
     try {
       await dataService.createEvent({
-        organizationId: user.organizationId,
+        organizationId: activeOrganizationId,
         name: formData.name,
         description: formData.description,
         category: formData.category,

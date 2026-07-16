@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { Shield, Building2, User, Eye, EyeOff, Ticket, ArrowRight, Lock, Mail } from 'lucide-react';
-import { useAuth, UserRole } from '../../context/AuthContext';
+import { useAuth, UserRole, dashboardPathForRole } from '../../context/AuthContext';
 
 
 
 export default function LoginPage() {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, isAuthenticated, user } = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -21,10 +21,13 @@ export default function LoginPage() {
         e.preventDefault();
         setError('');
         setLoading(true);
-        const ok = await login(email, password);
+        const profile = await login(email, password);
         setLoading(false);
-        if (ok) {
-            navigate('/mfa', { state: { from: '/' } });
+        if (profile) {
+            // Demo accounts (mfa_exempt) are already fully authenticated at
+            // this point — skip the MFA screen entirely instead of routing
+            // through it just to bounce back.
+            navigate(profile.mfaExempt ? dashboardPathForRole(profile.role) : '/mfa', { state: { from: '/' } });
         } else {
             setError('Credenciales incorrectas. Verifica tu email y contraseña.');
         }

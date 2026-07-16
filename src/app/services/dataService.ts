@@ -246,7 +246,9 @@ export const dataService = {
 
     // Users (profiles) — readable by the profile owner or a superadmin (RLS-enforced)
     async getUsers(): Promise<AuthUser[]> {
-        const { data, error } = await supabase.from('profiles').select('id, name, email, role, organizations(name)');
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id, name, email, role, mfa_exempt, organization_members(organization_id, organizations(id, name))');
         if (error) throw error;
         return (data ?? []).map((row: any) => ({
             id: row.id,
@@ -254,7 +256,11 @@ export const dataService = {
             email: row.email,
             role: row.role as UserRole,
             avatar: row.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2),
-            organizationName: row.organizations?.name,
+            organizations: (row.organization_members ?? [])
+                .map((m: any) => m.organizations)
+                .filter(Boolean)
+                .map((o: any) => ({ id: o.id, name: o.name })),
+            mfaExempt: row.mfa_exempt ?? false,
         }));
     },
 
@@ -440,16 +446,53 @@ export const dataService = {
     // Box-office (taquilla) staff account creation — goes through a
     // serverless function since creating a real auth user needs the
     // service-role key, which must never reach the browser.
-    async inviteStaff(name: string, email: string): Promise<{ email: string; temporaryPassword: string }> {
+    async inviteStaff(
+        name: string,
+        email: string,
+        role: 'organization' | 'taquilla',
+        organizationIds: string[]
+    ): Promise<{ email: string; temporaryPassword: string }> {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error('Not authenticated');
         const res = await fetch('/api/organization/invite-staff', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-            body: JSON.stringify({ name, email }),
+            body: JSON.stringify({ name, email, role, organizationIds }),
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Failed to invite staff');
         return json;
+    },
+
+    // Organization membership management (superadmin-only per RLS)
+    async getOrganizationMembers(organizationId: string): Promise<AuthUser[]> {
+        const { data, error } = await supabase
+            .from('organization_members')
+            .select('profiles(id, name, email, role, mfa_exempt)')
+            .eq('organization_id', organizationId);
+        if (error) throw error;
+        return (data ?? [])
+            .map((row: any) => row.profiles)
+            .filter(Boolean)
+            .map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                email: p.email,
+                role: p.role as UserRole,
+                avatar: p.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2),
+                organizations: [],
+                mfaExempt: p.mfa_exempt ?? false,
+            }));
+    },
+
+    async addExistingUserToOrganization(profileId: string, organizationId: string): Promise<void> {
+        const { error } = await supabase.from('organization_members').insert({ profile_id: profileId, organization_id: organizationId });
+        if (error) throw error;
+    },
+
+    async findProfileByEmail(email: string): Promise<{ id: string; name: string; email: string; role: UserRole } | null> {
+        const { data, error } = await supabase.from('profiles').select('id, name, email, role').eq('email', email).maybeSingle();
+        if (error || !data) return null;
+        return data as any;
     },
 };

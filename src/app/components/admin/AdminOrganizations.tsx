@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { Building2, Search, Plus, MoreHorizontal, ArrowUpRight, ArrowDownRight, Users } from "lucide-react";
+import { Building2, Search, Plus, ArrowUpRight, Users, X, UserPlus, Mail } from "lucide-react";
 import { Link } from "react-router";
 import { dataService, Organization } from "../../services/dataService";
+import { AuthUser } from "../../context/AuthContext";
 
 export default function AdminOrganizations() {
     const [orgs, setOrgs] = useState<Organization[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [membersOrg, setMembersOrg] = useState<Organization | null>(null);
 
     useEffect(() => {
         dataService.getOrganizations().then(setOrgs);
@@ -112,17 +114,159 @@ export default function AdminOrganizations() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button className="p-2 hover:bg-secondary rounded-lg transition-colors text-muted-foreground">
-                                            <MoreHorizontal className="w-5 h-5" />
-                                        </button>
-                                        <button className="p-2 hover:bg-primary/10 rounded-lg transition-colors text-primary ml-2">
-                                            <ArrowUpRight className="w-5 h-5" />
+                                        <button
+                                            onClick={() => setMembersOrg(org)}
+                                            className="flex items-center gap-2 px-3 py-2 hover:bg-primary/10 rounded-lg transition-colors text-primary ml-auto font-bold text-sm"
+                                        >
+                                            <Users className="w-4 h-4" />
+                                            Miembros
                                         </button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            {membersOrg && (
+                <MembersModal org={membersOrg} onClose={() => setMembersOrg(null)} />
+            )}
+        </div>
+    );
+}
+
+function MembersModal({ org, onClose }: { org: Organization; onClose: () => void }) {
+    const [members, setMembers] = useState<AuthUser[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [lastInvite, setLastInvite] = useState<{ email: string; temporaryPassword: string } | null>(null);
+
+    const [inviteForm, setInviteForm] = useState({ name: "", email: "", role: "taquilla" as "organization" | "taquilla" });
+    const [inviting, setInviting] = useState(false);
+
+    const [existingEmail, setExistingEmail] = useState("");
+    const [addingExisting, setAddingExisting] = useState(false);
+
+    const load = async () => {
+        setLoading(true);
+        setMembers(await dataService.getOrganizationMembers(org.id));
+        setLoading(false);
+    };
+
+    useEffect(() => { load(); }, [org.id]);
+
+    const handleInvite = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setInviting(true);
+        setError("");
+        setLastInvite(null);
+        try {
+            const result = await dataService.inviteStaff(inviteForm.name, inviteForm.email, inviteForm.role, [org.id]);
+            setLastInvite(result);
+            setInviteForm({ name: "", email: "", role: "taquilla" });
+            await load();
+        } catch (err: any) {
+            setError(err.message || "No se pudo invitar al usuario");
+        } finally {
+            setInviting(false);
+        }
+    };
+
+    const handleAddExisting = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setAddingExisting(true);
+        setError("");
+        try {
+            const profile = await dataService.findProfileByEmail(existingEmail);
+            if (!profile) throw new Error("No existe ninguna cuenta con ese correo");
+            if (profile.role !== 'organization' && profile.role !== 'taquilla') {
+                throw new Error("Solo se pueden agregar cuentas con rol organización o taquilla");
+            }
+            await dataService.addExistingUserToOrganization(profile.id, org.id);
+            setExistingEmail("");
+            await load();
+        } catch (err: any) {
+            setError(err.message || "No se pudo agregar el usuario");
+        } finally {
+            setAddingExisting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+            <div className="bg-card rounded-2xl border border-border shadow-xl p-8 max-w-2xl w-full space-y-6 max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-xl font-bold flex items-center gap-2"><Users className="w-5 h-5 text-primary" /> Miembros de {org.name}</h3>
+                    <button onClick={onClose} className="p-2 hover:bg-secondary rounded-lg"><X className="w-4 h-4" /></button>
+                </div>
+
+                {error && <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
+                {lastInvite && (
+                    <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                        Cuenta creada: <strong>{lastInvite.email}</strong> — contraseña temporal: <code className="font-mono bg-white px-2 py-0.5 rounded border border-green-300">{lastInvite.temporaryPassword}</code>
+                    </div>
+                )}
+
+                <div className="space-y-2">
+                    {loading ? (
+                        <p className="text-sm text-muted-foreground">Cargando miembros...</p>
+                    ) : members.length === 0 ? (
+                        <p className="text-sm text-muted-foreground italic">Sin miembros todavía.</p>
+                    ) : (
+                        members.map((m) => (
+                            <div key={m.id} className="flex items-center justify-between p-3 rounded-xl border border-border">
+                                <div>
+                                    <p className="font-bold text-sm">{m.name}</p>
+                                    <p className="text-xs text-muted-foreground">{m.email}</p>
+                                </div>
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${m.role === 'organization' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'}`}>
+                                    {m.role}
+                                </span>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                <div className="border-t border-border pt-6 space-y-4">
+                    <h4 className="font-bold text-sm flex items-center gap-2"><UserPlus className="w-4 h-4 text-primary" /> Invitar nuevo usuario</h4>
+                    <form onSubmit={handleInvite} className="grid grid-cols-2 gap-3">
+                        <input
+                            required placeholder="Nombre" value={inviteForm.name}
+                            onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+                            className="px-3 py-2 rounded-lg border-2 border-border bg-background outline-none col-span-1"
+                        />
+                        <input
+                            required type="email" placeholder="Correo" value={inviteForm.email}
+                            onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                            className="px-3 py-2 rounded-lg border-2 border-border bg-background outline-none col-span-1"
+                        />
+                        <select
+                            value={inviteForm.role}
+                            onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value as "organization" | "taquilla" })}
+                            className="px-3 py-2 rounded-lg border-2 border-border bg-background outline-none col-span-1"
+                        >
+                            <option value="taquilla">Taquilla</option>
+                            <option value="organization">Organización</option>
+                        </select>
+                        <button type="submit" disabled={inviting} className="px-4 py-2 bg-primary text-white rounded-lg font-bold text-sm disabled:opacity-60 col-span-1">
+                            {inviting ? "Invitando..." : "Invitar"}
+                        </button>
+                    </form>
+                </div>
+
+                <div className="border-t border-border pt-6 space-y-4">
+                    <h4 className="font-bold text-sm flex items-center gap-2"><Mail className="w-4 h-4 text-primary" /> Agregar usuario existente</h4>
+                    <form onSubmit={handleAddExisting} className="flex gap-3">
+                        <input
+                            required type="email" placeholder="Correo de la cuenta existente" value={existingEmail}
+                            onChange={(e) => setExistingEmail(e.target.value)}
+                            className="flex-1 px-3 py-2 rounded-lg border-2 border-border bg-background outline-none"
+                        />
+                        <button type="submit" disabled={addingExisting} className="px-4 py-2 bg-secondary rounded-lg font-bold text-sm disabled:opacity-60">
+                            {addingExisting ? "Agregando..." : "Agregar"}
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

@@ -4,14 +4,19 @@ import { supabase } from '../services/supabaseClient';
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type UserRole = 'superadmin' | 'organization' | 'user' | 'taquilla';
 
+export interface OrgMembership {
+  id: string;
+  name: string;
+}
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
   role: UserRole;
   avatar?: string;
-  organizationName?: string;
-  organizationId?: string;
+  organizations: OrgMembership[];
+  mfaExempt: boolean;
 }
 
 interface AuthState {
@@ -22,12 +27,17 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<boolean>;
+  // Returns the loaded profile (so the caller can route based on
+  // profile.mfaExempt without waiting for a state re-render) or null on
+  // failure.
+  login: (email: string, password: string) => Promise<AuthUser | null>;
   logout: () => void;
   verifyMFA: (code: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   isFirstMFASetup: boolean;
   mfaQrCode: string | null;
+  activeOrganizationId: string | null;
+  setActiveOrganizationId: (id: string) => void;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -36,11 +46,16 @@ const AuthContext = createContext<AuthContextType | null>(null);
 async function loadProfile(userId: string): Promise<AuthUser | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, name, email, role, organization_id, organizations(name)')
+    .select('id, name, email, role, mfa_exempt, organization_members(organization_id, organizations(id, name))')
     .eq('id', userId)
     .single();
 
   if (error || !data) return null;
+
+  const organizations: OrgMembership[] = ((data as any).organization_members ?? [])
+    .map((m: any) => m.organizations)
+    .filter(Boolean)
+    .map((o: any) => ({ id: o.id, name: o.name }));
 
   return {
     id: data.id,
@@ -48,8 +63,8 @@ async function loadProfile(userId: string): Promise<AuthUser | null> {
     email: data.email,
     role: data.role as UserRole,
     avatar: data.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2),
-    organizationName: (data as any).organizations?.name,
-    organizationId: data.organization_id ?? undefined,
+    organizations,
+    mfaExempt: data.mfa_exempt ?? false,
   };
 }
 
@@ -66,6 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const [mfaQrCode, setMfaQrCode] = useState<string | null>(null);
   const [isFirstMFASetup, setIsFirstMFASetup] = useState(false);
+  const [activeOrganizationId, setActiveOrganizationId] = useState<string | null>(null);
+
+  const applyActiveOrg = (profile: AuthUser) => {
+    setActiveOrganizationId((prev) =>
+      prev && profile.organizations.some((o) => o.id === prev) ? prev : (profile.organizations[0]?.id ?? null)
+    );
+  };
 
   // Restore session (e.g. after a page refresh) and re-sync MFA/aal status.
   useEffect(() => {
@@ -76,6 +98,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const profile = await loadProfile(session.user.id);
       if (!profile) return;
+      applyActiveOrg(profile);
+
+      if (profile.mfaExempt) {
+        setState({ user: profile, isAuthenticated: true, mfaVerified: true, pendingRole: profile.role });
+        return;
+      }
 
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       const mfaVerified = aal?.currentLevel === 'aal2';
@@ -91,6 +119,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const beginMfaStep = async (profile: AuthUser) => {
+    // Demo accounts skip MFA entirely — never inferred from email, only the
+    // per-profile mfa_exempt flag set explicitly for the 4 seeded demo users.
+    if (profile.mfaExempt) {
+      setState({ user: profile, isAuthenticated: true, mfaVerified: true, pendingRole: profile.role });
+      return;
+    }
+
     const { data: factorsData } = await supabase.auth.mfa.listFactors();
     const verifiedTotp = factorsData?.totp?.find((f) => f.status === 'verified');
 
@@ -109,15 +144,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ user: profile, isAuthenticated: false, mfaVerified: false, pendingRole: profile.role });
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<AuthUser | null> => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user) return false;
+    if (error || !data.user) return null;
 
     const profile = await loadProfile(data.user.id);
-    if (!profile) return false;
+    if (!profile) return null;
 
+    applyActiveOrg(profile);
     await beginMfaStep(profile);
-    return true;
+    return profile;
   };
 
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
@@ -136,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // /register with their own password), the login attempt below just
       // fails too and the caller sees register() return false as before.
       if (error.message?.toLowerCase().includes('already registered') || (error as any).code === 'user_already_exists') {
-        return login(email, password);
+        return !!(await login(email, password));
       }
       return false;
     }
@@ -146,6 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const profile = await loadProfile(data.user.id);
     if (!profile) return false;
 
+    applyActiveOrg(profile);
     await beginMfaStep(profile);
     return true;
   };
@@ -168,11 +205,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMfaFactorId(null);
     setMfaQrCode(null);
     setIsFirstMFASetup(false);
+    setActiveOrganizationId(null);
   };
 
   return (
     <AuthContext.Provider
-      value={{ ...state, login, logout, verifyMFA, register, isFirstMFASetup, mfaQrCode }}
+      value={{ ...state, login, logout, verifyMFA, register, isFirstMFASetup, mfaQrCode, activeOrganizationId, setActiveOrganizationId }}
     >
       {children}
     </AuthContext.Provider>

@@ -5,18 +5,18 @@ import { dataService, EventRecord } from "../../services/dataService";
 import { useAuth } from "../../context/AuthContext";
 
 export default function OrganizationEvents() {
-    const { user } = useAuth();
+    const { activeOrganizationId } = useAuth();
     const [searchTerm, setSearchTerm] = useState("");
     const [events, setEvents] = useState<EventRecord[]>([]);
     const [statsByEvent, setStatsByEvent] = useState<Record<string, { courtesyCount: number; refundedCount: number }>>({});
 
     useEffect(() => {
-        if (!user?.organizationId) return;
-        dataService.getEventsByOrganization(user.organizationId).then((evs) => {
+        if (!activeOrganizationId) return;
+        dataService.getEventsByOrganization(activeOrganizationId).then((evs) => {
             setEvents(evs);
             dataService.getEventStatsSummary(evs.map((e) => e.id)).then(setStatsByEvent);
         });
-    }, [user]);
+    }, [activeOrganizationId]);
 
     const mockEvents = events.map((e) => {
         const sold = e.ticketTypes.reduce((s, t) => s + t.sold, 0);

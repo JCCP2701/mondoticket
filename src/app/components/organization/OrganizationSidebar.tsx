@@ -8,6 +8,7 @@ import {
     ChevronRight
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import OrgSwitcher from "../shared/OrgSwitcher";
 
 const MENU_ITEMS = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/organization' },
@@ -29,6 +30,10 @@ export default function OrganizationSidebar() {
                     </div>
                     <span className="font-bold text-xl tracking-tight">TicketBlessing</span>
                 </div>
+            </div>
+
+            <div className="px-4 pt-4">
+                <OrgSwitcher />
             </div>
 
             <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
