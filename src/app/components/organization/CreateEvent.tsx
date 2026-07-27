@@ -31,6 +31,9 @@ export default function CreateEvent() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState("");
 
   const addTicketType = () => {
     setTicketTypes([...ticketTypes, { name: "", price: "", capacity: "" }]);
@@ -78,6 +81,7 @@ export default function CreateEvent() {
         venueAddress: formData.address,
         date: formData.date,
         instructions: formData.instructions,
+        imageUrl,
         ticketTypes: validTicketTypes.map((t) => ({
           name: t.name,
           price: parseFloat(t.price),
@@ -92,8 +96,20 @@ export default function CreateEvent() {
     }
   };
 
-  const handleImageChange = () => {
-    setImagePreview("https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=1000");
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeOrganizationId) return;
+    setImageError("");
+    setUploadingImage(true);
+    try {
+      const url = await dataService.uploadEventImage(file, activeOrganizationId);
+      setImageUrl(url);
+      setImagePreview(url);
+    } catch (err: any) {
+      setImageError(err.message || "No se pudo subir la imagen");
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const totalCapacity = ticketTypes.reduce((sum, t) => sum + (parseInt(t.capacity) || 0), 0);
@@ -286,21 +302,24 @@ export default function CreateEvent() {
           <div className="bg-card rounded-2xl border border-border p-6 shadow-sm overflow-hidden text-center">
             <h3 className="text-sm font-bold text-muted-foreground uppercase mb-4 text-left">Imagen del Evento</h3>
             <div className="relative aspect-video rounded-xl bg-secondary/50 border-2 border-dashed border-border flex flex-col items-center justify-center overflow-hidden group">
-              {imagePreview ? (
+              {uploadingImage ? (
+                <p className="text-xs text-muted-foreground">Subiendo imagen...</p>
+              ) : imagePreview ? (
                 <>
                   <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button type="button" onClick={() => setImagePreview(null)} className="p-2 bg-red-600 text-white rounded-lg">Eliminar</button>
+                    <button type="button" onClick={() => { setImagePreview(null); setImageUrl(null); }} className="p-2 bg-red-600 text-white rounded-lg">Eliminar</button>
                   </div>
                 </>
               ) : (
                 <>
                   <ImageIcon className="w-12 h-12 text-muted-foreground/30 mb-2" />
                   <p className="text-xs text-muted-foreground">Arrastra o selecciona<br />una imagen profesional</p>
-                  <input type="file" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                  <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                 </>
               )}
             </div>
+            {imageError && <p className="text-xs text-red-500 mt-2 text-left">{imageError}</p>}
           </div>
 
           <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-4">
@@ -327,7 +346,7 @@ export default function CreateEvent() {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || uploadingImage}
             className="w-full py-4 bg-primary text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] transition-all shadow-lg shadow-primary/20 disabled:opacity-60"
           >
             <Plus className="w-6 h-6" />

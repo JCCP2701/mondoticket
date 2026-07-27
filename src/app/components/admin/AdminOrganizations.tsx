@@ -1,17 +1,24 @@
 import { useState, useEffect } from "react";
-import { Building2, Search, Plus, ArrowUpRight, Users, X, UserPlus, Mail } from "lucide-react";
+import { Building2, Search, Plus, Users, X, UserPlus, Mail, FileEdit } from "lucide-react";
 import { Link } from "react-router";
 import { dataService, Organization } from "../../services/dataService";
 import { AuthUser } from "../../context/AuthContext";
 
 export default function AdminOrganizations() {
     const [orgs, setOrgs] = useState<Organization[]>([]);
+    const [activeEventCount, setActiveEventCount] = useState(0);
     const [searchTerm, setSearchTerm] = useState("");
     const [membersOrg, setMembersOrg] = useState<Organization | null>(null);
+    const [contractOrg, setContractOrg] = useState<Organization | null>(null);
 
-    useEffect(() => {
+    const load = () => {
         dataService.getOrganizations().then(setOrgs);
-    }, []);
+        dataService.getEvents().then((evs) =>
+            setActiveEventCount(evs.filter((e) => e.status === 'upcoming' || e.status === 'ongoing').length)
+        );
+    };
+
+    useEffect(() => { load(); }, []);
 
     const filteredOrgs = orgs.filter(org =>
         org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -39,10 +46,6 @@ export default function AdminOrganizations() {
                     <p className="text-sm font-medium text-muted-foreground mb-1">Total Organizaciones</p>
                     <div className="flex items-end gap-2">
                         <span className="text-3xl font-bold text-foreground">{orgs.length}</span>
-                        <span className="text-xs text-green-600 font-bold mb-1 flex items-center gap-0.5">
-                            <ArrowUpRight className="w-3 h-3" />
-                            +12%
-                        </span>
                     </div>
                 </div>
                 <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
@@ -56,7 +59,7 @@ export default function AdminOrganizations() {
                 <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
                     <p className="text-sm font-medium text-muted-foreground mb-1">Eventos Activos</p>
                     <div className="flex items-end gap-2">
-                        <span className="text-3xl font-bold text-foreground">42</span>
+                        <span className="text-3xl font-bold text-foreground">{activeEventCount}</span>
                     </div>
                 </div>
             </div>
@@ -114,13 +117,22 @@ export default function AdminOrganizations() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={() => setMembersOrg(org)}
-                                            className="flex items-center gap-2 px-3 py-2 hover:bg-primary/10 rounded-lg transition-colors text-primary ml-auto font-bold text-sm"
-                                        >
-                                            <Users className="w-4 h-4" />
-                                            Miembros
-                                        </button>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => setContractOrg(org)}
+                                                className="flex items-center gap-2 px-3 py-2 hover:bg-primary/10 rounded-lg transition-colors text-primary font-bold text-sm"
+                                            >
+                                                <FileEdit className="w-4 h-4" />
+                                                Convenio
+                                            </button>
+                                            <button
+                                                onClick={() => setMembersOrg(org)}
+                                                className="flex items-center gap-2 px-3 py-2 hover:bg-primary/10 rounded-lg transition-colors text-primary font-bold text-sm"
+                                            >
+                                                <Users className="w-4 h-4" />
+                                                Miembros
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -132,6 +144,127 @@ export default function AdminOrganizations() {
             {membersOrg && (
                 <MembersModal org={membersOrg} onClose={() => setMembersOrg(null)} />
             )}
+
+            {contractOrg && (
+                <ContractModal org={contractOrg} onClose={() => setContractOrg(null)} onSaved={load} />
+            )}
+        </div>
+    );
+}
+
+function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: () => void; onSaved: () => void }) {
+    const [feePercentage, setFeePercentage] = useState(String(org.feePercentage));
+    const [paymentTerms, setPaymentTerms] = useState(String(org.paymentTerms));
+    const [contractNotes, setContractNotes] = useState(org.contractNotes ?? "");
+    const [maxEventsPerMonth, setMaxEventsPerMonth] = useState(org.maxEventsPerMonth != null ? String(org.maxEventsPerMonth) : "");
+    const [courtesyTicketsPerEvent, setCourtesyTicketsPerEvent] = useState(org.courtesyTicketsPerEvent != null ? String(org.courtesyTicketsPerEvent) : "");
+    const [taquillaFeePercentage, setTaquillaFeePercentage] = useState(org.taquillaFeePercentage != null ? String(org.taquillaFeePercentage) : "");
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
+    const [saved, setSaved] = useState(false);
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaving(true);
+        setError("");
+        try {
+            await dataService.updateOrganizationContract(org.id, {
+                feePercentage: parseFloat(feePercentage),
+                paymentTerms: parseInt(paymentTerms, 10),
+                contractNotes: contractNotes.trim() || undefined,
+                maxEventsPerMonth: maxEventsPerMonth.trim() ? parseInt(maxEventsPerMonth, 10) : null,
+                courtesyTicketsPerEvent: courtesyTicketsPerEvent.trim() ? parseInt(courtesyTicketsPerEvent, 10) : null,
+                taquillaFeePercentage: taquillaFeePercentage.trim() ? parseFloat(taquillaFeePercentage) : null,
+            });
+            setSaved(true);
+            onSaved();
+        } catch (err: any) {
+            setError(err.message || "No se pudo guardar el convenio");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+            <div className="bg-card rounded-2xl border border-border shadow-xl p-8 max-w-md w-full space-y-6">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-xl font-bold flex items-center gap-2"><FileEdit className="w-5 h-5 text-primary" /> Convenio de {org.name}</h3>
+                    <button onClick={onClose} className="p-2 hover:bg-secondary rounded-lg"><X className="w-4 h-4" /></button>
+                </div>
+
+                {saved && (
+                    <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                        Convenio actualizado correctamente.
+                    </div>
+                )}
+
+                <form onSubmit={handleSave} className="space-y-4">
+                    <div>
+                        <label className="text-sm font-bold text-muted-foreground mb-2 block">Fee por Ticket (%)</label>
+                        <input
+                            type="number" min="0" max="100" step="0.5" required
+                            value={feePercentage} onChange={(e) => setFeePercentage(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-sm font-bold text-muted-foreground mb-2 block">Plazo de Pago (días)</label>
+                        <select
+                            value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                        >
+                            <option value="7">7 días</option>
+                            <option value="15">15 días</option>
+                            <option value="30">30 días</option>
+                            <option value="45">45 días</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-sm font-bold text-muted-foreground mb-2 block">Fee para Ventas en Taquilla (%)</label>
+                        <input
+                            type="number" min="0" max="100" step="0.5"
+                            value={taquillaFeePercentage} onChange={(e) => setTaquillaFeePercentage(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                            placeholder={`Vacío = usa el fee general (${feePercentage}%)`}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Si se deja vacío, se aplica el mismo fee que a la venta digital.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-sm font-bold text-muted-foreground mb-2 block">Eventos por Mes</label>
+                            <input
+                                type="number" min="0"
+                                value={maxEventsPerMonth} onChange={(e) => setMaxEventsPerMonth(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                                placeholder="Sin límite"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-sm font-bold text-muted-foreground mb-2 block">Cortesías por Evento</label>
+                            <input
+                                type="number" min="0"
+                                value={courtesyTicketsPerEvent} onChange={(e) => setCourtesyTicketsPerEvent(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                                placeholder="Sin límite"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-sm font-bold text-muted-foreground mb-2 block">Notas del Convenio</label>
+                        <textarea
+                            value={contractNotes} onChange={(e) => setContractNotes(e.target.value)}
+                            rows={4}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none resize-none"
+                            placeholder="Condiciones especiales, descuentos, cláusulas adicionales..."
+                        />
+                    </div>
+                    {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
+                    <button type="submit" disabled={saving} className="w-full py-3 bg-primary text-white rounded-xl font-bold disabled:opacity-60">
+                        {saving ? "Guardando..." : "Guardar Convenio"}
+                    </button>
+                </form>
+            </div>
         </div>
     );
 }

@@ -1,4 +1,4 @@
-import { FileText, CheckCircle, ShieldCheck, Download, Calendar, DollarSign, Wallet } from "lucide-react";
+import { FileText, CheckCircle, ShieldCheck, Download, Calendar, DollarSign, Wallet, Ticket, Gift } from "lucide-react";
 import { useEffect, useState } from "react";
 import { dataService, Organization } from "../../services/dataService";
 import { useAuth } from "../../context/AuthContext";
@@ -23,7 +23,7 @@ export default function OrganizationContract() {
                     <h1 className="text-3xl font-bold tracking-tight">Mi Contrato y Convenio</h1>
                     <p className="text-muted-foreground mt-1 text-lg">Términos comerciales y acuerdos de servicio con TicketBlessing</p>
                 </div>
-                <button className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg shadow-primary/20">
+                <button onClick={() => window.print()} className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg shadow-primary/20 print:hidden">
                     <Download className="w-5 h-5" />
                     Descargar PDF
                 </button>
@@ -41,7 +41,7 @@ export default function OrganizationContract() {
                         <CheckCircle className="w-5 h-5 text-green-500" />
                         <span className="text-2xl font-bold">Vigente</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">Última renovación: 12 Oct 2025</p>
+                    <p className="text-xs text-muted-foreground mt-2">Alta: {new Date(org.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                 </div>
 
                 <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
@@ -64,6 +64,43 @@ export default function OrganizationContract() {
                     </div>
                     <span className="text-3xl font-bold">{org.paymentTerms} días</span>
                     <p className="text-xs text-muted-foreground mt-2">Días naturales posteriores al evento</p>
+                </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+                <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-violet-100 rounded-lg text-violet-700">
+                            <DollarSign className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-bold text-muted-foreground">Fee en Taquilla</span>
+                    </div>
+                    <span className="text-3xl font-bold text-primary">{org.taquillaFeePercentage ?? org.feePercentage}%</span>
+                    <p className="text-xs text-muted-foreground mt-2">
+                        {org.taquillaFeePercentage != null ? "Fee específico para ventas en taquilla" : "Usa el mismo fee que la venta digital"}
+                    </p>
+                </div>
+
+                <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                            <Ticket className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-bold text-muted-foreground">Eventos por Mes</span>
+                    </div>
+                    <span className="text-3xl font-bold">{org.maxEventsPerMonth ?? "Sin límite"}</span>
+                    <p className="text-xs text-muted-foreground mt-2">Máximo de eventos nuevos por mes calendario</p>
+                </div>
+
+                <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-rose-50 rounded-lg text-rose-600">
+                            <Gift className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-bold text-muted-foreground">Cortesías por Evento</span>
+                    </div>
+                    <span className="text-3xl font-bold">{org.courtesyTicketsPerEvent ?? "Sin límite"}</span>
+                    <p className="text-xs text-muted-foreground mt-2">Boletos gratuitos permitidos por evento</p>
                 </div>
             </div>
 

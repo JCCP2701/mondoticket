@@ -235,6 +235,11 @@ export default function UserCheckout() {
 
             {/* 1. Event Selection (Visual confirmation) */}
             <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', overflow: 'hidden' }}>
+              {event.imageUrl && (
+                <div style={{ height: '220px', overflow: 'hidden' }}>
+                  <img src={event.imageUrl} alt={event.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )}
               <div style={{ padding: '24px' }}>
                 <span style={{ background: 'rgba(124,58,237,0.8)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '12px', display: 'inline-block' }}>{event.category || 'Evento'}</span>
                 <h1 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '16px' }}>{event.name}</h1>

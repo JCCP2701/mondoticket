@@ -1,15 +1,19 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { ArrowLeft, DollarSign, AlertCircle, TrendingUp, Plus, Users, Ticket, FileText, Gift, RotateCcw } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { useState, useEffect } from "react";
 import { dataService, Organization, EventRecord } from "../../services/dataService";
+import { AuthUser } from "../../context/AuthContext";
 
 export default function SuperAdminDashboard() {
+  const navigate = useNavigate();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [events, setEvents] = useState<EventRecord[]>([]);
+  const [users, setUsers] = useState<AuthUser[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [stats, setStats] = useState({ totalSold: 0, totalCapacity: 0, totalRevenue: 0, totalProfit: 0, orgCount: 0, eventCount: 0 });
   const [statsByEvent, setStatsByEvent] = useState<Record<string, { courtesyCount: number; refundedCount: number }>>({});
+  const [revenueData, setRevenueData] = useState<{ month: string; revenue: number }[]>([]);
 
   useEffect(() => {
     dataService.getOrganizations().then(setOrganizations);
@@ -18,6 +22,8 @@ export default function SuperAdminDashboard() {
       dataService.getEventStatsSummary(evs.map((e) => e.id)).then(setStatsByEvent);
     });
     dataService.getGlobalStats().then(setStats);
+    dataService.getUsers().then(setUsers);
+    dataService.getMonthlyRevenueSeries(6).then(setRevenueData);
   }, []);
 
   const handleFeeChange = async (id: string, newFee: number) => {
@@ -25,16 +31,8 @@ export default function SuperAdminDashboard() {
     setOrganizations(await dataService.getOrganizations());
   };
 
-  // Prepare chart data from real events (grouped by month or similar)
-  // For now using static for charts but dynamic for KPIs and Table
-  const revenueData = [
-    { month: "Ene", revenue: 45000 },
-    { month: "Feb", revenue: 52000 },
-    { month: "Mar", revenue: stats.totalRevenue / 10 },
-    { month: "Abr", revenue: 61000 },
-    { month: "May", revenue: 55000 },
-    { month: "Jun", revenue: 67000 },
-  ];
+  const normalUserCount = users.filter((u) => u.role === 'user').length;
+  const orgUserCount = users.filter((u) => u.role === 'organization').length;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -276,13 +274,13 @@ export default function SuperAdminDashboard() {
               Control de usuarios normales y administradores de organizaciones.
             </p>
             <div className="space-y-4">
-              <button className="w-full py-3 bg-secondary hover:bg-secondary/70 rounded-lg text-sm font-medium transition-colors text-left px-4 flex justify-between items-center">
+              <button onClick={() => navigate('/admin/users?role=user')} className="w-full py-3 bg-secondary hover:bg-secondary/70 rounded-lg text-sm font-medium transition-colors text-left px-4 flex justify-between items-center">
                 <span>Ver Usuarios Normales</span>
-                <span className="bg-background px-2 py-1 rounded text-xs">Total: 124</span>
+                <span className="bg-background px-2 py-1 rounded text-xs">Total: {normalUserCount}</span>
               </button>
-              <button className="w-full py-3 bg-secondary hover:bg-secondary/70 rounded-lg text-sm font-medium transition-colors text-left px-4 flex justify-between items-center">
+              <button onClick={() => navigate('/admin/users?role=organization')} className="w-full py-3 bg-secondary hover:bg-secondary/70 rounded-lg text-sm font-medium transition-colors text-left px-4 flex justify-between items-center">
                 <span>Ver Usuarios Organizaciones</span>
-                <span className="bg-background px-2 py-1 rounded text-xs">Total: {organizations.length}</span>
+                <span className="bg-background px-2 py-1 rounded text-xs">Total: {orgUserCount}</span>
               </button>
             </div>
           </div>

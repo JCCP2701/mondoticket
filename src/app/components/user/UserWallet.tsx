@@ -1,66 +1,43 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { Ticket, QrCode, Calendar, MapPin, Download, Share2, LogOut, Filter, ChevronRight, Wallet } from 'lucide-react';
+import { Ticket, QrCode, Calendar, MapPin, ExternalLink, LogOut, Filter, ChevronRight, Wallet } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { dataService, MyTicketRecord } from '../../services/dataService';
 import { QRCodeSVG } from 'qrcode.react';
 
-// Mock data for demo
-const MOCK_TICKETS = [
-    {
-        id: 'tb_7821', eventName: 'Festival Conexión MX', date: '15 Ago 2025', venue: 'Foro Sol, CDMX',
-        type: 'General', price: 850, status: 'upcoming',
-        gradient: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
-        emoji: '🎸',
-    },
-    {
-        id: 'tb_6543', eventName: 'Cumbre Líderes 2025', date: '22 Sep 2025', venue: 'Centro Banamex, CDMX',
-        type: 'VIP', price: 2500, status: 'upcoming',
-        gradient: 'linear-gradient(135deg, #d97706, #b45309)',
-        emoji: '🏆',
-    },
-    {
-        id: 'tb_5102', eventName: 'Night Glow EDM', date: '10 Mar 2025', venue: 'Pepsi Center, CDMX',
-        type: 'Early Bird', price: 450, status: 'past',
-        gradient: 'linear-gradient(135deg, #0891b2, #0e7490)',
-        emoji: '🎧',
-    },
-    {
-        id: 'tb_4891', eventName: 'Expo Gastronómica MX', date: '28 Feb 2025', venue: 'World Trade Center, CDMX',
-        type: 'General', price: 300, status: 'past',
-        gradient: 'linear-gradient(135deg, #16a34a, #15803d)',
-        emoji: '🍽️',
-    },
-];
+const STATUS_LABEL: Record<MyTicketRecord['status'], string> = { valid: 'Válido', used: 'Usado', cancelled: 'Reembolsado' };
+const STATUS_COLOR: Record<MyTicketRecord['status'], string> = {
+    valid: 'rgba(16,185,129,0.9)',
+    used: 'rgba(59,130,246,0.9)',
+    cancelled: 'rgba(244,63,94,0.9)',
+};
 
-function TicketCard({ ticket }: { ticket: typeof MOCK_TICKETS[0] }) {
+function TicketCard({ ticket, isUpcoming }: { ticket: MyTicketRecord; isUpcoming: boolean }) {
     const [showQR, setShowQR] = useState(false);
-    const qrData = `ticketblessing://verify/${ticket.id}`;
 
     return (
         <div style={{
             borderRadius: '20px', overflow: 'hidden',
             background: 'rgba(19,16,42,0.8)', border: '1px solid rgba(139,92,246,0.2)',
-            boxShadow: ticket.status === 'upcoming' ? '0 10px 40px rgba(124,58,237,0.15)' : 'none',
+            boxShadow: isUpcoming ? '0 10px 40px rgba(124,58,237,0.15)' : 'none',
             transition: 'all 0.3s ease',
-            opacity: ticket.status === 'past' ? 0.75 : 1,
-        }}
-            onMouseEnter={(e) => { if (ticket.status === 'upcoming') e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 20px 50px rgba(124,58,237,0.2)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = ticket.status === 'upcoming' ? '0 10px 40px rgba(124,58,237,0.15)' : 'none'; }}>
-
-            {/* Color header */}
-            <div style={{ height: '80px', background: ticket.gradient, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', position: 'relative' }}>
-                <span style={{ fontSize: '36px' }}>{ticket.emoji}</span>
+            opacity: ticket.status === 'cancelled' ? 0.6 : isUpcoming ? 1 : 0.85,
+        }}>
+            {/* Header */}
+            <div style={{
+                height: '80px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px',
+                background: ticket.eventImageUrl ? `linear-gradient(180deg, rgba(13,11,30,0.2), rgba(13,11,30,0.75)), url(${ticket.eventImageUrl}) center/cover` : 'linear-gradient(135deg, #7c3aed, #5b21b6)',
+            }}>
+                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.75)', fontWeight: 700, textTransform: 'uppercase' }}>{ticket.eventCategory || 'Evento'}</span>
                 <div style={{ textAlign: 'right' }}>
-                    <span style={{ display: 'block', fontSize: '10px', color: 'rgba(255,255,255,0.7)', marginBottom: '2px' }}>{ticket.type}</span>
-                    <span style={{ fontSize: '22px', fontWeight: 800, color: 'white' }}>${ticket.price.toLocaleString()} MXN</span>
+                    <span style={{ display: 'block', fontSize: '10px', color: 'rgba(255,255,255,0.7)', marginBottom: '2px' }}>{ticket.ticketTypeName}</span>
+                    <span style={{ fontSize: '22px', fontWeight: 800, color: 'white' }}>{ticket.unitPrice === 0 ? 'Gratis' : `$${ticket.unitPrice.toLocaleString()} MXN`}</span>
                 </div>
-                {ticket.status === 'upcoming' && (
-                    <div style={{
-                        position: 'absolute', top: '12px', left: '12px',
-                        padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: 700,
-                        background: 'rgba(16,185,129,0.9)', color: 'white', border: '1px solid rgba(255,255,255,0.2)',
-                    }}>● PRÓXIMO</div>
-                )}
+                <div style={{
+                    position: 'absolute', top: '12px', left: '12px',
+                    padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: 700,
+                    background: STATUS_COLOR[ticket.status], color: 'white', border: '1px solid rgba(255,255,255,0.2)',
+                }}>{STATUS_LABEL[ticket.status]}</div>
             </div>
 
             {/* Dashed divider */}
@@ -77,21 +54,27 @@ function TicketCard({ ticket }: { ticket: typeof MOCK_TICKETS[0] }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Calendar size={13} color="rgba(240,237,255,0.4)" />
-                        <span style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)' }}>{ticket.date}</span>
+                        <span style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)' }}>
+                            {ticket.eventDate ? new Date(ticket.eventDate + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Fecha por confirmar'}
+                        </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <MapPin size={13} color="rgba(240,237,255,0.4)" />
-                        <span style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)' }}>{ticket.venue}</span>
+                        <span style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)' }}>{ticket.venueName || 'Recinto por confirmar'}</span>
                     </div>
+                    {ticket.seatLabel && (
+                        <div style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)' }}>Asiento {ticket.seatLabel}</div>
+                    )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <button
                         onClick={() => setShowQR(!showQR)}
+                        disabled={ticket.status === 'cancelled'}
                         style={{
-                            flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                            flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: ticket.status === 'cancelled' ? 'not-allowed' : 'pointer',
                             background: showQR ? 'rgba(139,92,246,0.3)' : 'rgba(139,92,246,0.15)',
-                            color: '#a78bfa', fontSize: '13px', fontWeight: 600,
+                            color: '#a78bfa', fontSize: '13px', fontWeight: 600, opacity: ticket.status === 'cancelled' ? 0.5 : 1,
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                             transition: 'all 0.2s',
                         }}
@@ -99,40 +82,30 @@ function TicketCard({ ticket }: { ticket: typeof MOCK_TICKETS[0] }) {
                         <QrCode size={15} />
                         {showQR ? 'Ocultar' : 'Ver QR'}
                     </button>
-                    <button
+                    <Link
+                        to={`/ticket/${ticket.orderId}`}
                         style={{
                             width: '40px', height: '40px', borderRadius: '10px', border: '1px solid rgba(139,92,246,0.2)',
-                            background: 'rgba(255,255,255,0.03)', color: 'rgba(240,237,255,0.4)', cursor: 'pointer',
+                            background: 'rgba(255,255,255,0.03)', color: 'rgba(240,237,255,0.6)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
                         }}
-                        title="Descargar boleto"
+                        title="Ver boleto completo"
                     >
-                        <Download size={15} />
-                    </button>
-                    <button
-                        style={{
-                            width: '40px', height: '40px', borderRadius: '10px', border: '1px solid rgba(139,92,246,0.2)',
-                            background: 'rgba(255,255,255,0.03)', color: 'rgba(240,237,255,0.4)', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
-                        }}
-                        title="Compartir boleto"
-                    >
-                        <Share2 size={15} />
-                    </button>
+                        <ExternalLink size={15} />
+                    </Link>
                 </div>
 
-                {/* QR Expand */}
-                {showQR && (
+                {showQR && ticket.status !== 'cancelled' && (
                     <div style={{
                         marginTop: '16px', padding: '16px', borderRadius: '12px',
                         background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.15)',
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
                     }}>
                         <div style={{ padding: '10px', background: 'white', borderRadius: '10px' }}>
-                            <QRCodeSVG value={qrData} size={120} level="H" />
+                            <QRCodeSVG value={ticket.qrCode} size={120} level="H" />
                         </div>
                         <p style={{ fontSize: '11px', color: 'rgba(240,237,255,0.35)', textAlign: 'center' }}>
-                            ID: {ticket.id} • Presenta este QR en el acceso
+                            ID: {ticket.id.slice(0, 8)} • Presenta este QR en el acceso
                         </p>
                     </div>
                 )}
@@ -143,9 +116,20 @@ function TicketCard({ ticket }: { ticket: typeof MOCK_TICKETS[0] }) {
 
 export default function UserWallet() {
     const { user, logout } = useAuth();
+    const [tickets, setTickets] = useState<MyTicketRecord[]>([]);
+    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('all');
 
-    const filtered = MOCK_TICKETS.filter((t) => filter === 'all' || t.status === filter);
+    useEffect(() => {
+        dataService.getTicketsForOwner().then((t) => { setTickets(t); setLoading(false); });
+    }, []);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const isUpcoming = (t: MyTicketRecord) => !t.eventDate || t.eventDate >= today;
+
+    const filtered = tickets.filter((t) => filter === 'all' || (filter === 'upcoming' ? isUpcoming(t) : !isUpcoming(t)));
+    const upcomingCount = tickets.filter(isUpcoming).length;
+    const totalInvested = tickets.filter((t) => t.status !== 'cancelled').reduce((s, t) => s + t.unitPrice, 0);
 
     return (
         <div style={{ minHeight: '100vh', background: '#0d0b1e' }}>
@@ -188,16 +172,16 @@ export default function UserWallet() {
                         </h1>
                     </div>
                     <p style={{ color: 'rgba(240,237,255,0.5)', fontSize: '15px' }}>
-                        {MOCK_TICKETS.filter(t => t.status === 'upcoming').length} boleto(s) próximos • {MOCK_TICKETS.filter(t => t.status === 'past').length} usados
+                        {upcomingCount} boleto(s) próximos • {tickets.length - upcomingCount} pasados
                     </p>
                 </div>
 
                 {/* Stats bar */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }} className="wallet-stats">
                     {[
-                        { label: 'Total boletos', value: MOCK_TICKETS.length, color: '#a78bfa', emoji: '🎟️' },
-                        { label: 'Próximos eventos', value: MOCK_TICKETS.filter(t => t.status === 'upcoming').length, color: '#10b981', emoji: '📅' },
-                        { label: 'Total invertido', value: `$${MOCK_TICKETS.reduce((s, t) => s + t.price, 0).toLocaleString()} MXN`, color: '#f59e0b', emoji: '💰' },
+                        { label: 'Total boletos', value: tickets.length, color: '#a78bfa', emoji: '🎟️' },
+                        { label: 'Próximos eventos', value: upcomingCount, color: '#10b981', emoji: '📅' },
+                        { label: 'Total invertido', value: `$${totalInvested.toLocaleString()} MXN`, color: '#f59e0b', emoji: '💰' },
                     ].map((s) => (
                         <div key={s.label} style={{ padding: '20px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', gap: '14px' }}>
                             <span style={{ fontSize: '28px' }}>{s.emoji}</span>
@@ -228,7 +212,7 @@ export default function UserWallet() {
                     ))}
                     <div style={{ marginLeft: 'auto' }}>
                         <Link
-                            to="/checkout/evt_001"
+                            to="/events"
                             style={{
                                 padding: '8px 18px', borderRadius: '10px', textDecoration: 'none', fontSize: '13px', fontWeight: 600,
                                 background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)',
@@ -242,19 +226,23 @@ export default function UserWallet() {
                     </div>
                 </div>
 
-                {/* Tickets grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '20px' }}>
-                    {filtered.map((ticket) => (
-                        <TicketCard key={ticket.id} ticket={ticket} />
-                    ))}
-                </div>
+                {loading && <p style={{ color: 'rgba(240,237,255,0.4)' }}>Cargando tus boletos...</p>}
 
-                {filtered.length === 0 && (
+                {/* Tickets grid */}
+                {!loading && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '20px' }}>
+                        {filtered.map((ticket) => (
+                            <TicketCard key={ticket.id} ticket={ticket} isUpcoming={isUpcoming(ticket)} />
+                        ))}
+                    </div>
+                )}
+
+                {!loading && filtered.length === 0 && (
                     <div style={{ textAlign: 'center', padding: '80px 20px' }}>
                         <span style={{ fontSize: '64px', display: 'block', marginBottom: '16px' }}>🎟️</span>
                         <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#f0edff', marginBottom: '8px' }}>No tienes boletos aquí</h3>
                         <p style={{ color: 'rgba(240,237,255,0.5)', marginBottom: '24px' }}>¡Explora eventos increíbles y compra tu primer boleto!</p>
-                        <Link to="/checkout/evt_001" style={{ padding: '12px 28px', borderRadius: '12px', background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', color: 'white', textDecoration: 'none', fontWeight: 700 }}>
+                        <Link to="/events" style={{ padding: '12px 28px', borderRadius: '12px', background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', color: 'white', textDecoration: 'none', fontWeight: 700 }}>
                             Ver Eventos
                         </Link>
                     </div>

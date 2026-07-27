@@ -10,7 +10,9 @@ import {
   RotateCcw,
   Gift,
   MapPin,
-  X
+  X,
+  Pencil,
+  Image as ImageIcon
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { dataService, EventRecord, TicketRecord } from "../../services/dataService";
@@ -29,6 +31,8 @@ export default function EventDetail() {
   const [showCourtesyForm, setShowCourtesyForm] = useState(false);
   const [courtesyForm, setCourtesyForm] = useState({ ticketTypeId: "", name: "", email: "" });
   const [assigningCourtesy, setAssigningCourtesy] = useState(false);
+
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const load = async () => {
     if (!eventId) return;
@@ -147,6 +151,13 @@ export default function EventDetail() {
           </div>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-card border border-border rounded-xl font-bold hover:bg-secondary transition-all"
+          >
+            <Pencil className="w-5 h-5" />
+            Editar Evento
+          </button>
           <Link
             to={`/organization/event/${eventId}/venue-designer`}
             className="flex items-center justify-center gap-2 px-6 py-3 bg-card border border-border rounded-xl font-bold hover:bg-secondary transition-all"
@@ -225,6 +236,10 @@ export default function EventDetail() {
             </form>
           </div>
         </div>
+      )}
+
+      {showEditModal && (
+        <EditEventModal event={event} onClose={() => setShowEditModal(false)} onSaved={load} />
       )}
 
       {/* KPI Stats */}
@@ -354,6 +369,115 @@ export default function EventDetail() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function EditEventModal({ event, onClose, onSaved }: { event: EventRecord; onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState(event.name);
+  const [category, setCategory] = useState(event.category ?? "");
+  const [description, setDescription] = useState(event.description ?? "");
+  const [imageUrl, setImageUrl] = useState<string | null>(event.imageUrl);
+  const [imagePreview, setImagePreview] = useState<string | null>(event.imageUrl);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError("");
+    setUploadingImage(true);
+    try {
+      const url = await dataService.uploadEventImage(file, event.organizationId);
+      setImageUrl(url);
+      setImagePreview(url);
+    } catch (err: any) {
+      setError(err.message || "No se pudo subir la imagen");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      await dataService.updateEvent(event.id, { name, category, description, imageUrl });
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      setError(err.message || "No se pudo guardar el evento");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-card rounded-2xl border border-border shadow-xl p-8 max-w-lg w-full space-y-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-bold flex items-center gap-2"><Pencil className="w-5 h-5 text-primary" /> Editar Evento</h3>
+          <button onClick={onClose} className="p-2 hover:bg-secondary rounded-lg"><X className="w-4 h-4" /></button>
+        </div>
+
+        <form onSubmit={handleSave} className="space-y-4">
+          <div>
+            <label className="text-sm font-bold text-muted-foreground mb-2 block">Imagen del Evento</label>
+            <div className="relative aspect-video rounded-xl bg-secondary/50 border-2 border-dashed border-border flex flex-col items-center justify-center overflow-hidden group">
+              {uploadingImage ? (
+                <p className="text-xs text-muted-foreground">Subiendo imagen...</p>
+              ) : imagePreview ? (
+                <>
+                  <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button type="button" onClick={() => { setImagePreview(null); setImageUrl(null); }} className="p-2 bg-red-600 text-white rounded-lg">Eliminar</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="w-10 h-10 text-muted-foreground/30 mb-2" />
+                  <p className="text-xs text-muted-foreground">Arrastra o selecciona una imagen</p>
+                  <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                </>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-muted-foreground mb-2 block">Nombre del Evento</label>
+            <input
+              value={name} onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-muted-foreground mb-2 block">Categoría</label>
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none">
+              <option value="concierto">Concierto</option>
+              <option value="festival">Festival</option>
+              <option value="teatro">Teatro</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-muted-foreground mb-2 block">Descripción</label>
+            <textarea
+              value={description} onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none resize-none"
+            />
+          </div>
+
+          {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
+
+          <button type="submit" disabled={saving || uploadingImage} className="w-full py-3 bg-primary text-white rounded-xl font-bold disabled:opacity-60">
+            {saving ? "Guardando..." : "Guardar Cambios"}
+          </button>
+        </form>
       </div>
     </div>
   );

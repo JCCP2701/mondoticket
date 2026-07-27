@@ -8,6 +8,7 @@ export default function OrganizationEvents() {
     const { activeOrganizationId } = useAuth();
     const [searchTerm, setSearchTerm] = useState("");
     const [events, setEvents] = useState<EventRecord[]>([]);
+    const [feePercentage, setFeePercentage] = useState(10);
     const [statsByEvent, setStatsByEvent] = useState<Record<string, { courtesyCount: number; refundedCount: number }>>({});
 
     useEffect(() => {
@@ -16,9 +17,13 @@ export default function OrganizationEvents() {
             setEvents(evs);
             dataService.getEventStatsSummary(evs.map((e) => e.id)).then(setStatsByEvent);
         });
+        dataService.getOrganizations().then((orgs) => {
+            const org = orgs.find((o) => o.id === activeOrganizationId);
+            if (org) setFeePercentage(org.feePercentage);
+        });
     }, [activeOrganizationId]);
 
-    const mockEvents = events.map((e) => {
+    const eventRows = events.map((e) => {
         const sold = e.ticketTypes.reduce((s, t) => s + t.sold, 0);
         const totalCapacity = e.ticketTypes.reduce((s, t) => s + t.capacity, 0);
         const revenue = e.ticketTypes.reduce((s, t) => s + t.sold * t.price, 0);
@@ -31,7 +36,7 @@ export default function OrganizationEvents() {
             sold,
             presaleActive: e.status === "upcoming",
             revenue,
-            platformFee: revenue * 0.1,
+            platformFee: revenue * (feePercentage / 100),
             status: e.status,
             courtesyCount: statsByEvent[e.id]?.courtesyCount ?? 0,
             refundedCount: statsByEvent[e.id]?.refundedCount ?? 0,
@@ -87,7 +92,7 @@ export default function OrganizationEvents() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                            {mockEvents.map((event) => {
+                            {eventRows.map((event) => {
                                 const occupancyPercent = event.totalCapacity ? (event.sold / event.totalCapacity) * 100 : 0;
                                 return (
                                     <tr key={event.id} className="hover:bg-secondary/10 transition-colors group">

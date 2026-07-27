@@ -1,0 +1,6 @@
+Las 4 cuentas demo (todas con Demo123!, ninguna pide MFA):
+
+superadmin@demo.com
+organization@demo.com
+taquilla@demo.com
+user@demo.com

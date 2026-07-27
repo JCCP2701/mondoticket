@@ -1,6 +1,9 @@
 import { createBrowserRouter } from "react-router";
 import Root from "./components/Root";
 import LandingPage from "./components/landing/LandingPage";
+import AllEventsPage from "./components/landing/AllEventsPage";
+import PrivacyPolicy from "./components/landing/PrivacyPolicy";
+import TermsAndConditions from "./components/landing/TermsAndConditions";
 import LoginPage from "./components/auth/LoginPage";
 import MFAPage from "./components/auth/MFAPage";
 import RegisterPage from "./components/auth/RegisterPage";
@@ -32,6 +35,9 @@ export const router = createBrowserRouter([
         children: [
             // Public routes
             { index: true, Component: LandingPage },
+            { path: "events", Component: AllEventsPage },
+            { path: "privacidad", Component: PrivacyPolicy },
+            { path: "terminos", Component: TermsAndConditions },
             { path: "login", Component: LoginPage },
             { path: "mfa", Component: MFAPage },
             { path: "register", Component: RegisterPage },

@@ -15,6 +15,9 @@ export interface Organization {
     feePercentage: number;
     paymentTerms: number;
     contractNotes?: string;
+    maxEventsPerMonth?: number | null;
+    courtesyTicketsPerEvent?: number | null;
+    taquillaFeePercentage?: number | null;
     status: 'active' | 'pending' | 'suspended';
     createdAt: string;
 }
@@ -41,6 +44,7 @@ export interface EventRecord {
     status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
     ticketTypes: TicketType[];
     hasSeatMap: boolean;
+    imageUrl: string | null;
 }
 
 export interface SeatRecord {
@@ -69,6 +73,23 @@ export interface TicketRecord {
     createdAt: string;
 }
 
+export interface MyTicketRecord {
+    id: string;
+    orderId: string;
+    status: 'valid' | 'used' | 'cancelled';
+    qrCode: string;
+    ticketTypeName: string;
+    unitPrice: number;
+    seatLabel: string | null;
+    eventId: string;
+    eventName: string;
+    eventDate: string;
+    eventCategory: string | null;
+    eventImageUrl: string | null;
+    venueName: string;
+    createdAt: string;
+}
+
 // ─── Mapping helpers ────────────────────────────────────────────────────────
 
 function mapOrganization(row: any): Organization {
@@ -84,6 +105,9 @@ function mapOrganization(row: any): Organization {
         feePercentage: Number(row.fee_percentage),
         paymentTerms: row.payment_terms,
         contractNotes: row.contract_notes ?? undefined,
+        maxEventsPerMonth: row.max_events_per_month ?? null,
+        courtesyTicketsPerEvent: row.courtesy_tickets_per_event ?? null,
+        taquillaFeePercentage: row.taquilla_fee_percentage != null ? Number(row.taquilla_fee_percentage) : null,
         status: row.status,
         createdAt: row.created_at,
     };
@@ -114,6 +138,7 @@ function mapEvent(row: any): EventRecord {
         // Checkout/taquilla must branch per ticket type, not on this,
         // since a single event can mix seat-mapped and quantity-based types.
         hasSeatMap: (row.event_ticket_types ?? []).some((t: any) => (t.event_seats?.[0]?.count ?? 0) > 0),
+        imageUrl: row.image_url ?? null,
     };
 }
 
@@ -130,7 +155,7 @@ function mapSeat(row: any): SeatRecord {
     };
 }
 
-const EVENT_SELECT = 'id, organization_id, name, description, category, venue_id, event_date, status, venues(name), event_ticket_types(id, name, description, price, capacity, sold, event_seats(count))';
+const EVENT_SELECT = 'id, organization_id, name, description, category, venue_id, event_date, status, image_url, venues(name), event_ticket_types(id, name, description, price, capacity, sold, event_seats(count))';
 
 // ─── Data Service ─────────────────────────────────────────────────────────────
 export const dataService = {
@@ -171,6 +196,28 @@ export const dataService = {
         if (error) throw error;
     },
 
+    async updateOrganizationContract(id: string, input: {
+        feePercentage: number;
+        paymentTerms: number;
+        contractNotes?: string;
+        maxEventsPerMonth?: number | null;
+        courtesyTicketsPerEvent?: number | null;
+        taquillaFeePercentage?: number | null;
+    }): Promise<void> {
+        const { error } = await supabase
+            .from('organizations')
+            .update({
+                fee_percentage: input.feePercentage,
+                payment_terms: input.paymentTerms,
+                contract_notes: input.contractNotes ?? null,
+                max_events_per_month: input.maxEventsPerMonth ?? null,
+                courtesy_tickets_per_event: input.courtesyTicketsPerEvent ?? null,
+                taquilla_fee_percentage: input.taquillaFeePercentage ?? null,
+            })
+            .eq('id', id);
+        if (error) throw error;
+    },
+
     // Events
     async getEvents(): Promise<EventRecord[]> {
         const { data, error } = await supabase.from('events').select(EVENT_SELECT).order('event_date');
@@ -203,6 +250,7 @@ export const dataService = {
         venueAddress: string;
         date: string;
         instructions?: string;
+        imageUrl?: string | null;
         ticketTypes: { name: string; description?: string; price: number; capacity: number }[];
     }): Promise<EventRecord> {
         const { data: venue, error: venueError } = await supabase
@@ -222,6 +270,7 @@ export const dataService = {
                 category: input.category,
                 event_date: input.date,
                 instructions: input.instructions,
+                image_url: input.imageUrl ?? null,
             })
             .select('*')
             .single();
@@ -242,6 +291,28 @@ export const dataService = {
         const created = await dataService.getEventById(event.id);
         if (!created) throw new Error('Failed to load created event');
         return created;
+    },
+
+    // Uploads a real event cover image to the public 'event-images' storage
+    // bucket and returns its public URL. Keyed by organizationId (not
+    // eventId) since this runs from CreateEvent.tsx before the event exists.
+    async uploadEventImage(file: File, organizationId: string): Promise<string> {
+        const ext = file.name.split('.').pop() || 'jpg';
+        const path = `${organizationId}/${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage.from('event-images').upload(path, file, { upsert: false });
+        if (error) throw error;
+        const { data } = supabase.storage.from('event-images').getPublicUrl(path);
+        return data.publicUrl;
+    },
+
+    async updateEvent(id: string, input: { name?: string; description?: string; category?: string; imageUrl?: string | null }): Promise<void> {
+        const patch: Record<string, unknown> = {};
+        if (input.name !== undefined) patch.name = input.name;
+        if (input.description !== undefined) patch.description = input.description;
+        if (input.category !== undefined) patch.category = input.category;
+        if (input.imageUrl !== undefined) patch.image_url = input.imageUrl;
+        const { error } = await supabase.from('events').update(patch).eq('id', id);
+        if (error) throw error;
     },
 
     // Users (profiles) — readable by the profile owner or a superadmin (RLS-enforced)
@@ -293,6 +364,73 @@ export const dataService = {
             orgCount: orgs.length,
             eventCount: events.length,
         };
+    },
+
+    // Real per-organization -> per-event finance breakdown (superadmin
+    // Finanzas page). Revenue is computed from actual non-cancelled tickets
+    // (same model EventDetail.tsx uses), split by the order's sales_channel
+    // so a taquilla-specific fee (org.taquillaFeePercentage) can apply
+    // separately from the digital fee.
+    async getFinanceSummaryByOrganization(): Promise<{
+        organization: Organization;
+        events: { event: EventRecord; revenueOnline: number; revenueTaquilla: number; profit: number }[];
+        totalRevenue: number;
+        totalProfit: number;
+    }[]> {
+        const [orgs, events, ticketsRes] = await Promise.all([
+            dataService.getOrganizations(),
+            dataService.getEvents(),
+            supabase.from('tickets').select('event_id, status, event_ticket_types(price), orders(organization_id, sales_channel)'),
+        ]);
+        if (ticketsRes.error) throw ticketsRes.error;
+
+        const perEvent: Record<string, { online: number; taquilla: number }> = {};
+        for (const row of (ticketsRes.data ?? []) as any[]) {
+            if (row.status === 'cancelled') continue;
+            const price = Number(row.event_ticket_types?.price ?? 0);
+            const channel: 'online' | 'taquilla' = row.orders?.sales_channel === 'taquilla' ? 'taquilla' : 'online';
+            const bucket = perEvent[row.event_id] ?? (perEvent[row.event_id] = { online: 0, taquilla: 0 });
+            bucket[channel] += price;
+        }
+
+        return orgs.map((organization) => {
+            const orgEvents = events.filter((e) => e.organizationId === organization.id);
+            const taquillaFeePct = organization.taquillaFeePercentage ?? organization.feePercentage;
+            const eventSummaries = orgEvents.map((event) => {
+                const bucket = perEvent[event.id] ?? { online: 0, taquilla: 0 };
+                const profit = (bucket.online * organization.feePercentage) / 100 + (bucket.taquilla * taquillaFeePct) / 100;
+                return { event, revenueOnline: bucket.online, revenueTaquilla: bucket.taquilla, profit };
+            });
+            const totalRevenue = eventSummaries.reduce((s, e) => s + e.revenueOnline + e.revenueTaquilla, 0);
+            const totalProfit = eventSummaries.reduce((s, e) => s + e.profit, 0);
+            return { organization, events: eventSummaries, totalRevenue, totalProfit };
+        });
+    },
+
+    // Real monthly gross revenue for the last N months (superadmin dashboard
+    // chart), computed from actual paid/refunded orders instead of a
+    // hand-typed placeholder series. Zero-fills months with no orders.
+    async getMonthlyRevenueSeries(months: number = 6): Promise<{ month: string; revenue: number }[]> {
+        const { data, error } = await supabase
+            .from('orders')
+            .select('paid_at, subtotal')
+            .in('status', ['paid', 'refunded'])
+            .not('paid_at', 'is', null);
+        if (error) throw error;
+
+        const now = new Date();
+        const buckets: { key: string; label: string; revenue: number }[] = [];
+        for (let i = months - 1; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            buckets.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString('es-MX', { month: 'short' }), revenue: 0 });
+        }
+        const byKey = new Map(buckets.map((b) => [b.key, b]));
+        for (const row of (data ?? []) as any[]) {
+            const d = new Date(row.paid_at);
+            const bucket = byKey.get(`${d.getFullYear()}-${d.getMonth()}`);
+            if (bucket) bucket.revenue += Number(row.subtotal ?? 0);
+        }
+        return buckets.map((b) => ({ month: b.label, revenue: b.revenue }));
     },
 
     // Seat map
@@ -374,6 +512,7 @@ export const dataService = {
         paymentIntentId: string;
         items?: { ticketTypeId: string; quantity: number }[];
         seatIds?: string[];
+        salesChannel?: 'online' | 'taquilla';
     }): Promise<string> {
         const { data, error } = await supabase.rpc('create_order_and_tickets', {
             p_event_id: input.eventId,
@@ -385,6 +524,7 @@ export const dataService = {
             p_stripe_payment_intent_id: input.paymentIntentId,
             p_items: input.items ? input.items.map((i) => ({ ticket_type_id: i.ticketTypeId, quantity: i.quantity })) : null,
             p_seat_ids: input.seatIds ?? null,
+            p_sales_channel: input.salesChannel ?? 'online',
         });
         if (error) throw error;
         return data as string;
@@ -412,6 +552,35 @@ export const dataService = {
             customerName: row.orders?.customer_name ?? '',
             customerEmail: row.orders?.customer_email ?? '',
             orderTotal: Number(row.orders?.total ?? 0),
+            createdAt: row.created_at,
+        }));
+    },
+
+    // The logged-in buyer's own tickets, across every organization they've
+    // bought from (User Wallet). No client-side filter needed — RLS already
+    // restricts tickets to owner_profile_id = auth.uid() for a 'user' role.
+    async getTicketsForOwner(): Promise<MyTicketRecord[]> {
+        const { data, error } = await supabase
+            .from('tickets')
+            .select(
+                'id, order_id, status, qr_code, created_at, event_ticket_types(name, price), event_seats(row_label, seat_number), events(id, name, event_date, category, image_url, venues(name))'
+            )
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            id: row.id,
+            orderId: row.order_id,
+            status: row.status,
+            qrCode: row.qr_code,
+            ticketTypeName: row.event_ticket_types?.name ?? '',
+            unitPrice: Number(row.event_ticket_types?.price ?? 0),
+            seatLabel: row.event_seats ? `${row.event_seats.row_label}-${row.event_seats.seat_number}` : null,
+            eventId: row.events?.id ?? '',
+            eventName: row.events?.name ?? '',
+            eventDate: row.events?.event_date ?? '',
+            eventCategory: row.events?.category ?? null,
+            eventImageUrl: row.events?.image_url ?? null,
+            venueName: row.events?.venues?.name ?? '',
             createdAt: row.created_at,
         }));
     },
@@ -487,6 +656,15 @@ export const dataService = {
 
     async addExistingUserToOrganization(profileId: string, organizationId: string): Promise<void> {
         const { error } = await supabase.from('organization_members').insert({ profile_id: profileId, organization_id: organizationId });
+        if (error) throw error;
+    },
+
+    async removeUserFromOrganization(profileId: string, organizationId: string): Promise<void> {
+        const { error } = await supabase
+            .from('organization_members')
+            .delete()
+            .eq('profile_id', profileId)
+            .eq('organization_id', organizationId);
         if (error) throw error;
     },
 

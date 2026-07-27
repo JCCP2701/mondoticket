@@ -4,11 +4,31 @@ import { Ticket, Twitter, Instagram, Linkedin, Mail } from 'lucide-react';
 export default function Footer() {
     const year = new Date().getFullYear();
 
-    const links = {
-        Producto: ['Características', 'Precios', 'Integraciones', 'API Docs'],
-        Empresa: ['Nosotros', 'Blog', 'Prensa', 'Empleos'],
-        Soporte: ['Centro de Ayuda', 'Contacto', 'Status', 'Seguridad'],
-        Legal: ['Privacidad', 'Términos', 'Cookies', 'GDPR'],
+    const links: Record<string, { label: string; to: string }[]> = {
+        Producto: [
+            { label: 'Características', to: '/#features' },
+            { label: 'Precios', to: '/#pricing' },
+            { label: 'Integraciones', to: '#' },
+            { label: 'API Docs', to: '#' },
+        ],
+        Empresa: [
+            { label: 'Nosotros', to: '/#about' },
+            { label: 'Blog', to: '#' },
+            { label: 'Prensa', to: '#' },
+            { label: 'Empleos', to: '#' },
+        ],
+        Soporte: [
+            { label: 'Centro de Ayuda', to: '#' },
+            { label: 'Contacto', to: 'mailto:soporte@ticketblessing.com' },
+            { label: 'Status', to: '#' },
+            { label: 'Seguridad', to: '#' },
+        ],
+        Legal: [
+            { label: 'Privacidad', to: '/privacidad' },
+            { label: 'Términos', to: '/terminos' },
+            { label: 'Cookies', to: '/privacidad' },
+            { label: 'GDPR', to: '/privacidad' },
+        ],
     };
 
     return (
@@ -69,18 +89,25 @@ export default function Footer() {
                                 {category}
                             </h4>
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {items.map((item) => (
-                                    <li key={item}>
-                                        <Link
-                                            to="#"
-                                            style={{ fontSize: '14px', color: 'rgba(240,237,255,0.4)', textDecoration: 'none', transition: 'color 0.2s' }}
-                                            onMouseEnter={(e) => (e.currentTarget.style.color = '#a78bfa')}
-                                            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(240,237,255,0.4)')}
-                                        >
-                                            {item}
-                                        </Link>
-                                    </li>
-                                ))}
+                                {items.map((item) => {
+                                    const linkStyle = { fontSize: '14px', color: 'rgba(240,237,255,0.4)', textDecoration: 'none', transition: 'color 0.2s' };
+                                    const hoverIn = (e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.color = '#a78bfa');
+                                    const hoverOut = (e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.color = 'rgba(240,237,255,0.4)');
+                                    const isExternal = item.to.startsWith('mailto:') || item.to.startsWith('http');
+                                    return (
+                                        <li key={item.label}>
+                                            {isExternal ? (
+                                                <a href={item.to} style={linkStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
+                                                    {item.label}
+                                                </a>
+                                            ) : (
+                                                <Link to={item.to} style={linkStyle} onMouseEnter={hoverIn} onMouseLeave={hoverOut}>
+                                                    {item.label}
+                                                </Link>
+                                            )}
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </div>
                     ))}

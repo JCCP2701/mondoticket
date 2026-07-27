@@ -79,6 +79,7 @@ export default function TaquillaDashboard() {
         paymentIntentId: `taquilla_${paymentNote}_${Date.now()}`,
         items: items.length > 0 ? items : undefined,
         seatIds: selectedSeats.length > 0 ? selectedSeats.map((s) => s.seatId) : undefined,
+        salesChannel: 'taquilla',
       });
       setLastSaleOrderId(orderId);
       resetSelection();
@@ -134,6 +135,11 @@ export default function TaquillaDashboard() {
         {event && (
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
+              {event.imageUrl && (
+                <div className="rounded-2xl border border-border overflow-hidden h-48">
+                  <img src={event.imageUrl} alt={event.name} className="w-full h-full object-cover" />
+                </div>
+              )}
               <div className="bg-card p-6 rounded-2xl border border-border">
                 <h3 className="font-bold mb-4">Selecciona boletos</h3>
                 {seatError && <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{seatError}</div>}
