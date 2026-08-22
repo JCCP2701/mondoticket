@@ -2,46 +2,40 @@ import { ShieldCheck, Zap, BarChart3, Building2, CreditCard, QrCode } from 'luci
 
 const features = [
     {
-        icon: <Zap size={28} color="#8b5cf6" />,
+        icon: <Zap size={28} />,
         title: 'Venta Online Instantánea',
         desc: 'Publica tu evento y empieza a vender en minutos. Sin configuraciones complicadas.',
-        gradient: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(139,92,246,0.05))',
-        glow: 'rgba(124,58,237,0.2)',
+        accent: 'var(--mt-gold)',
     },
     {
-        icon: <QrCode size={28} color="#f59e0b" />,
+        icon: <QrCode size={28} />,
         title: 'Boletos con QR Único',
         desc: 'Cada boleto genera un código QR único e infalsificable. Escaneo rápido en acceso.',
-        gradient: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.05))',
-        glow: 'rgba(245,158,11,0.2)',
+        accent: 'var(--mt-green)',
     },
     {
-        icon: <BarChart3 size={28} color="#10b981" />,
+        icon: <BarChart3 size={28} />,
         title: 'Analytics en Tiempo Real',
         desc: 'Visualiza ventas, ingresos y métricas de tus eventos en dashboards interactivos.',
-        gradient: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(52,211,153,0.05))',
-        glow: 'rgba(16,185,129,0.2)',
+        accent: 'var(--mt-gold)',
     },
     {
-        icon: <Building2 size={28} color="#a78bfa" />,
+        icon: <Building2 size={28} />,
         title: 'Multi-Organización',
         desc: 'Administra múltiples organizadores y eventos desde un solo panel de control.',
-        gradient: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(196,181,253,0.05))',
-        glow: 'rgba(167,139,250,0.2)',
+        accent: 'var(--mt-green)',
     },
     {
-        icon: <CreditCard size={28} color="#f43f5e" />,
+        icon: <CreditCard size={28} />,
         title: 'Pagos con Stripe',
         desc: 'Integración nativa con Stripe. Acepta tarjetas, OXXO y más. Liquidaciones automáticas.',
-        gradient: 'linear-gradient(135deg, rgba(244,63,94,0.15), rgba(251,113,133,0.05))',
-        glow: 'rgba(244,63,94,0.2)',
+        accent: 'var(--mt-gold)',
     },
     {
-        icon: <ShieldCheck size={28} color="#06b6d4" />,
+        icon: <ShieldCheck size={28} />,
         title: 'Seguridad con MFA',
         desc: 'Autenticación de doble factor para todos los roles. Tu plataforma siempre protegida.',
-        gradient: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(34,211,238,0.05))',
-        glow: 'rgba(6,182,212,0.2)',
+        accent: 'var(--mt-green)',
     },
 ];
 
@@ -51,75 +45,44 @@ export default function FeaturesSection() {
             id="features"
             style={{
                 padding: '100px 24px',
-                background: 'linear-gradient(180deg, #0d0b1e 0%, #0f0d26 100%)',
+                background: 'var(--mt-black)',
                 position: 'relative',
-                overflow: 'hidden',
             }}
         >
-            {/* Background decoration */}
-            <div style={{
-                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                width: '800px', height: '800px', borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 70%)',
-                pointerEvents: 'none',
-            }} />
-
             <div style={{ maxWidth: '1280px', margin: '0 auto', position: 'relative' }}>
                 {/* Section header */}
-                <div style={{ textAlign: 'center', marginBottom: '72px' }}>
-                    <span style={{
-                        display: 'inline-block', padding: '4px 16px', borderRadius: '20px', marginBottom: '16px',
-                        background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)',
-                        fontSize: '13px', fontWeight: 600, color: '#a78bfa', letterSpacing: '0.08em',
-                    }}>
-                        ✦ FUNCIONALIDADES
+                <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+                    <span className="mt-badge mt-badge-on-dark" style={{ marginBottom: '16px' }}>
+                        Funcionalidades
                     </span>
                     <h2 style={{
-                        fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f0edff',
-                        marginBottom: '16px', lineHeight: 1.15,
+                        fontSize: 'clamp(30px, 3.6vw, 46px)', fontWeight: 800, color: 'var(--mt-white)',
+                        marginBottom: '16px', lineHeight: 1.15, letterSpacing: '-0.02em',
                     }}>
                         Todo lo que necesitas para{' '}
-                        <span className="tb-gradient-text">triunfar</span>
+                        <span className="mt-gradient-gold-text">triunfar</span>
                     </h2>
-                    <p style={{ fontSize: '18px', color: 'rgba(240,237,255,0.55)', maxWidth: '560px', margin: '0 auto', lineHeight: 1.7 }}>
+                    <p style={{ fontSize: '17px', color: 'var(--mt-muted-on-dark)', maxWidth: '560px', margin: '0 auto', lineHeight: 1.7 }}>
                         MondoTicket combina tecnología de punta con una UX impecable para llevar tus eventos al siguiente nivel.
                     </p>
                 </div>
 
-                {/* Features grid */}
+                {/* Features grid — plain icon + text, no card chrome */}
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: '24px',
+                    columnGap: '32px',
+                    rowGap: '48px',
                 }} className="features-grid">
                     {features.map((f, i) => (
-                        <div
-                            key={i}
-                            className="tb-card-hover"
-                            style={{
-                                padding: '32px', borderRadius: '20px',
-                                background: f.gradient,
-                                border: `1px solid ${f.glow}`,
-                                position: 'relative', overflow: 'hidden',
-                            }}
-                        >
-                            {/* Glow accent */}
-                            <div style={{
-                                position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px',
-                                borderRadius: '50%', background: f.glow, filter: 'blur(30px)', opacity: 0.4, pointerEvents: 'none',
-                            }} />
-
-                            <div style={{
-                                width: '56px', height: '56px', borderRadius: '14px',
-                                background: 'rgba(13,11,30,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                marginBottom: '20px', backdropFilter: 'blur(10px)',
-                            }}>
+                        <div key={i}>
+                            <div style={{ color: f.accent, marginBottom: '16px' }}>
                                 {f.icon}
                             </div>
-                            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#f0edff', marginBottom: '10px' }}>
+                            <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--mt-white)', marginBottom: '8px' }}>
                                 {f.title}
                             </h3>
-                            <p style={{ fontSize: '14px', color: 'rgba(240,237,255,0.55)', lineHeight: 1.7 }}>
+                            <p style={{ fontSize: '14px', color: 'var(--mt-muted-on-dark)', lineHeight: 1.65 }}>
                                 {f.desc}
                             </p>
                         </div>

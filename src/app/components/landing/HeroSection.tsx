@@ -1,88 +1,83 @@
 import { useNavigate } from 'react-router';
-import { Zap, Shield, ChevronDown } from 'lucide-react';
+import { ShieldCheck, CreditCard, QrCode, LayoutDashboard, Ticket, Users, BarChart3, ArrowRight } from 'lucide-react';
 
-// Floating ticket visual
-function FloatingTicket() {
+const TRUST_ITEMS = [
+    { icon: ShieldCheck, label: 'MFA protegido' },
+    { icon: CreditCard, label: 'Pagos con Stripe' },
+    { icon: QrCode, label: 'Boletos con QR único' },
+];
+
+const MOCK_EVENTS = [
+    { name: 'Festival Conexión MX', date: '15 Ago', status: 'Activo', statusTone: 'green' as const },
+    { name: 'Noche de Jazz — Foro Sol', date: '22 Ago', status: 'Activo', statusTone: 'green' as const },
+    { name: 'Copa MX Final', date: '02 Sep', status: 'Agotado', statusTone: 'gold' as const },
+];
+
+function DashboardMock() {
     return (
-        <div className="animate-float" style={{ perspective: '1000px' }}>
+        <div style={{
+            background: 'var(--mt-white)',
+            border: '1px solid var(--mt-line)',
+            borderRadius: '14px',
+            overflow: 'hidden',
+            boxShadow: '0 24px 60px rgba(19,18,15,0.08)',
+            display: 'flex',
+            width: '100%',
+            maxWidth: '460px',
+        }}>
+            {/* Icon rail */}
             <div style={{
-                width: '340px', maxWidth: '90vw',
-                background: 'linear-gradient(135deg, #13102a, #1a1535)',
-                borderRadius: '20px', overflow: 'hidden', position: 'relative',
-                boxShadow: '0 30px 80px rgba(124, 58, 237, 0.3), 0 0 0 1px rgba(139, 92, 246, 0.2)',
-                transform: 'rotate(-4deg) rotateX(8deg)',
+                width: '52px', background: 'var(--mt-black)', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', gap: '20px', padding: '20px 0', flexShrink: 0,
             }}>
-                {/* Holographic shimmer overlay */}
-                <div style={{
-                    position: 'absolute', inset: 0,
-                    background: 'linear-gradient(135deg, transparent 40%, rgba(139,92,246,0.08) 50%, transparent 60%)',
-                    pointerEvents: 'none',
-                }} />
+                <LayoutDashboard size={17} color="var(--mt-gold)" />
+                <Ticket size={17} color="rgba(255,255,255,0.4)" />
+                <Users size={17} color="rgba(255,255,255,0.4)" />
+                <BarChart3 size={17} color="rgba(255,255,255,0.4)" />
+            </div>
 
-                {/* Top gradient band */}
-                <div style={{
-                    height: '6px',
-                    background: 'linear-gradient(90deg, #7c3aed, #f59e0b, #10b981, #7c3aed)',
-                    backgroundSize: '200% 100%',
-                    animation: 'shimmer 3s linear infinite',
-                }} />
-
-                <div style={{ padding: '24px' }}>
-                    {/* Event badge */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                        <span style={{ padding: '4px 10px', borderRadius: '20px', background: 'rgba(245,158,11,0.15)', color: '#f59e0b', fontSize: '11px', fontWeight: 700, border: '1px solid rgba(245,158,11,0.3)' }}>
-                            ✦ PREMIUM
-                        </span>
-                        <span style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)' }}>ID: #TB-7821</span>
-                    </div>
-
-                    {/* Event name */}
-                    <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#f0edff', marginBottom: '6px' }}>
-                        Festival Conexión MX
-                    </h3>
-                    <p style={{ fontSize: '13px', color: 'rgba(240,237,255,0.6)', marginBottom: '20px' }}>
-                        📍 Foro Sol, CDMX &nbsp;·&nbsp; 🗓 15 Ago 2025
-                    </p>
-
-                    {/* Divider */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                        <div style={{ flex: 1, height: '1px', background: 'repeating-linear-gradient(90deg, rgba(139,92,246,0.3) 0px, rgba(139,92,246,0.3) 6px, transparent 6px, transparent 12px)' }} />
-                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#0d0b1e' }} />
-                        <div style={{ flex: 1, height: '1px', background: 'repeating-linear-gradient(90deg, rgba(139,92,246,0.3) 0px, rgba(139,92,246,0.3) 6px, transparent 6px, transparent 12px)' }} />
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        {/* QR placeholder */}
-                        <div style={{
-                            width: '80px', height: '80px', borderRadius: '10px',
-                            background: 'white', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
-                            padding: '8px', gap: '2px',
-                        }}>
-                            {Array.from({ length: 49 }).map((_, i) => (
-                                <div
-                                    key={i}
-                                    style={{
-                                        background: [0, 1, 2, 7, 9, 14, 21, 22, 27, 28, 29, 35, 42, 43, 44, 45, 47, 48].includes(i) ? '#0d0b1e' : 'white',
-                                        borderRadius: '1px',
-                                    }}
-                                />
-                            ))}
-                        </div>
-                        {/* Ticket info */}
-                        <div style={{ textAlign: 'right' }}>
-                            <p style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)', marginBottom: '4px' }}>GENERAL</p>
-                            <p style={{ fontSize: '28px', fontWeight: 800, color: '#f0edff' }}>$850</p>
-                            <p style={{ fontSize: '12px', color: 'rgba(240,237,255,0.4)' }}>MXN</p>
-                        </div>
-                    </div>
+            <div style={{ flex: 1, padding: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--mt-ink)' }}>Mis eventos</span>
+                    <span style={{ fontSize: '11px', color: 'var(--mt-green)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--mt-green)' }} />
+                        En vivo
+                    </span>
                 </div>
 
-                <style>{`
-          @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-          }
-        `}</style>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '18px' }}>
+                    {MOCK_EVENTS.map((ev) => (
+                        <div key={ev.name} style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '10px 12px', borderRadius: '8px', background: 'var(--mt-offwhite)',
+                        }}>
+                            <div>
+                                <p style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--mt-ink)', marginBottom: '2px' }}>{ev.name}</p>
+                                <p style={{ fontSize: '11px', color: 'var(--mt-muted)' }}>{ev.date}</p>
+                            </div>
+                            <span style={{
+                                fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '20px',
+                                background: ev.statusTone === 'green' ? 'var(--mt-green-wash)' : 'var(--mt-gold-wash)',
+                                color: ev.statusTone === 'green' ? 'var(--mt-green-dark)' : 'var(--mt-gold-dark)',
+                            }}>
+                                {ev.status}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+
+                <div style={{ display: 'flex', gap: '16px', paddingTop: '14px', borderTop: '1px solid var(--mt-line)' }}>
+                    {[
+                        { value: '2.5M+', label: 'Vendidos' },
+                        { value: '340+', label: 'Eventos' },
+                        { value: '99.9%', label: 'Uptime' },
+                    ].map((s) => (
+                        <div key={s.label}>
+                            <p className="mt-gradient-gold-text" style={{ fontSize: '17px', fontWeight: 800, fontFamily: 'Outfit, sans-serif' }}>{s.value}</p>
+                            <p style={{ fontSize: '10.5px', color: 'var(--mt-muted)' }}>{s.label}</p>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );
@@ -92,139 +87,85 @@ export default function HeroSection() {
     const navigate = useNavigate();
 
     return (
-        <section style={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #0d0b1e 0%, #1a0a3d 40%, #0d1b4d 70%, #0d0b1e 100%)',
-            display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden',
-            paddingTop: '72px',
-        }}>
-            {/* Animated background orbs */}
-            <div style={{
-                position: 'absolute', top: '20%', left: '5%', width: '500px', height: '500px',
-                borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%)',
-                filter: 'blur(40px)', pointerEvents: 'none',
-            }} />
-            <div style={{
-                position: 'absolute', bottom: '10%', right: '10%', width: '400px', height: '400px',
-                borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,158,11,0.1) 0%, transparent 70%)',
-                filter: 'blur(40px)', pointerEvents: 'none',
-            }} />
-
-            {/* Grid pattern */}
-            <div style={{
-                position: 'absolute', inset: 0, opacity: 0.03,
-                backgroundImage: 'linear-gradient(#8b5cf6 1px, transparent 1px), linear-gradient(90deg, #8b5cf6 1px, transparent 1px)',
-                backgroundSize: '60px 60px', pointerEvents: 'none',
-            }} />
-
-            <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '80px 24px', width: '100%' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', alignItems: 'center' }}
-                    className="hero-grid">
+        <section style={{ background: 'var(--mt-black)', paddingTop: '148px', paddingBottom: '90px' }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: '64px', alignItems: 'center' }} className="hero-grid">
 
                     {/* Left: Text */}
                     <div>
-                        {/* Badge */}
-                        <div className="animate-fade-in" style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '8px',
-                            padding: '6px 16px', borderRadius: '30px', marginBottom: '28px',
-                            background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)',
+                        <span style={{
+                            display: 'block', fontSize: '13px', fontWeight: 700, color: 'var(--mt-gold)',
+                            letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '20px',
                         }}>
-                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b', animation: 'pulse 2s infinite' }} />
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#f59e0b' }}>
-                                La plataforma #1 de boletos en México
-                            </span>
-                        </div>
+                            Sistema de boletos inteligente
+                        </span>
 
-                        <h1 className="animate-slide-up" style={{
-                            fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 900, lineHeight: 1.05,
-                            color: '#f0edff', marginBottom: '24px',
+                        <h1 style={{
+                            fontSize: 'clamp(36px, 4.2vw, 56px)', fontWeight: 800, lineHeight: 1.08,
+                            color: 'var(--mt-white)', marginBottom: '20px', letterSpacing: '-0.02em',
                             fontFamily: 'Outfit, sans-serif',
                         }}>
                             Vende boletos con{' '}
-                            <span className="tb-gradient-text">
-                                magia y seguridad
-                            </span>
+                            <span className="mt-gradient-gold-text">magia y seguridad</span>
                         </h1>
 
-                        <p className="animate-slide-up" style={{
-                            fontSize: '18px', lineHeight: 1.7, color: 'rgba(240,237,255,0.65)',
-                            marginBottom: '40px', maxWidth: '480px',
-                            animationDelay: '0.1s', opacity: 0, animation: 'slide-in-up 0.6s ease-out 0.1s forwards',
+                        <p style={{
+                            fontSize: '17px', lineHeight: 1.65, color: 'var(--mt-muted-on-dark)',
+                            marginBottom: '32px', maxWidth: '440px',
                         }}>
                             Crea eventos, vende entradas, gestiona organizaciones y protege el acceso con MFA.
                             Todo en una plataforma diseñada para el futuro.
                         </p>
 
-                        {/* Trust badges */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px', flexWrap: 'wrap' }}>
-                            {[
-                                { icon: '🔐', label: 'MFA Protegido' },
-                                { icon: '💳', label: 'Stripe Payments' },
-                                { icon: '🎟️', label: 'QR Tickets' },
-                            ].map((b) => (
-                                <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ fontSize: '16px' }}>{b.icon}</span>
-                                    <span style={{ fontSize: '13px', color: 'rgba(240,237,255,0.5)', fontWeight: 500 }}>{b.label}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* CTAs */}
-                        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '40px', flexWrap: 'wrap' }}>
                             <button
                                 id="hero-cta-start"
                                 onClick={() => navigate('/register')}
+                                className="mt-btn-primary"
                                 style={{
-                                    padding: '14px 32px', borderRadius: '12px',
-                                    background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)',
-                                    color: 'white', fontSize: '16px', fontWeight: 700, border: 'none',
-                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                                    boxShadow: '0 0 30px rgba(124,58,237,0.4)',
-                                    transition: 'all 0.2s',
+                                    padding: '13px 26px', borderRadius: '8px',
+                                    fontSize: '15px', fontWeight: 700, cursor: 'pointer',
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 50px rgba(124,58,237,0.6)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 30px rgba(124,58,237,0.4)'; }}
                             >
-                                <Zap size={18} />
-                                Comenzar Gratis
+                                Comenzar gratis
                             </button>
                             <button
                                 id="hero-cta-login"
                                 onClick={() => navigate('/login')}
                                 style={{
-                                    padding: '14px 32px', borderRadius: '12px',
-                                    border: '1px solid rgba(139,92,246,0.35)', background: 'rgba(139,92,246,0.08)',
-                                    color: '#f0edff', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s',
+                                    padding: '13px 22px', borderRadius: '8px',
+                                    border: '1px solid var(--mt-line-dark)', background: 'transparent',
+                                    color: 'var(--mt-white)', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '6px', transition: 'border-color 0.15s',
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.background = 'rgba(139,92,246,0.15)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(139,92,246,0.35)'; e.currentTarget.style.background = 'rgba(139,92,246,0.08)'; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--mt-line-dark)'; }}
                             >
-                                <Shield size={18} />
-                                Iniciar Sesión
+                                Iniciar sesión
+                                <ArrowRight size={15} />
                             </button>
+                        </div>
+
+                        {/* Trust row */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+                            {TRUST_ITEMS.map((t, i) => (
+                                <div key={t.label} style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                                    <t.icon size={15} color={i % 2 === 0 ? 'var(--mt-gold)' : 'var(--mt-green-light)'} />
+                                    <span style={{ fontSize: '13px', color: 'var(--mt-muted-on-dark)', fontWeight: 500 }}>{t.label}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Right: Floating Ticket */}
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }} className="hero-visual">
-                        <FloatingTicket />
+                    {/* Right: Dashboard mock */}
+                    <div style={{ display: 'flex', justifyContent: 'center' }} className="hero-visual">
+                        <DashboardMock />
                     </div>
                 </div>
             </div>
 
-            {/* Scroll indicator */}
-            <div style={{ position: 'absolute', bottom: '32px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', opacity: 0.5 }}>
-                <span style={{ fontSize: '12px', color: '#f0edff', letterSpacing: '0.1em' }}>DESCUBRE MÁS</span>
-                <ChevronDown size={20} color="#f0edff" style={{ animation: 'float 2s ease-in-out infinite' }} />
-            </div>
-
             <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.8); }
-        }
-        @media (max-width: 768px) {
+        @media (max-width: 860px) {
           .hero-grid { grid-template-columns: 1fr !important; text-align: center; }
           .hero-visual { display: none !important; }
         }

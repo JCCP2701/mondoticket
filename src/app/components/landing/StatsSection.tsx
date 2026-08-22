@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
 const stats = [
-    { value: 2500000, label: 'Boletos Vendidos', suffix: '+', prefix: '' },
-    { value: 8400, label: 'Eventos Realizados', suffix: '+', prefix: '' },
+    { value: 2500000, label: 'Boletos vendidos', suffix: '+', prefix: '' },
+    { value: 8400, label: 'Eventos realizados', suffix: '+', prefix: '' },
     { value: 340, label: 'Organizaciones', suffix: '+', prefix: '' },
-    { value: 99.9, label: 'Uptime Garantizado', suffix: '%', prefix: '' },
+    { value: 99.9, label: 'Uptime garantizado', suffix: '%', prefix: '' },
 ];
 
 function useCountUp(target: number, duration = 2000, started: boolean) {
@@ -29,8 +29,8 @@ function useCountUp(target: number, duration = 2000, started: boolean) {
     return count;
 }
 
-function StatCard({ stat, delay, started }: { stat: typeof stats[0]; delay: number; started: boolean }) {
-    const count = useCountUp(stat.value, 2000 + delay * 200, started);
+function Stat({ stat, delay, started }: { stat: typeof stats[0]; delay: number; started: boolean }) {
+    const count = useCountUp(stat.value, 1600 + delay * 150, started);
 
     const formatted =
         stat.value >= 1000000
@@ -40,27 +40,14 @@ function StatCard({ stat, delay, started }: { stat: typeof stats[0]; delay: numb
                 : count.toString();
 
     return (
-        <div
-            className="tb-card-hover"
-            style={{
-                padding: '40px 32px', textAlign: 'center', borderRadius: '20px',
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(139,92,246,0.15)',
-                backdropFilter: 'blur(10px)',
-                animationDelay: `${delay * 0.15}s`,
-            }}
-        >
-            <div style={{
-                fontSize: 'clamp(40px, 5vw, 64px)', fontWeight: 900, lineHeight: 1,
-                marginBottom: '12px', fontFamily: 'Outfit, sans-serif',
+        <div style={{ textAlign: 'center', padding: '0 20px' }}>
+            <p className="mt-gradient-gold-text" style={{
+                fontSize: 'clamp(30px, 3.4vw, 42px)', fontWeight: 800, lineHeight: 1,
+                marginBottom: '8px', fontFamily: 'Outfit, sans-serif',
             }}>
-                <span style={{
-                    background: 'linear-gradient(135deg, #a78bfa, #f59e0b)',
-                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-                }}>
-                    {stat.prefix}{formatted}{stat.suffix}
-                </span>
-            </div>
-            <p style={{ fontSize: '15px', color: 'rgba(240,237,255,0.55)', fontWeight: 500 }}>
+                {stat.prefix}{formatted}{stat.suffix}
+            </p>
+            <p style={{ fontSize: '14px', color: 'var(--mt-muted)', fontWeight: 500 }}>
                 {stat.label}
             </p>
         </div>
@@ -81,33 +68,25 @@ export default function StatsSection() {
     }, []);
 
     return (
-        <section
-            style={{
-                padding: '80px 24px',
-                background: 'linear-gradient(180deg, #0f0d26 0%, #12103a 50%, #0f0d26 100%)',
-                position: 'relative',
-            }}
-        >
-            <div ref={ref} style={{ maxWidth: '1280px', margin: '0 auto' }}>
-                <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-                    <h2 style={{ fontSize: 'clamp(28px, 3vw, 42px)', fontWeight: 800, color: '#f0edff', marginBottom: '12px' }}>
-                        Números que hablan por sí solos
-                    </h2>
-                    <p style={{ color: 'rgba(240,237,255,0.5)', fontSize: '16px' }}>
-                        La confianza de miles de organizadores y compradores avala nuestra plataforma.
-                    </p>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }} className="stats-grid">
+        <section style={{ padding: '72px 24px', background: 'var(--mt-offwhite)', borderTop: '1px solid var(--mt-line)', borderBottom: '1px solid var(--mt-line)' }}>
+            <div ref={ref} style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                <div
+                    style={{
+                        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+                    }}
+                    className="stats-row"
+                >
                     {stats.map((stat, i) => (
-                        <StatCard key={i} stat={stat} delay={i} started={started} />
+                        <div key={i} style={{ borderLeft: i > 0 ? '1px solid var(--mt-line)' : 'none' }} className="stat-cell">
+                            <Stat stat={stat} delay={i} started={started} />
+                        </div>
                     ))}
                 </div>
             </div>
 
             <style>{`
-        @media (max-width: 1024px) { .stats-grid { grid-template-columns: repeat(2, 1fr) !important; } }
-        @media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr !important; } }
+        @media (max-width: 720px) { .stats-row { grid-template-columns: repeat(2, 1fr) !important; row-gap: 32px; } .stat-cell:nth-child(3) { border-left: none !important; } }
+        @media (max-width: 420px) { .stats-row { grid-template-columns: 1fr !important; } .stat-cell { border-left: none !important; } }
       `}</style>
         </section>
     );

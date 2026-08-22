@@ -1,21 +1,18 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { Shield, Building2, User, Eye, EyeOff, Ticket, ArrowRight, Lock, Mail } from 'lucide-react';
-import { useAuth, UserRole, dashboardPathForRole } from '../../context/AuthContext';
-
-
+import { Shield, Eye, EyeOff, Ticket, ArrowRight, Lock, Mail } from 'lucide-react';
+import { useAuth, dashboardPathForRole } from '../../context/AuthContext';
+import '../landing/landing-theme.css';
 
 export default function LoginPage() {
     const navigate = useNavigate();
-    const { login, isAuthenticated, user } = useAuth();
+    const { login } = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
-    const accentColor = "#a78bfa";
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,74 +36,49 @@ export default function LoginPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: '#030014',
-            position: 'relative',
-            overflow: 'hidden',
+            background: 'var(--mt-black)',
             padding: '24px',
         }}>
-            {/* Animated Mesh Gradient Background */}
-            <div style={{
-                position: 'absolute',
-                top: 0, left: 0, right: 0, bottom: 0,
-                background: `
-                    radial-gradient(circle at 20% 30%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 70%, rgba(245, 158, 11, 0.1) 0%, transparent 50%),
-                    radial-gradient(circle at 50% 50%, rgba(15, 12, 41, 1) 0%, rgba(3, 0, 20, 1) 100%)
-                `,
-                zIndex: 0
-            }} />
-
-            {/* Floating Orbs */}
-            <div className="login-orb-1" />
-            <div className="login-orb-2" />
-
-            <div style={{
-                width: '100%',
-                maxWidth: '440px',
-                position: 'relative',
-                zIndex: 1,
-            }}>
+            <div style={{ width: '100%', maxWidth: '420px' }}>
                 {/* Logo & Header */}
-                <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                    <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', textDecoration: 'none', marginBottom: '24px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                    <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', textDecoration: 'none', marginBottom: '24px' }}>
                         <div style={{
-                            width: '52px', height: '52px', borderRadius: '14px',
-                            background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)',
+                            width: '44px', height: '44px', borderRadius: '11px',
+                            background: 'rgba(255,255,255,0.06)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: '0 0 30px rgba(124,58,237,0.5)',
-                            transform: 'rotate(-5deg)'
                         }}>
-                            <Ticket size={28} color="white" />
+                            <Ticket size={22} color="var(--mt-gold)" />
                         </div>
-                        <span style={{ fontSize: '30px', fontWeight: 900, color: '#f0edff', letterSpacing: '-1px' }}>
-                            Mondo<span style={{ color: '#f59e0b' }}>Ticket</span>
+                        <span style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'Outfit, sans-serif' }}>
+                            <span style={{ color: 'var(--mt-green-light)' }}>mondo</span>
+                            <span className="mt-gradient-gold-text">ticket</span>
                         </span>
                     </Link>
 
-                    <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#f8fafc', marginBottom: '12px', letterSpacing: '-0.5px' }}>
-                        Bienvenido de <span className="tb-gradient-text">vuelta</span>
+                    <h1 style={{ fontSize: '28px', fontWeight: 800, color: 'var(--mt-white)', marginBottom: '10px', letterSpacing: '-0.02em' }}>
+                        Bienvenido de <span className="mt-gradient-gold-text">vuelta</span>
                     </h1>
-                    <p style={{ fontSize: '15px', color: 'rgba(248, 250, 252, 0.5)', maxWidth: '300px', margin: '0 auto' }}>
+                    <p style={{ fontSize: '14px', color: 'var(--mt-muted-on-dark)', maxWidth: '300px', margin: '0 auto' }}>
                         Accede a la plataforma de boletos más segura y avanzada.
                     </p>
                 </div>
 
                 {/* Login Card */}
                 <div style={{
-                    background: 'rgba(15, 12, 41, 0.65)',
-                    backdropFilter: 'blur(25px) saturate(180%)',
-                    borderRadius: '32px',
-                    border: '1px solid rgba(167, 139, 250, 0.2)',
-                    padding: '44px',
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                    background: 'var(--mt-white)',
+                    borderRadius: '16px',
+                    border: '1px solid var(--mt-line)',
+                    padding: '32px',
+                    boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
                 }}>
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(248, 250, 252, 0.8)', marginLeft: '4px' }}>
+                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mt-ink)' }}>
                                 Correo electrónico
                             </label>
                             <div style={{ position: 'relative' }}>
-                                <Mail size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(167, 139, 250, 0.5)' }} />
+                                <Mail size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--mt-muted)' }} />
                                 <input
                                     id="login-email"
                                     type="email"
@@ -114,20 +86,20 @@ export default function LoginPage() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="tunombre@ejemplo.com"
                                     required
-                                    className="login-input-premium"
+                                    className="login-input"
                                 />
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '4px' }}>
-                                <label style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(248, 250, 252, 0.8)', marginLeft: '4px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mt-ink)' }}>
                                     Contraseña
                                 </label>
-                                <a href="#" style={{ fontSize: '12px', color: accentColor, textDecoration: 'none', fontWeight: 500, opacity: 0.8 }}>¿Olvidaste tu contraseña?</a>
+                                <a href="#" style={{ fontSize: '12px', color: 'var(--mt-gold-dark)', textDecoration: 'none', fontWeight: 500 }}>¿Olvidaste tu contraseña?</a>
                             </div>
                             <div style={{ position: 'relative' }}>
-                                <Lock size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(167, 139, 250, 0.5)' }} />
+                                <Lock size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--mt-muted)' }} />
                                 <input
                                     id="login-password"
                                     type={showPassword ? 'text' : 'password'}
@@ -135,31 +107,31 @@ export default function LoginPage() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••••••"
                                     required
-                                    className="login-input-premium"
+                                    className="login-input"
+                                    style={{ paddingRight: '44px' }}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
                                     style={{
-                                        position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)',
-                                        background: 'none', border: 'none', color: 'rgba(167, 139, 250, 0.5)', cursor: 'pointer',
-                                        padding: '4px', borderRadius: '50%', transition: 'all 0.2s'
+                                        position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                                        background: 'none', border: 'none', color: 'var(--mt-muted)', cursor: 'pointer', padding: '4px',
                                     }}
                                 >
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                 </button>
                             </div>
                         </div>
 
                         {error && (
                             <div style={{
-                                padding: '12px 16px', borderRadius: '12px',
-                                background: 'rgba(239, 68, 68, 0.1)',
-                                border: '1px solid rgba(239, 68, 68, 0.2)',
-                                color: '#fca5a5', fontSize: '13px',
-                                display: 'flex', alignItems: 'center', gap: '10px'
+                                padding: '11px 14px', borderRadius: '10px',
+                                background: 'rgba(244,63,94,0.08)',
+                                border: '1px solid rgba(244,63,94,0.25)',
+                                color: '#e11d48', fontSize: '13px',
+                                display: 'flex', alignItems: 'center', gap: '8px',
                             }}>
-                                <Shield size={16} />
+                                <Shield size={15} />
                                 {error}
                             </div>
                         )}
@@ -168,29 +140,30 @@ export default function LoginPage() {
                             id="login-submit"
                             type="submit"
                             disabled={loading}
-                            className="login-btn-premium"
+                            className="mt-btn-primary"
+                            style={{ width: '100%', padding: '13px', borderRadius: '10px', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                         >
                             {loading ? (
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <span className="spinner-small" /> Verificando...
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span className="login-spinner" /> Verificando...
                                 </span>
                             ) : (
                                 <>
                                     <span>Ingresar a mi Wallet</span>
-                                    <ArrowRight size={18} />
+                                    <ArrowRight size={16} />
                                 </>
                             )}
                         </button>
                     </form>
 
-                    <div style={{ marginTop: '32px', textAlign: 'center', borderTop: '1px solid rgba(167, 139, 250, 0.1)', paddingTop: '24px' }}>
-                        <p style={{ fontSize: '14px', color: 'rgba(248, 250, 252, 0.4)' }}>
+                    <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid var(--mt-line)', paddingTop: '20px' }}>
+                        <p style={{ fontSize: '13px', color: 'var(--mt-muted)' }}>
                             ¿Eres nuevo en MondoTicket?
                         </p>
                         <Link to="/register" style={{
-                            display: 'inline-block', marginTop: '8px',
-                            color: '#fff', textDecoration: 'none', fontWeight: 700,
-                            fontSize: '15px', borderBottom: `2px solid ${accentColor}`
+                            display: 'inline-block', marginTop: '6px',
+                            color: 'var(--mt-ink)', textDecoration: 'none', fontWeight: 700,
+                            fontSize: '14px', borderBottom: '2px solid var(--mt-gold)',
                         }}>
                             Crea tu cuenta gratis
                         </Link>
@@ -199,84 +172,38 @@ export default function LoginPage() {
 
                 {/* Footer Security Badges */}
                 <div style={{
-                    marginTop: '40px', display: 'flex', justifyContent: 'center', gap: '24px',
-                    opacity: 0.5, filter: 'grayscale(1)'
+                    marginTop: '28px', display: 'flex', justifyContent: 'center', gap: '20px',
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#fff' }}>
-                        <Shield size={14} /> 256-bit SSL
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: 'var(--mt-muted-on-dark)' }}>
+                        <Shield size={13} /> 256-bit SSL
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#fff' }}>
-                        <Lock size={14} /> MFA Secure
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: 'var(--mt-muted-on-dark)' }}>
+                        <Lock size={13} /> MFA Secure
                     </div>
                 </div>
             </div>
 
             <style>{`
-                .login-input-premium {
-                    width: 100%; 
-                    padding: 16px 16px 16px 48px; 
-                    border-radius: 16px;
-                    background: rgba(255, 255, 255, 0.03); 
-                    border: 1px solid rgba(167, 139, 250, 0.15);
-                    color: #fff; 
-                    font-size: 15px; 
-                    outline: none; 
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                .login-input {
+                    width: 100%;
+                    padding: 12px 14px 12px 40px;
+                    border-radius: 10px;
+                    background: var(--mt-offwhite);
+                    border: 1px solid var(--mt-line);
+                    color: var(--mt-ink);
+                    font-size: 14px;
+                    outline: none;
+                    transition: border-color 0.2s ease;
                     box-sizing: border-box;
                 }
-                .login-input-premium:focus {
-                    background: rgba(167, 139, 250, 0.05);
-                    border-color: #a78bfa;
-                    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.15);
+                .login-input:focus {
+                    border-color: var(--mt-gold);
                 }
-                .login-btn-premium {
-                    width: 100%; 
-                    padding: 18px; 
-                    border-radius: 18px;
-                    background: linear-gradient(135deg, #7c3aed, #6366f1);
-                    color: white; 
-                    font-weight: 700; 
-                    font-size: 16px; 
-                    border: none;
-                    cursor: pointer;
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center; 
-                    gap: '12px';
-                    transition: all 0.3s; 
-                    box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.4);
+                .login-spinner {
+                    width: 15px; height: 15px; border: 2px solid rgba(10,10,10,0.25);
+                    border-top-color: var(--mt-black); border-radius: 50%; animation: login-spin 0.8s linear infinite;
                 }
-                .login-btn-premium:hover:not(:disabled) {
-                    transform: translateY(-2px);
-                    box-shadow: 0 15px 30px -5px rgba(124, 58, 237, 0.5);
-                    filter: brightness(1.1);
-                }
-                .login-btn-premium:active:not(:disabled) {
-                    transform: translateY(0);
-                }
-                .login-btn-premium:disabled {
-                    opacity: 0.6;
-                    cursor: not-allowed;
-                }
-                .login-orb-1 {
-                    position: absolute; top: -100px; left: -100px; width: 400px; height: 400px;
-                    background: radial-gradient(circle, rgba(124, 58, 237, 0.2), transparent 70%);
-                    filter: blur(60px); animation: orbital 20s infinite linear;
-                }
-                .login-orb-2 {
-                    position: absolute; bottom: -100px; right: -100px; width: 400px; height: 400px;
-                    background: radial-gradient(circle, rgba(245, 158, 11, 0.15), transparent 70%);
-                    filter: blur(60px); animation: orbital 25s reverse infinite linear;
-                }
-                @keyframes orbital {
-                    from { transform: rotate(0deg) translate(50px) rotate(0deg); }
-                    to { transform: rotate(360deg) translate(50px) rotate(-360deg); }
-                }
-                .spinner-small {
-                    width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
-                    border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite;
-                }
-                @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes login-spin { to { transform: rotate(360deg); } }
             `}</style>
         </div>
     );

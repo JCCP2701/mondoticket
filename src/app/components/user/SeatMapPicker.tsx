@@ -3,6 +3,9 @@ import { dataService, SeatRecord, TicketType } from "../../services/dataService"
 import { supabase } from "../../services/supabaseClient";
 
 const PALETTE = ["#7c3aed", "#0891b2", "#d97706", "#059669", "#be123c", "#4338ca"];
+// Used only when `theme="light"` (the buyer-facing checkout) — a warm
+// gold/green family instead of the admin dashboard's default palette above.
+const LIGHT_PALETTE = ["#d4af37", "#328022", "#9cc183", "#a6821f", "#4f9e3a", "#6b685f"];
 const HEARTBEAT_MS = 90_000;
 
 export interface SelectedSeat {
@@ -26,18 +29,22 @@ interface SeatMapPickerProps {
     maxSeats?: number;
     onSelectionChange: (seats: SelectedSeat[]) => void;
     onError?: (message: string) => void;
+    // 'default' (Taquilla / internal dashboards) keeps the existing look.
+    // 'light' is for the buyer-facing checkout redesign — flat white/gold/green.
+    theme?: 'default' | 'light';
 }
 
-export default function SeatMapPicker({ eventId, ticketTypes, ticketTypeId, maxSeats, onSelectionChange, onError }: SeatMapPickerProps) {
+export default function SeatMapPicker({ eventId, ticketTypes, ticketTypeId, maxSeats, onSelectionChange, onError, theme = 'default' }: SeatMapPickerProps) {
     const [seats, setSeats] = useState<SeatRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const selectedIdsRef = useRef<string[]>([]);
     selectedIdsRef.current = selectedIds;
 
+    const palette = theme === 'light' ? LIGHT_PALETTE : PALETTE;
     const typeById = new Map(ticketTypes.map((t) => [t.id, t]));
     const typeColor: Record<string, string> = {};
-    ticketTypes.forEach((t, i) => { typeColor[t.id] = PALETTE[i % PALETTE.length]; });
+    ticketTypes.forEach((t, i) => { typeColor[t.id] = palette[i % palette.length]; });
 
     const refreshSeats = useCallback(async () => {
         const data = await dataService.getSeatMap(eventId);
@@ -143,7 +150,7 @@ export default function SeatMapPicker({ eventId, ticketTypes, ticketTypeId, maxS
         }
     };
 
-    if (loading) return <div className="text-sm text-muted-foreground p-4">Cargando mapa de asientos...</div>;
+    if (loading) return <div className="text-sm text-muted-foreground p-4" style={theme === 'light' ? { color: 'var(--mt-muted)' } : undefined}>Cargando mapa de asientos...</div>;
 
     const maxRow = Math.max(0, ...seats.map((s) => s.rowIndex)) + 1;
     const maxCol = Math.max(0, ...seats.map((s) => s.colIndex)) + 1;
@@ -152,15 +159,18 @@ export default function SeatMapPicker({ eventId, ticketTypes, ticketTypeId, maxS
     return (
         <div>
             {maxSeats !== undefined && (
-                <p className="text-sm font-bold mb-3">
+                <p className="text-sm font-bold mb-3" style={theme === 'light' ? { color: 'var(--mt-ink)' } : undefined}>
                     {maxSeats === 0
                         ? 'Elige cuántos boletos quieres arriba para habilitar el mapa.'
                         : `Selecciona ${selectedIds.length} de ${maxSeats} asientos`}
                 </p>
             )}
             <div
-                className="grid p-4 bg-secondary/5 rounded-2xl border border-dashed border-border overflow-auto"
-                style={{ gridTemplateColumns: `repeat(${maxCol}, minmax(0, 1fr))`, gap: '6px', opacity: maxSeats === 0 ? 0.5 : 1 }}
+                className={theme === 'light' ? 'grid p-4 rounded-2xl overflow-auto' : 'grid p-4 bg-secondary/5 rounded-2xl border border-dashed border-border overflow-auto'}
+                style={{
+                    gridTemplateColumns: `repeat(${maxCol}, minmax(0, 1fr))`, gap: '6px', opacity: maxSeats === 0 ? 0.5 : 1,
+                    ...(theme === 'light' ? { background: 'var(--mt-offwhite)', border: '1px dashed var(--mt-line)' } : {}),
+                }}
             >
                 {Array.from({ length: maxRow }).map((_, r) =>
                     Array.from({ length: maxCol }).map((_, c) => {
@@ -203,12 +213,12 @@ export default function SeatMapPicker({ eventId, ticketTypes, ticketTypeId, maxS
                 {ticketTypes.map((t) => (
                     <div key={t.id} className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded" style={{ background: typeColor[t.id] }} />
-                        <span className="font-bold">{t.name}</span>
+                        <span className="font-bold" style={theme === 'light' ? { color: 'var(--mt-ink)' } : undefined}>{t.name}</span>
                     </div>
                 ))}
                 <div className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded bg-gray-200 border border-gray-300" />
-                    <span className="text-muted-foreground">Ocupado / vendido</span>
+                    <span className="text-muted-foreground" style={theme === 'light' ? { color: 'var(--mt-muted)' } : undefined}>Ocupado / vendido</span>
                 </div>
             </div>
         </div>

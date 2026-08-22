@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { dataService, EventRecord } from "../../services/dataService";
 import { supabase } from "../../services/supabaseClient";
 import SeatMapPicker, { SelectedSeat } from "./SeatMapPicker";
+import "../landing/landing-theme.css";
 
 export default function UserCheckout() {
   const navigate = useNavigate();
@@ -276,7 +277,7 @@ export default function UserCheckout() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0d0b1e', color: '#f0edff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--mt-offwhite)', color: 'var(--mt-ink)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         Cargando evento...
       </div>
     );
@@ -284,64 +285,76 @@ export default function UserCheckout() {
 
   if (loadError || !event) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0d0b1e', color: '#f0edff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--mt-offwhite)', color: 'var(--mt-ink)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
         <p>{loadError || 'No hay eventos disponibles todavía.'}</p>
-        <Link to="/" style={{ color: '#a78bfa' }}>Volver al inicio</Link>
+        <Link to="/" style={{ color: 'var(--mt-gold-dark)' }}>Volver al inicio</Link>
       </div>
     );
   }
 
+  const stepBadgeStyle: React.CSSProperties = {
+    width: '28px', height: '28px', borderRadius: '50%', background: 'var(--mt-gold-wash)', color: 'var(--mt-gold-dark)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700,
+  };
+  const cardStyle: React.CSSProperties = { background: 'var(--mt-white)', borderRadius: '16px', border: '1px solid var(--mt-line)' };
+  const qtyBtnBase: React.CSSProperties = {
+    width: '32px', height: '32px', borderRadius: '9px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  };
+
   return (
-    <div style={{ minHeight: '100vh', background: '#0d0b1e', color: '#f0edff', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--mt-offwhite)', color: 'var(--mt-ink)' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px 60px' }}>
 
         {canceledNotice && (
-          <div style={{ marginBottom: '24px', padding: '14px 18px', borderRadius: '14px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <div style={{ marginBottom: '24px', padding: '13px 16px', borderRadius: '12px', background: 'var(--mt-gold-wash)', border: '1px solid var(--mt-gold-border)', color: 'var(--mt-gold-dark)', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
             <span>Pago cancelado — puedes intentarlo de nuevo cuando quieras.</span>
-            <button onClick={() => setCanceledNotice(false)} style={{ background: 'none', border: 'none', color: '#f59e0b', cursor: 'pointer', fontWeight: 800, fontSize: '14px' }}>×</button>
+            <button onClick={() => setCanceledNotice(false)} style={{ background: 'none', border: 'none', color: 'var(--mt-gold-dark)', cursor: 'pointer', fontWeight: 800, fontSize: '14px' }}>×</button>
           </div>
         )}
 
         {/* Header Navigation */}
-        <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ marginBottom: '28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button
             onClick={() => navigate('/')}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'rgba(240,237,255,0.6)', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'var(--mt-muted)', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={17} />
             Volver a Eventos
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Ticket size={16} color="white" />
+            <div style={{ width: '30px', height: '30px', borderRadius: '7px', background: 'var(--mt-black)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Ticket size={15} color="var(--mt-gold)" />
             </div>
-            <span style={{ fontSize: '18px', fontWeight: 800 }}>Mondo<span style={{ color: '#a78bfa' }}>Ticket</span></span>
+            <span style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'Outfit, sans-serif' }}>
+              <span style={{ color: 'var(--mt-green)' }}>mondo</span>
+              <span className="mt-gradient-gold-text">ticket</span>
+            </span>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '32px' }} className="checkout-grid">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '24px' }} className="checkout-grid">
 
           {/* Main Checkout Section */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
             {/* 1. Event Selection (Visual confirmation) */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', overflow: 'hidden' }}>
+            <div style={{ ...cardStyle, overflow: 'hidden' }}>
               {event.imageUrl && (
-                <div style={{ height: '220px', overflow: 'hidden' }}>
+                <div style={{ height: '200px', overflow: 'hidden' }}>
                   <img src={event.imageUrl} alt={event.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               )}
-              <div style={{ padding: '24px' }}>
-                <span style={{ background: 'rgba(124,58,237,0.8)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '12px', display: 'inline-block' }}>{event.category || 'Evento'}</span>
-                <h1 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '16px' }}>{event.name}</h1>
-                <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(240,237,255,0.6)', fontSize: '13px' }}>
-                    <Calendar size={14} color="#a78bfa" />
+              <div style={{ padding: '22px' }}>
+                <span style={{ background: 'var(--mt-black)', color: 'var(--mt-gold)', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '12px', display: 'inline-block' }}>{event.category || 'Evento'}</span>
+                <h1 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '14px' }}>{event.name}</h1>
+                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--mt-muted)', fontSize: '13px' }}>
+                    <Calendar size={14} color="var(--mt-gold-dark)" />
                     {new Date(event.date).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(240,237,255,0.6)', fontSize: '13px' }}>
-                    <MapPin size={14} color="#a78bfa" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--mt-muted)', fontSize: '13px' }}>
+                    <MapPin size={14} color="var(--mt-green)" />
                     {event.venueName}
                   </div>
                 </div>
@@ -350,64 +363,64 @@ export default function UserCheckout() {
 
             {/* 2. Customer Info — comes first: creates the buyer's session so
                  the seat picker below can hold seats (anon sessions can't). */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', padding: '24px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>1</span>
+            <div style={{ ...cardStyle, padding: '22px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={stepBadgeStyle}>1</span>
                 Tus datos para el boleto
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }} className="form-grid">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }} className="form-grid">
                 <div>
-                  <label style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)', marginBottom: '6px', display: 'block' }}>Nombre Completo</label>
+                  <label style={{ fontSize: '12px', color: 'var(--mt-muted)', marginBottom: '6px', display: 'block' }}>Nombre Completo</label>
                   <div style={{ position: 'relative' }}>
-                    <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(240,237,255,0.3)' }} />
+                    <User size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--mt-muted)' }} />
                     <input
                       type="text"
                       placeholder="Ej. Juan Pérez"
                       value={formData.name}
                       disabled={otpSent}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      style={{ width: '100%', padding: '12px 12px 12px 36px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${formErrors.name ? '#f43f5e' : 'rgba(255,255,255,0.1)'}`, color: 'white', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box', opacity: otpSent ? 0.6 : 1 }}
+                      style={{ width: '100%', padding: '11px 12px 11px 34px', borderRadius: '10px', background: 'var(--mt-offwhite)', border: `1px solid ${formErrors.name ? '#e11d48' : 'var(--mt-line)'}`, color: 'var(--mt-ink)', outline: 'none', boxSizing: 'border-box', opacity: otpSent ? 0.6 : 1 }}
                     />
                   </div>
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)', marginBottom: '6px', display: 'block' }}>Correo Electrónico</label>
+                  <label style={{ fontSize: '12px', color: 'var(--mt-muted)', marginBottom: '6px', display: 'block' }}>Correo Electrónico</label>
                   <div style={{ position: 'relative' }}>
-                    <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(240,237,255,0.3)' }} />
+                    <Mail size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--mt-muted)' }} />
                     <input
                       type="email"
                       placeholder="juan@ejemplo.com"
                       value={formData.email}
                       disabled={otpSent}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      style={{ width: '100%', padding: '12px 12px 12px 36px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${formErrors.email ? '#f43f5e' : 'rgba(255,255,255,0.1)'}`, color: 'white', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box', opacity: otpSent ? 0.6 : 1 }}
+                      style={{ width: '100%', padding: '11px 12px 11px 34px', borderRadius: '10px', background: 'var(--mt-offwhite)', border: `1px solid ${formErrors.email ? '#e11d48' : 'var(--mt-line)'}`, color: 'var(--mt-ink)', outline: 'none', boxSizing: 'border-box', opacity: otpSent ? 0.6 : 1 }}
                     />
                   </div>
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
-                  <label style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)', marginBottom: '6px', display: 'block' }}>Teléfono de contacto</label>
+                  <label style={{ fontSize: '12px', color: 'var(--mt-muted)', marginBottom: '6px', display: 'block' }}>Teléfono de contacto</label>
                   <div style={{ position: 'relative' }}>
-                    <Phone size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(240,237,255,0.3)' }} />
+                    <Phone size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--mt-muted)' }} />
                     <input
                       type="tel"
                       placeholder="55 1234 5678"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      style={{ width: '100%', padding: '12px 12px 12px 36px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${formErrors.phone ? '#f43f5e' : 'rgba(255,255,255,0.1)'}`, color: 'white', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '11px 12px 11px 34px', borderRadius: '10px', background: 'var(--mt-offwhite)', border: `1px solid ${formErrors.phone ? '#e11d48' : 'var(--mt-line)'}`, color: 'var(--mt-ink)', outline: 'none', boxSizing: 'border-box' }}
                     />
                   </div>
                 </div>
               </div>
 
               {registerError && (
-                <div style={{ marginTop: '16px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)', color: '#fca5a5', fontSize: '13px' }}>
+                <div style={{ marginTop: '16px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)', color: '#e11d48', fontSize: '13px' }}>
                   {registerError}
                 </div>
               )}
 
               {!sessionReady && otpSent && (
-                <div style={{ marginTop: '20px' }}>
-                  <label style={{ fontSize: '12px', color: 'rgba(240,237,255,0.5)', marginBottom: '6px', display: 'block' }}>
+                <div style={{ marginTop: '18px' }}>
+                  <label style={{ fontSize: '12px', color: 'var(--mt-muted)', marginBottom: '6px', display: 'block' }}>
                     Código de 6 dígitos enviado a {formData.email}
                   </label>
                   <input
@@ -417,7 +430,7 @@ export default function UserCheckout() {
                     placeholder="000000"
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                    style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', boxSizing: 'border-box', letterSpacing: '4px', fontSize: '18px', textAlign: 'center' }}
+                    style={{ width: '100%', padding: '11px', borderRadius: '10px', background: 'var(--mt-offwhite)', border: '1px solid var(--mt-line)', color: 'var(--mt-ink)', outline: 'none', boxSizing: 'border-box', letterSpacing: '4px', fontSize: '17px', textAlign: 'center' }}
                   />
                 </div>
               )}
@@ -426,10 +439,10 @@ export default function UserCheckout() {
                 <button
                   onClick={otpSent ? handleVerifyCode : handleSendCode}
                   disabled={registering || checkingSession || verifyingCode || (otpSent && otpCode.trim().length < 6)}
+                  className="mt-btn-primary"
                   style={{
-                    marginTop: '20px', width: '100%', padding: '14px', borderRadius: '14px', border: 'none',
-                    background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', color: 'white', fontWeight: 700, fontSize: '15px',
-                    cursor: (registering || checkingSession || verifyingCode) ? 'not-allowed' : 'pointer', opacity: (registering || checkingSession || verifyingCode || (otpSent && otpCode.trim().length < 6)) ? 0.7 : 1,
+                    marginTop: '18px', width: '100%', padding: '13px', borderRadius: '11px', fontSize: '14px',
+                    cursor: (registering || checkingSession || verifyingCode) ? 'not-allowed' : 'pointer', opacity: (registering || checkingSession || verifyingCode || (otpSent && otpCode.trim().length < 6)) ? 0.6 : 1,
                   }}
                 >
                   {registering ? 'Enviando código...' : verifyingCode ? 'Verificando...' : otpSent ? 'Verificar código' : 'Enviar código'}
@@ -440,7 +453,7 @@ export default function UserCheckout() {
                 <button
                   onClick={handleSendCode}
                   disabled={registering}
-                  style={{ marginTop: '10px', width: '100%', padding: '8px', background: 'none', border: 'none', color: 'rgba(240,237,255,0.4)', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}
+                  style={{ marginTop: '10px', width: '100%', padding: '8px', background: 'none', border: 'none', color: 'var(--mt-muted)', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}
                 >
                   Reenviar código
                 </button>
@@ -449,25 +462,25 @@ export default function UserCheckout() {
 
             {/* 3. Ticket/Seat Selection — locked until step 1 creates a session;
                  an event can mix seat-mapped types with plain quantity-based ones. */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', padding: '24px', opacity: sessionReady ? 1 : 0.4 }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>2</span>
+            <div style={{ ...cardStyle, padding: '22px', opacity: sessionReady ? 1 : 0.4 }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={stepBadgeStyle}>2</span>
                 Elige tus boletos
               </h3>
 
               {!sessionReady ? (
-                <p style={{ fontSize: '13px', color: 'rgba(240,237,255,0.4)' }}>
+                <p style={{ fontSize: '13px', color: 'var(--mt-muted)' }}>
                   Completa tus datos de contacto arriba para ver la disponibilidad y elegir tus boletos.
                 </p>
               ) : (
               <>
               {seatError && (
-                <div style={{ marginBottom: '16px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)', color: '#fca5a5', fontSize: '13px' }}>
+                <div style={{ marginBottom: '16px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)', color: '#e11d48', fontSize: '13px' }}>
                   {seatError}
                 </div>
               )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                 {event.ticketTypes.map((t) => {
                   if (t.hasSeatMap) {
                     const available = t.capacity - t.sold;
@@ -477,40 +490,42 @@ export default function UserCheckout() {
                       <div key={t.id}>
                         <div style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
-                          padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                          padding: '14px 16px', borderRadius: '12px', background: 'var(--mt-offwhite)', border: '1px solid var(--mt-line)',
                           opacity: soldOut ? 0.5 : 1, marginBottom: '12px',
                         }}>
                           <div>
-                            <p style={{ fontWeight: 700, fontSize: '15px' }}>{t.name}</p>
-                            <p style={{ fontSize: '13px', color: 'rgba(240,237,255,0.5)' }}>
+                            <p style={{ fontWeight: 700, fontSize: '14px' }}>{t.name}</p>
+                            <p style={{ fontSize: '13px', color: 'var(--mt-muted)' }}>
                               {t.price === 0 ? 'Gratis' : `$${t.price.toLocaleString()} MXN`} · {soldOut ? 'Agotado' : `${available} disponibles`}
                             </p>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--mt-white)', padding: '6px', borderRadius: '11px', border: '1px solid var(--mt-line)' }}>
                             <button
                               onClick={() => setQty(t.id, qty - 1, available)}
                               disabled={qty === 0}
-                              style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', cursor: qty === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: qty === 0 ? 0.4 : 1 }}
+                              style={{ ...qtyBtnBase, background: 'var(--mt-offwhite)', color: 'var(--mt-ink)', cursor: qty === 0 ? 'not-allowed' : 'pointer', opacity: qty === 0 ? 0.4 : 1 }}
                             >
                               <Minus size={14} />
                             </button>
-                            <span style={{ fontSize: '16px', fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{qty}</span>
+                            <span style={{ fontSize: '15px', fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{qty}</span>
                             <button
                               onClick={() => setQty(t.id, qty + 1, available)}
                               disabled={soldOut || qty >= available}
-                              style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', border: 'none', color: 'white', cursor: (soldOut || qty >= available) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (soldOut || qty >= available) ? 0.4 : 1 }}
+                              className={!(soldOut || qty >= available) ? 'mt-btn-primary' : undefined}
+                              style={{ ...qtyBtnBase, background: (soldOut || qty >= available) ? 'var(--mt-offwhite)' : undefined, color: (soldOut || qty >= available) ? 'var(--mt-ink)' : undefined, cursor: (soldOut || qty >= available) ? 'not-allowed' : 'pointer', opacity: (soldOut || qty >= available) ? 0.4 : 1 }}
                             >
                               <Plus size={14} />
                             </button>
                           </div>
                         </div>
                         {qty > 0 && (
-                          <div style={{ background: 'white', borderRadius: '16px', padding: '16px' }}>
+                          <div style={{ background: 'var(--mt-white)', borderRadius: '12px', padding: '14px', border: '1px solid var(--mt-line)' }}>
                             <SeatMapPicker
                               eventId={event.id}
                               ticketTypeId={t.id}
                               ticketTypes={[t]}
                               maxSeats={qty}
+                              theme="light"
                               onSelectionChange={(seats) => setSelectedSeatsByType((prev) => ({ ...prev, [t.id]: seats }))}
                               onError={setSeatError}
                             />
@@ -526,28 +541,29 @@ export default function UserCheckout() {
                   return (
                     <div key={t.id} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
-                      padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                      padding: '14px 16px', borderRadius: '12px', background: 'var(--mt-offwhite)', border: '1px solid var(--mt-line)',
                       opacity: soldOut ? 0.5 : 1,
                     }}>
                       <div>
-                        <p style={{ fontWeight: 700, fontSize: '15px' }}>{t.name}</p>
-                        <p style={{ fontSize: '13px', color: 'rgba(240,237,255,0.5)' }}>
+                        <p style={{ fontWeight: 700, fontSize: '14px' }}>{t.name}</p>
+                        <p style={{ fontSize: '13px', color: 'var(--mt-muted)' }}>
                           {t.price === 0 ? 'Gratis' : `$${t.price.toLocaleString()} MXN`} · {soldOut ? 'Agotado' : `${available} disponibles`}
                         </p>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--mt-white)', padding: '6px', borderRadius: '11px', border: '1px solid var(--mt-line)' }}>
                         <button
                           onClick={() => setQty(t.id, qty - 1, available)}
                           disabled={qty === 0}
-                          style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', cursor: qty === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: qty === 0 ? 0.4 : 1 }}
+                          style={{ ...qtyBtnBase, background: 'var(--mt-offwhite)', color: 'var(--mt-ink)', cursor: qty === 0 ? 'not-allowed' : 'pointer', opacity: qty === 0 ? 0.4 : 1 }}
                         >
                           <Minus size={14} />
                         </button>
-                        <span style={{ fontSize: '16px', fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{qty}</span>
+                        <span style={{ fontSize: '15px', fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{qty}</span>
                         <button
                           onClick={() => setQty(t.id, qty + 1, available)}
                           disabled={soldOut || qty >= available}
-                          style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', border: 'none', color: 'white', cursor: (soldOut || qty >= available) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (soldOut || qty >= available) ? 0.4 : 1 }}
+                          className={!(soldOut || qty >= available) ? 'mt-btn-primary' : undefined}
+                          style={{ ...qtyBtnBase, background: (soldOut || qty >= available) ? 'var(--mt-offwhite)' : undefined, color: (soldOut || qty >= available) ? 'var(--mt-ink)' : undefined, cursor: (soldOut || qty >= available) ? 'not-allowed' : 'pointer', opacity: (soldOut || qty >= available) ? 0.4 : 1 }}
                         >
                           <Plus size={14} />
                         </button>
@@ -562,34 +578,34 @@ export default function UserCheckout() {
 
             {/* 4. Payment Method — not needed for a $0 (free/courtesy) selection */}
             {isFree ? (
-              <div style={{ background: 'rgba(16,185,129,0.08)', borderRadius: '24px', border: '1px solid rgba(16,185,129,0.25)', padding: '24px', color: '#34d399', fontSize: '14px', fontWeight: 600 }}>
+              <div style={{ background: 'var(--mt-green-wash)', borderRadius: '16px', border: '1px solid var(--mt-green-border)', padding: '22px', color: 'var(--mt-green-dark)', fontSize: '14px', fontWeight: 600 }}>
                 Esta selección es gratuita — no se requiere método de pago.
               </div>
             ) : (
-            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(139,92,246,0.15)', padding: '24px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>3</span>
+            <div style={{ ...cardStyle, padding: '22px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={stepBadgeStyle}>3</span>
                 Métodos de pago disponibles
               </h3>
-              <p style={{ fontSize: '12px', color: 'rgba(240,237,255,0.4)', marginBottom: '16px' }}>Elegirás uno de estos en la siguiente pantalla, con nuestra pasarela de pago segura.</p>
+              <p style={{ fontSize: '12px', color: 'var(--mt-muted)', marginBottom: '16px' }}>Elegirás uno de estos en la siguiente pantalla, con nuestra pasarela de pago segura.</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                 {[
-                  { id: 'card', name: 'Tarjeta', icon: <CreditCard size={20} />, sub: 'Crédito / Débito' },
-                  { id: 'transfer', name: 'SPEI', icon: <CreditCard size={20} />, sub: 'Transferencia' },
-                  { id: 'cash', name: 'Efectivo', icon: <Banknote size={20} />, sub: 'OXXO / Pay' }
+                  { id: 'card', name: 'Tarjeta', icon: <CreditCard size={19} />, sub: 'Crédito / Débito' },
+                  { id: 'transfer', name: 'SPEI', icon: <CreditCard size={19} />, sub: 'Transferencia' },
+                  { id: 'cash', name: 'Efectivo', icon: <Banknote size={19} />, sub: 'OXXO / Pay' }
                 ].map((m) => (
                   <div
                     key={m.id}
                     style={{
-                      padding: '16px', borderRadius: '16px', border: '2px solid rgba(255,255,255,0.1)',
-                      background: 'rgba(255,255,255,0.03)',
-                      color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
+                      padding: '14px', borderRadius: '12px', border: '1px solid var(--mt-line)',
+                      background: 'var(--mt-offwhite)',
+                      color: 'var(--mt-ink)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
                     }}
                   >
                     {m.icon}
                     <div style={{ textAlign: 'center' }}>
-                      <p style={{ fontSize: '14px', fontWeight: 700 }}>{m.name}</p>
-                      <p style={{ fontSize: '10px', color: 'rgba(240,237,255,0.4)' }}>{m.sub}</p>
+                      <p style={{ fontSize: '13px', fontWeight: 700 }}>{m.name}</p>
+                      <p style={{ fontSize: '10px', color: 'var(--mt-muted)' }}>{m.sub}</p>
                     </div>
                   </div>
                 ))}
@@ -599,28 +615,28 @@ export default function UserCheckout() {
           </div>
 
 
-          <div style={{ position: 'sticky', top: '120px', height: 'fit-content' }}>
-            <div style={{ background: 'rgba(19,16,42,0.95)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '24px', padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.4)' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '20px' }}>Resumen de Compra</h3>
+          <div style={{ position: 'sticky', top: '24px', height: 'fit-content' }}>
+            <div style={{ background: 'var(--mt-black)', border: '2px solid var(--mt-gold)', borderRadius: '16px', padding: '22px', boxShadow: '0 20px 50px rgba(0,0,0,0.3)' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '18px', color: 'var(--mt-white)' }}>Resumen de Compra</h3>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '11px', marginBottom: '22px', borderBottom: '1px solid var(--mt-line-dark)', paddingBottom: '18px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: 'rgba(240,237,255,0.5)' }}>Subtotal ({totalQuantity} boletos)</span>
-                  <span style={{ fontWeight: 600 }}>${subtotal.toLocaleString()} MXN</span>
+                  <span style={{ color: 'var(--mt-muted-on-dark)' }}>Subtotal ({totalQuantity} boletos)</span>
+                  <span style={{ fontWeight: 600, color: 'var(--mt-white)' }}>${subtotal.toLocaleString()} MXN</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: 'rgba(240,237,255,0.5)' }}>Cargos por servicio</span>
-                  <span style={{ fontWeight: 600 }}>${serviceFee.toLocaleString()} MXN</span>
+                  <span style={{ color: 'var(--mt-muted-on-dark)' }}>Cargos por servicio</span>
+                  <span style={{ fontWeight: 600, color: 'var(--mt-white)' }}>${serviceFee.toLocaleString()} MXN</span>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                <span style={{ fontSize: '18px', fontWeight: 800 }}>Total</span>
-                <span style={{ fontSize: '28px', fontWeight: 900, color: '#a78bfa' }}>${total.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: 600 }}>MXN</span></span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+                <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--mt-white)' }}>Total</span>
+                <span className="mt-gradient-gold-text" style={{ fontSize: '26px', fontWeight: 800 }}>${total.toLocaleString()} <span style={{ fontSize: '13px', fontWeight: 600 }}>MXN</span></span>
               </div>
 
               {purchaseError && (
-                <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '12px', background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)', color: '#f43f5e', fontSize: '13px' }}>
+                <div style={{ marginBottom: '16px', padding: '11px 13px', borderRadius: '10px', background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.3)', color: '#fca5a5', fontSize: '13px' }}>
                   {purchaseError}
                 </div>
               )}
@@ -630,23 +646,24 @@ export default function UserCheckout() {
                 return (
               <>
               {sessionReady && totalQuantity > 0 && !seatSelectionsComplete && (
-                <p style={{ marginBottom: '12px', fontSize: '12px', color: '#f59e0b', textAlign: 'center' }}>
+                <p style={{ marginBottom: '12px', fontSize: '12px', color: 'var(--mt-gold)', textAlign: 'center' }}>
                   Todavía te faltan asientos por elegir en el mapa de arriba.
                 </p>
               )}
               <button
                 onClick={handlePurchase}
                 disabled={isProcessing || !canPurchase}
+                className={canPurchase ? 'mt-btn-primary' : undefined}
                 style={{
-                  width: '100%', padding: '16px', borderRadius: '16px', border: 'none',
-                  background: canPurchase ? 'linear-gradient(135deg, #7c3aed, #8b5cf6)' : 'rgba(255,255,255,0.1)',
-                  color: 'white', fontWeight: 800, fontSize: '16px', cursor: (isProcessing || !canPurchase) ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: canPurchase ? '0 10px 20px rgba(124,58,237,0.3)' : 'none', transition: 'all 0.3s'
+                  width: '100%', padding: '15px', borderRadius: '12px', border: 'none',
+                  background: canPurchase ? undefined : 'rgba(255,255,255,0.1)',
+                  color: canPurchase ? undefined : 'rgba(255,255,255,0.4)', fontWeight: 800, fontSize: '15px', cursor: (isProcessing || !canPurchase) ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
                 }}
               >
                 {isProcessing ? 'Procesando...' : (
                   <>
-                    <Sparkles size={20} />
+                    <Sparkles size={19} />
                     Finalizar Compra
                   </>
                 )}
@@ -655,13 +672,13 @@ export default function UserCheckout() {
                 );
               })()}
 
-              <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', color: 'rgba(16,185,129,0.8)', fontSize: '12px', fontWeight: 600 }}>
-                <ShieldCheck size={16} />
+              <div style={{ marginTop: '18px', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', color: 'var(--mt-green-light)', fontSize: '12px', fontWeight: 600 }}>
+                <ShieldCheck size={15} />
                 Compra segura y encriptada
               </div>
             </div>
 
-            <div style={{ marginTop: '20px', padding: '16px', borderRadius: '16px', background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)', fontSize: '12px', color: 'rgba(245,158,11,0.8)', lineHeight: 1.5 }}>
+            <div style={{ marginTop: '18px', padding: '15px', borderRadius: '12px', background: 'var(--mt-gold-wash)', border: '1px solid var(--mt-gold-border)', fontSize: '12px', color: 'var(--mt-gold-dark)', lineHeight: 1.5 }}>
               ⚠️ Recibirás tus boletos digitales y el código QR de acceso inmediatamente después de confirmar el pago.
             </div>
           </div>

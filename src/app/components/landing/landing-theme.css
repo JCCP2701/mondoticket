@@ -1,0 +1,86 @@
+/* ==========================================
+   MONDOTICKET LANDING — design tokens
+   Scoped to the public landing pages only.
+   Does NOT affect src/styles/theme.css (system theme).
+   ========================================== */
+
+:root {
+  --mt-black: #0a0a0a;
+  --mt-charcoal: #141210;
+  --mt-charcoal-2: #1c1a16;
+  --mt-offwhite: #faf9f6;
+  --mt-white: #ffffff;
+  --mt-ink: #13120f;
+  --mt-muted: #6b685f;
+  --mt-muted-on-dark: rgba(250, 249, 246, 0.6);
+  --mt-line: #e7e3d8;
+  --mt-line-dark: rgba(255, 255, 255, 0.1);
+
+  --mt-gold: #d4af37;
+  --mt-gold-light: #f0c75e;
+  --mt-gold-dark: #a6821f;
+  --mt-gold-gradient: linear-gradient(135deg, #a6821f 0%, #d4af37 55%, #f0c75e 100%);
+  --mt-gold-wash: rgba(212, 175, 55, 0.1);
+  --mt-gold-border: rgba(212, 175, 55, 0.3);
+
+  --mt-green: #328022;
+  --mt-green-dark: #21540f;
+  --mt-green-light: #4f9e3a;
+  --mt-sage: #9cc183;
+  --mt-green-wash: rgba(50, 128, 34, 0.08);
+  --mt-green-border: rgba(50, 128, 34, 0.25);
+}
+
+.mt-gradient-gold-text {
+  background: var(--mt-gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.mt-btn-primary {
+  background: var(--mt-gold-gradient);
+  color: var(--mt-black);
+  border: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+.mt-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+}
+
+.mt-card {
+  background: var(--mt-white);
+  border: 1px solid var(--mt-line);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.mt-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--mt-gold);
+  box-shadow: 0 20px 40px rgba(10, 10, 10, 0.08);
+}
+
+.mt-card-dark {
+  background: var(--mt-charcoal);
+  border: 1px solid var(--mt-line-dark);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.mt-card-dark:hover {
+  transform: translateY(-4px);
+  border-color: var(--mt-gold-border);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.mt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mt-gold-dark);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mt-badge-on-dark {
+  color: var(--mt-gold-light);
+}
