@@ -1,16 +1,22 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-// Creates an 'organization' or 'taquilla' account and assigns it to one or
-// more organizations. Requires SUPABASE_SERVICE_ROLE_KEY — this must never
-// be sent to the browser, which is exactly why account creation has to go
-// through a serverless function rather than the browser Supabase client
-// used everywhere else in this app.
+// Creates an 'organization', 'taquilla', 'validador' or 'broker' account and
+// assigns it to one or more organizations. Requires SUPABASE_SERVICE_ROLE_KEY —
+// this must never be sent to the browser, which is exactly why account
+// creation has to go through a serverless function rather than the browser
+// Supabase client used everywhere else in this app.
 //
 // Two callers are allowed:
-//   - superadmin: can invite either role, to any organization(s).
-//   - organization (manager): can only invite 'taquilla', and only into
+//   - superadmin: can invite any role, to any organization(s).
+//   - organization (manager): can only invite 'taquilla' or 'validador'
+//     (never another 'organization' account, never 'broker'), and only into
 //     organization(s) they themselves belong to.
+//
+// 'broker' accounts never join organization_members — their relationship to
+// an organization is a commercial contract (broker_contracts), set up
+// separately by a superadmin, not staff membership. organizationIds is
+// therefore not required when role is 'broker'.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -32,13 +38,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const callerToken = authHeader.slice('Bearer '.length);
 
   const { name, email, role, organizationIds } = req.body ?? {};
+  const validRoles = ['organization', 'taquilla', 'validador', 'broker'];
+  const requiresOrgIds = role !== 'broker';
   if (
     typeof name !== 'string' || !name.trim() ||
     typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
-    (role !== 'organization' && role !== 'taquilla') ||
-    !Array.isArray(organizationIds) || organizationIds.length === 0 || !organizationIds.every((id) => typeof id === 'string')
+    !validRoles.includes(role) ||
+    (requiresOrgIds && (!Array.isArray(organizationIds) || organizationIds.length === 0 || !organizationIds.every((id) => typeof id === 'string')))
   ) {
-    res.status(400).json({ error: 'name, a valid email, role (organization|taquilla), and a non-empty organizationIds array are required' });
+    res.status(400).json({ error: 'name, a valid email, role (organization|taquilla|validador|broker), and a non-empty organizationIds array (not required for broker) are required' });
     return;
   }
 
@@ -66,10 +74,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const isOrgManager = callerProfile.role === 'organization';
 
   if (isSuperadmin) {
-    // may invite either role, to any organization(s) — no further checks.
+    // may invite any role, to any organization(s) — no further checks.
   } else if (isOrgManager) {
-    if (role !== 'taquilla' || !organizationIds.every((id: string) => callerOrgIds.has(id))) {
-      res.status(403).json({ error: 'An organization account can only invite taquilla staff into its own organization(s)' });
+    if ((role !== 'taquilla' && role !== 'validador') || !organizationIds.every((id: string) => callerOrgIds.has(id))) {
+      res.status(403).json({ error: 'An organization account can only invite taquilla or validador staff into its own organization(s)' });
       return;
     }
   } else {
@@ -102,14 +110,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const { error: membershipError } = await serviceClient
-    .from('organization_members')
-    .insert(organizationIds.map((organizationId: string) => ({ profile_id: created.user.id, organization_id: organizationId })));
+  if (role !== 'broker') {
+    const { error: membershipError } = await serviceClient
+      .from('organization_members')
+      .insert(organizationIds.map((organizationId: string) => ({ profile_id: created.user.id, organization_id: organizationId })));
 
-  if (membershipError) {
-    await serviceClient.auth.admin.deleteUser(created.user.id);
-    res.status(500).json({ error: 'Failed to assign organization(s), account rolled back: ' + membershipError.message });
-    return;
+    if (membershipError) {
+      await serviceClient.auth.admin.deleteUser(created.user.id);
+      res.status(500).json({ error: 'Failed to assign organization(s), account rolled back: ' + membershipError.message });
+      return;
+    }
   }
 
   res.status(200).json({ email, temporaryPassword });

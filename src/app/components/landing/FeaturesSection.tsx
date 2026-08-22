@@ -82,7 +82,7 @@ export default function FeaturesSection() {
                         <span className="tb-gradient-text">triunfar</span>
                     </h2>
                     <p style={{ fontSize: '18px', color: 'rgba(240,237,255,0.55)', maxWidth: '560px', margin: '0 auto', lineHeight: 1.7 }}>
-                        TicketBlessing combina tecnología de punta con una UX impecable para llevar tus eventos al siguiente nivel.
+                        MondoTicket combina tecnología de punta con una UX impecable para llevar tus eventos al siguiente nivel.
                     </p>
                 </div>
 

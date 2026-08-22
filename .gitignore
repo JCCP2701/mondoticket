@@ -8,3 +8,8 @@ dist
 .venv
 *.pkpass
 .env*
+
+# Google Cloud service-account key files (never commit private keys)
+mondoticket-*.json
+*-service-account*.json
+secrets/

@@ -4,14 +4,14 @@ export default function TermsAndConditions() {
     return (
         <LegalPageLayout title="Términos y Condiciones" updatedAt="16 de julio de 2026">
             <p>
-                Estos Términos y Condiciones regulan el uso de TicketBlessing (la "Plataforma") para la
+                Estos Términos y Condiciones regulan el uso de MondoTicket (la "Plataforma") para la
                 compra, venta y gestión de boletos a eventos. Al crear una cuenta o comprar un boleto,
                 aceptas los términos descritos a continuación.
             </p>
 
             <h2>1. Sobre la Plataforma</h2>
             <p>
-                TicketBlessing conecta a organizaciones que producen eventos con personas que desean asistir
+                MondoTicket conecta a organizaciones que producen eventos con personas que desean asistir
                 a ellos. Actuamos como intermediario tecnológico: procesamos la compra, emitimos el boleto
                 digital y validamos el inventario disponible, pero cada evento es organizado y operado por la
                 organización que lo publica en la Plataforma.
@@ -58,7 +58,7 @@ export default function TermsAndConditions() {
             <p>
                 Cada organización es responsable del contenido, la fecha, el lugar y la realización del
                 evento que publica, así como de cumplir con los permisos y condiciones necesarias para su
-                operación. TicketBlessing no es responsable por la cancelación, cambio o desempeño de un
+                operación. MondoTicket no es responsable por la cancelación, cambio o desempeño de un
                 evento, más allá de reflejar correctamente el estado del inventario y facilitar el proceso de
                 reembolso cuando la organización lo autorice.
             </p>
@@ -79,7 +79,7 @@ export default function TermsAndConditions() {
             <h2>9. Contacto</h2>
             <p>
                 Para dudas sobre estos términos, escríbenos a{' '}
-                <a href="mailto:soporte@ticketblessing.com">soporte@ticketblessing.com</a>.
+                <a href="mailto:soporte@mondoticket.com">soporte@mondoticket.com</a>.
             </p>
         </LegalPageLayout>
     );

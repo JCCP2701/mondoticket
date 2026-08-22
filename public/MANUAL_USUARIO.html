@@ -1,0 +1,618 @@
+<title>Manual de Usuario — MondoTicket</title>
+<style>
+  :root {
+    --bg: #0d0b1e;
+    --surface: #15112c;
+    --surface-2: #1c1740;
+    --border: rgba(167,139,250,0.16);
+    --border-strong: rgba(167,139,250,0.3);
+    --text: #f0edff;
+    --text-muted: rgba(240,237,255,0.6);
+    --text-faint: rgba(240,237,255,0.4);
+    --accent: #a78bfa;
+    --accent-strong: #7c3aed;
+    --accent-2: #4338ca;
+    --amber: #f59e0b;
+    --superadmin: #f59e0b;
+    --organizacion: #a78bfa;
+    --taquilla: #38bdf8;
+    --validador: #fb7185;
+    --broker: #2dd4bf;
+    --usuario: #34d399;
+    --font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+    --sidebar-w: 272px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #faf8ff;
+      --surface: #ffffff;
+      --surface-2: #f3effc;
+      --border: rgba(124,58,237,0.13);
+      --border-strong: rgba(124,58,237,0.28);
+      --text: #201a33;
+      --text-muted: rgba(32,26,51,0.62);
+      --text-faint: rgba(32,26,51,0.42);
+      --accent: #7c3aed;
+      --accent-strong: #6d28d9;
+      --accent-2: #4338ca;
+      --amber: #b45309;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d0b1e; --surface: #15112c; --surface-2: #1c1740;
+    --border: rgba(167,139,250,0.16); --border-strong: rgba(167,139,250,0.3);
+    --text: #f0edff; --text-muted: rgba(240,237,255,0.6); --text-faint: rgba(240,237,255,0.4);
+    --accent: #a78bfa; --accent-strong: #7c3aed; --accent-2: #4338ca; --amber: #f59e0b;
+  }
+  :root[data-theme="light"] {
+    --bg: #faf8ff; --surface: #ffffff; --surface-2: #f3effc;
+    --border: rgba(124,58,237,0.13); --border-strong: rgba(124,58,237,0.28);
+    --text: #201a33; --text-muted: rgba(32,26,51,0.62); --text-faint: rgba(32,26,51,0.42);
+    --accent: #7c3aed; --accent-strong: #6d28d9; --accent-2: #4338ca; --amber: #b45309;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font-body); line-height: 1.65; font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px;
+  }
+  code {
+    font-family: var(--font-mono); font-size: 0.88em; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 5px; padding: 0.12em 0.45em;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em;
+    text-wrap: balance; color: var(--text); margin: 0;
+  }
+
+  .shell { display: flex; min-height: 100vh; max-width: 1280px; margin: 0 auto; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: var(--sidebar-w); flex: 0 0 auto; position: sticky; top: 0; height: 100vh;
+    display: flex; flex-direction: column; border-right: 1px solid var(--border);
+    padding: 24px 18px; gap: 18px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 0 4px; }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 9px; flex: 0 0 auto;
+    background: linear-gradient(135deg, var(--accent-strong), var(--accent-2));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-family: var(--font-display); font-weight: 900; font-size: 17px;
+  }
+  .brand-name { font-family: var(--font-display); font-weight: 800; font-size: 17px; letter-spacing: -0.01em; }
+  .brand-name b { color: var(--accent); font-weight: 800; }
+  .brand-tag { font-size: 12px; color: var(--text-faint); padding: 0 4px; margin-top: -12px; }
+
+  .filter-box { position: relative; }
+  .filter-box input {
+    width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    border-radius: 9px; padding: 9px 12px 9px 32px; font-size: 13.5px; font-family: var(--font-body);
+  }
+  .filter-box input::placeholder { color: var(--text-faint); }
+  .filter-box svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.5; }
+
+  nav.toc { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+  .toc-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--text-faint); margin: 14px 4px 4px;
+  }
+  .toc-label:first-child { margin-top: 2px; }
+  .toc a {
+    display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: 8px;
+    color: var(--text-muted); font-size: 13.5px; font-weight: 500; line-height: 1.3;
+  }
+  .toc a:hover { background: var(--surface); color: var(--text); text-decoration: none; }
+  .toc a.active { background: var(--surface-2); color: var(--text); font-weight: 700; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  .toc li { list-style: none; }
+  .toc ul { list-style: none; margin: 0; padding: 0; }
+
+  .sidebar-foot { font-size: 11.5px; color: var(--text-faint); padding: 0 4px; border-top: 1px solid var(--border); padding-top: 12px; }
+
+  /* ---------- Main content ---------- */
+  main { flex: 1; min-width: 0; padding: 56px 56px 120px; max-width: 780px; }
+  .doc-header { margin-bottom: 44px; }
+  .eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 10px;
+  }
+  h1.title { font-size: 40px; margin-bottom: 12px; }
+  .lede { font-size: 17px; color: var(--text-muted); max-width: 60ch; }
+
+  section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  section h2 {
+    font-size: 24px; padding-bottom: 12px; margin-bottom: 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  section h2 .dot { width: 10px; height: 10px; }
+  section h3 { font-size: 18px; margin: 28px 0 10px; }
+  section h4 { font-size: 15.5px; margin: 20px 0 8px; color: var(--accent); }
+  section p { margin: 0 0 14px; color: var(--text); max-width: 66ch; }
+  section p.muted { color: var(--text-muted); }
+  section ul, section ol { margin: 0 0 14px; padding-left: 22px; max-width: 64ch; }
+  section li { margin-bottom: 7px; }
+  section li ul { margin-top: 7px; margin-bottom: 0; }
+  strong { font-weight: 700; }
+
+  .callout {
+    border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    background: var(--surface); border-radius: 10px; padding: 13px 16px; margin: 16px 0;
+    font-size: 14.5px; color: var(--text-muted); max-width: 64ch;
+  }
+  .callout strong { color: var(--text); }
+  .callout.warn { border-left-color: var(--amber); }
+  .callout.warn strong { color: var(--amber); }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 10px 0 20px; font-size: 14.5px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  }
+  .table-wrap { overflow-x: auto; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); font-weight: 700; }
+  tr:last-child td { border-bottom: none; }
+  td code, th code { font-variant-numeric: tabular-nums; }
+
+  .role-guide h2 { border-bottom-color: var(--role-color, var(--border)); }
+  .role-guide h2 .dot { background: var(--role-color); }
+
+  .changelog-entry {
+    display: grid; grid-template-columns: 92px 1fr; gap: 18px; padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .changelog-entry:last-child { border-bottom: none; }
+  .changelog-date { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-faint); padding-top: 2px; white-space: nowrap; }
+  .changelog-body p { margin: 0; font-size: 14.5px; color: var(--text-muted); }
+  .changelog-body strong { color: var(--text); }
+
+  .faq-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
+  .faq-item:last-child { border-bottom: none; }
+  .faq-q { font-weight: 700; margin-bottom: 6px; font-size: 15.5px; }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  @media (max-width: 860px) {
+    .shell { flex-direction: column; }
+    .sidebar {
+      width: 100%; height: auto; position: sticky; top: 0; z-index: 10;
+      flex-direction: row; align-items: center; padding: 12px 16px; gap: 12px;
+      background: var(--bg); overflow-x: auto;
+    }
+    .brand-tag, .filter-box, .sidebar-foot { display: none; }
+    nav.toc { flex-direction: row; overflow-x: auto; overflow-y: visible; white-space: nowrap; }
+    .toc-label { display: none; }
+    .toc a { padding: 7px 10px; }
+    main { padding: 32px 20px 100px; }
+    h1.title { font-size: 30px; }
+    .changelog-entry { grid-template-columns: 1fr; gap: 4px; }
+  }
+
+  @media print {
+    .sidebar { display: none; }
+    main { max-width: 100%; padding: 0 24px; }
+    a { color: inherit; text-decoration: underline; }
+  }
+</style>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">M</div>
+      <div class="brand-name">Mondo<b>Ticket</b></div>
+    </div>
+    <div class="brand-tag">Manual de usuario</div>
+
+    <div class="filter-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="navFilter" type="text" placeholder="Buscar en el manual…" autocomplete="off" />
+    </div>
+
+    <nav class="toc" id="toc">
+      <div class="toc-label">Empezar</div>
+      <li><a href="#que-es" data-text="qué es mondoticket roles cuentas">Qué es MondoTicket</a></li>
+      <li><a href="#iniciar-sesion" data-text="iniciar sesión login cuentas demo contraseña">Cómo iniciar sesión</a></li>
+
+      <div class="toc-label">Guías por rol</div>
+      <li><a href="#super-admin" data-text="super administrador organizaciones usuarios finanzas configuración fee convenio"><span class="dot" style="background:var(--superadmin)"></span>Super Administrador</a></li>
+      <li><a href="#organizacion" data-text="organización dashboard mis eventos crear evento mapa de asientos cortesía reembolso contrato"><span class="dot" style="background:var(--organizacion)"></span>Organización</a></li>
+      <li><a href="#taquilla" data-text="taquilla vender boletos cantidad asiento venta"><span class="dot" style="background:var(--taquilla)"></span>Taquilla</a></li>
+      <li><a href="#validador" data-text="validador escaneo puerta qr cámara offline sin conexión revertir check-in"><span class="dot" style="background:var(--validador)"></span>Validador</a></li>
+      <li><a href="#broker" data-text="broker socio externo comisión ganancia contrato fee venta de boletos"><span class="dot" style="background:var(--broker)"></span>Broker</a></li>
+      <li><a href="#usuario" data-text="usuario comprador comprar boleto wallet google apple qr código"><span class="dot" style="background:var(--usuario)"></span>Usuario (comprador)</a></li>
+
+      <div class="toc-label">Más</div>
+      <li><a href="#faq" data-text="preguntas frecuentes faq código correo asiento escaneo">Preguntas frecuentes</a></li>
+      <li><a href="#changelog" data-text="historial de cambios changelog actualizaciones">Historial de cambios</a></li>
+    </nav>
+
+    <div class="sidebar-foot">Se actualiza con cada cambio de la plataforma. Ver <a href="#changelog">Historial de cambios</a>.</div>
+  </aside>
+
+  <main>
+    <div class="doc-header">
+      <div class="eyebrow">Manual de usuario</div>
+      <h1 class="title">Todo lo que necesitas saber para usar MondoTicket</h1>
+      <p class="lede">Una guía por rol — desde crear tu primer evento hasta escanear boletos en la entrada. Usa el buscador de la izquierda para saltar directo a lo que necesitas.</p>
+    </div>
+
+    <section id="que-es">
+      <h2>Qué es MondoTicket</h2>
+      <p>MondoTicket es la plataforma donde:</p>
+      <ul>
+        <li>Las <strong>organizaciones</strong> publican sus eventos y venden boletos.</li>
+        <li>Los <strong>compradores</strong> eligen y pagan sus boletos en línea.</li>
+        <li>El personal de <strong>taquilla</strong> vende boletos físicamente en el evento.</li>
+        <li>Los <strong>brokers</strong> son socios externos que ganan un % por las organizaciones que traen a la plataforma.</li>
+        <li>El <strong>superadministrador</strong> da de alta a las organizaciones y supervisa todo el negocio.</li>
+      </ul>
+      <p>Existen 6 tipos de cuenta (roles). Cada uno entra a una pantalla distinta automáticamente al iniciar sesión.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Rol</th><th>¿Quién es?</th><th>¿A dónde entra?</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Super Administrador</strong></td><td>El equipo de MondoTicket</td><td>Panel de administración general</td></tr>
+            <tr><td><strong>Organización</strong></td><td>El cliente que organiza y vende sus eventos</td><td>Panel de la organización</td></tr>
+            <tr><td><strong>Taquilla</strong></td><td>El personal que vende boletos en el lugar del evento</td><td>Panel de venta en taquilla</td></tr>
+            <tr><td><strong>Validador</strong></td><td>El personal que revisa boletos en la entrada del evento</td><td>Panel de escaneo de boletos</td></tr>
+            <tr><td><strong>Broker</strong></td><td>Socio externo que gana un % por las organizaciones que trajo</td><td>Panel de ganancias del broker</td></tr>
+            <tr><td><strong>Usuario</strong></td><td>La persona que compra boletos para asistir</td><td>Su cartera de boletos ("Mi Wallet")</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">Una cuenta de <strong>Organización</strong> o <strong>Taquilla</strong> puede pertenecer a más de una organización al mismo tiempo (por ejemplo, si la misma persona administra dos recintos). En ese caso aparece un selector para cambiar entre organizaciones en la barra lateral.</p>
+    </section>
+
+    <section id="iniciar-sesion">
+      <h2>Cómo iniciar sesión</h2>
+      <ol>
+        <li>Entra a la página principal y da clic en <strong>"Iniciar Sesión"</strong>.</li>
+        <li>Escribe tu correo y contraseña.</li>
+        <li>Si tu cuenta tiene activada la verificación en dos pasos, se te pedirá un código de tu aplicación de autenticación (Google Authenticator, Authy, etc.) la primera vez que entres desde un dispositivo nuevo.</li>
+      </ol>
+      <div class="callout">Las cuentas de demostración (<code>@demo.com</code>) no piden verificación en dos pasos, para poder mostrar la plataforma rápidamente.</div>
+
+      <h3>Cuentas de demostración</h3>
+      <p>Estas 6 cuentas existen solo para mostrar la plataforma. Ninguna pide verificación en dos pasos ni código por correo — entran directo con correo y contraseña.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Rol</th><th>Correo</th><th>Contraseña</th></tr></thead>
+          <tbody>
+            <tr><td>Super Administrador</td><td><code>superadmin@demo.com</code></td><td><code>Demo123!</code></td></tr>
+            <tr><td>Organización</td><td><code>organization@demo.com</code></td><td><code>Demo123!</code></td></tr>
+            <tr><td>Taquilla</td><td><code>taquilla@demo.com</code></td><td><code>Demo123!</code></td></tr>
+            <tr><td>Validador</td><td><code>validador@demo.com</code></td><td><code>Demo123!</code></td></tr>
+            <tr><td>Broker</td><td><code>broker@demo.com</code></td><td><code>Demo123!</code></td></tr>
+            <tr><td>Usuario (comprador)</td><td><code>user@demo.com</code></td><td><code>Demo123!</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">La cuenta demo de Broker ya tiene un contrato de ejemplo con "Organización Demo" (10% de la venta de boletos), así que al entrar se ven ganancias reales de inmediato, no un panel vacío.</div>
+      <div class="callout">Estas cuentas de demostración son distintas del código de verificación por correo que se pide al comprar como invitado (ver <a href="#usuario">Comprar un boleto</a>) — ese flujo es solo para compradores nuevos sin cuenta, no aplica a estas 6 cuentas.</div>
+    </section>
+
+    <section id="super-admin" class="role-guide" style="--role-color: var(--superadmin)">
+      <h2><span class="dot"></span>Guía para Super Administrador</h2>
+      <p>Al entrar verás el menú lateral con: <strong>Dashboard</strong>, <strong>Organizaciones</strong>, <strong>Usuarios</strong>, <strong>Brokers</strong>, <strong>Finanzas</strong>, <strong>Configuración</strong>.</p>
+
+      <h3>Dashboard</h3>
+      <p>Resumen general: ganancia estimada, boletos vendidos, boletos por vender, número de organizaciones, gráfica de recaudación de los últimos 6 meses, y una tabla con cada organización donde puedes editar rápidamente su fee (%) haciendo clic sobre el porcentaje.</p>
+
+      <h3>Organizaciones</h3>
+      <p>Lista de todas las organizaciones registradas. Desde aquí puedes:</p>
+      <ul>
+        <li><strong>Nueva Organización</strong> (botón superior derecho): da de alta a un nuevo cliente — nombre comercial, razón social, RFC, dirección, contacto y los términos comerciales iniciales.</li>
+        <li><strong>Convenio</strong> (botón por fila): edita en cualquier momento el convenio comercial de esa organización:
+          <ul>
+            <li><strong>Fee por Ticket (%)</strong> — lo que cobra la plataforma por cada boleto vendido en línea.</li>
+            <li><strong>Fee para Ventas en Taquilla (%)</strong> — opcional; si se deja vacío, se usa el mismo fee general. Útil si quieres cobrar distinto por las ventas presenciales.</li>
+            <li><strong>Plazo de Pago (días)</strong> — cuántos días tiene la organización para pagar el fee.</li>
+            <li><strong>Eventos por Mes</strong> — opcional; límite de eventos nuevos que puede crear por mes calendario. Si se deja vacío, no hay límite.</li>
+            <li><strong>Cortesías por Evento</strong> — opcional; límite de boletos gratuitos que puede emitir por evento. Si se deja vacío, no hay límite.</li>
+            <li><strong>Notas del Convenio</strong> — cualquier condición especial por escrito.</li>
+          </ul>
+        </li>
+        <li><strong>Miembros</strong> (botón por fila): ver quién pertenece a esa organización, invitar a una persona nueva (te da una contraseña temporal para compartirle) o agregar a una cuenta que ya existe.</li>
+      </ul>
+
+      <h3>Usuarios</h3>
+      <p>Lista de todas las cuentas del sistema (clientes, organizaciones, taquilla, superadmins), con buscador y filtro por rol.</p>
+      <ul>
+        <li><strong>Nuevo Usuario</strong> (botón superior): crea directamente una cuenta de <code>Organización</code> o <code>Taquilla</code> y la asigna a una o varias organizaciones desde el momento de creación.</li>
+        <li>Ícono de engranaje (por fila): administra a qué organización(es) pertenece esa persona — quitarla de una, o agregarla a otra. Para cuentas de rol <code>Usuario</code> o <code>Super Admin</code> este botón no aplica (no pertenecen a ninguna organización).</li>
+      </ul>
+
+      <h3>Brokers</h3>
+      <p>Aquí se crean las cuentas de <strong>Broker</strong> y se configura su contrato comercial con cada organización.</p>
+      <ul>
+        <li><strong>Nuevo Broker</strong> (botón superior derecho): crea la cuenta (solo nombre y correo — un broker no se asigna a ninguna organización todavía en este paso).</li>
+        <li>Da clic en un broker para desplegar sus contratos. <strong>Agregar contrato con otra organización</strong>: eliges la organización, la base de cálculo, y el porcentaje:
+          <ul>
+            <li><strong>% de venta de boletos</strong>: el broker gana ese % sobre el total vendido en boletos de los eventos de esa organización.</li>
+            <li><strong>% del fee de la plataforma</strong>: el broker gana ese % sobre lo que MondoTicket le cobra a esa organización (no sobre la venta del evento).</li>
+          </ul>
+        </li>
+        <li>Cada broker puede tener un contrato distinto (organización, base, %) con cada organización. Editar o eliminar un contrato es inmediato — el broker deja de ver ganancias de esa organización en cuanto se elimina.</li>
+      </ul>
+      <div class="callout">El broker <strong>nunca ve el ingreso real</strong> de un evento ni el detalle de las órdenes — solo su ganancia ya calculada. Esto no es una preferencia de la interfaz: la cuenta de broker no tiene ningún permiso para leer boletos u órdenes directamente en la base de datos, así que no hay manera de que vea esos números aunque lo intente.</div>
+
+      <h3>Finanzas</h3>
+      <p>Recaudación real por organización. Da clic en una organización para desplegar el detalle evento por evento, separando lo vendido en línea de lo vendido en taquilla (porque pueden tener un fee distinto).</p>
+
+      <h3>Configuración</h3>
+      <p>Esta sección todavía es solo una vista de referencia — los cambios que se hagan aquí <strong>no se guardan todavía</strong>. Se avisará en este manual cuando quede completamente funcional.</p>
+    </section>
+
+    <section id="organizacion" class="role-guide" style="--role-color: var(--organizacion)">
+      <h2><span class="dot"></span>Guía para Organización</h2>
+      <p>Menú lateral: <strong>Dashboard</strong>, <strong>Mis Eventos</strong>, <strong>Mi Contrato</strong>, <strong>Configuración</strong>. Si tu cuenta pertenece a más de una organización, verás un selector arriba del menú para cambiar entre ellas.</p>
+
+      <h3>Dashboard</h3>
+      <p>Resumen de tu organización: eventos activos, boletos vendidos, revenue total, cuánto fee le debes a la plataforma ("Fee a Liquidar"), y un gráfico de tu inventario disponible vs. vendido. El botón <strong>"Descargar Resumen"</strong> abre el diálogo de impresión del navegador para guardarlo como PDF.</p>
+
+      <h3>Mis Eventos</h3>
+      <p>Lista de tus eventos con ocupación, estado de preventa, revenue, cortesías y reembolsos. Botón <strong>"Nuevo Evento"</strong> para crear uno, o <strong>"Detalles"</strong> para entrar a la gestión de uno existente.</p>
+
+      <h4>Crear un evento</h4>
+      <ol>
+        <li>Completa nombre, categoría, descripción, sede, dirección, fecha y hora.</li>
+        <li>Puedes subir una imagen real para el evento (se mostrará en el sitio y en el checkout).</li>
+        <li>Agrega uno o varios <strong>tipos de boleto</strong> (por ejemplo General, VIP) con su precio y aforo. Un tipo de boleto con precio $0 funciona como boleto de cortesía.</li>
+        <li>Da clic en <strong>"Publicar Evento"</strong>.</li>
+      </ol>
+      <div class="callout">Si tu organización tiene un límite de "Eventos por Mes" en su convenio y ya lo alcanzaste ese mes, el sistema no dejará crear uno nuevo hasta el siguiente mes.</div>
+
+      <h4>Detalle de un evento</h4>
+      <p>Desde aquí puedes:</p>
+      <ul>
+        <li><strong>Editar Evento</strong>: cambiar nombre, categoría, descripción o la imagen del evento en cualquier momento.</li>
+        <li><strong>Mapa de Asientos</strong>: diseñar el mapa de asientos para los tipos de boleto que lo requieran (ver siguiente sección).</li>
+        <li><strong>Asignar Cortesía</strong>: dar un boleto gratuito a alguien (solo visible si el evento tiene algún tipo de boleto con precio $0).</li>
+        <li>Ver la lista de boletos vendidos, buscarlos, filtrarlos por estado (Válido / Usado / Reembolsado), y <strong>seleccionar boletos para reembolsar</strong>.</li>
+      </ul>
+      <div class="callout">Si tu convenio tiene un límite de "Cortesías por Evento" y ya lo alcanzaste, el sistema no dejará asignar más cortesías para ese evento.</div>
+
+      <h4>Mapa de Asientos</h4>
+      <p>Diseña la distribución de asientos con las herramientas de Selector, Bloque y Borrador, elige a qué tipo de boleto pertenece cada asiento pintado, y da clic en <strong>"Guardar Mapa de Asientos"</strong>. Una vez que un tipo de boleto tiene asientos, los compradores eligen su asiento exacto en vez de solo la cantidad.</p>
+
+      <h3>Mi Contrato</h3>
+      <p>Consulta (sin poder editar) tu convenio comercial vigente: fee digital, fee en taquilla, plazo de pago, límite de eventos por mes, límite de cortesías por evento, y los datos legales de tu organización. Solo el Super Administrador puede modificar estos valores. El botón <strong>"Descargar PDF"</strong> abre el diálogo de impresión del navegador.</p>
+
+      <h3>Configuración</h3>
+      <p>Igual que en el panel de Super Administrador: esta sección todavía es solo de referencia, los cambios <strong>no se guardan todavía</strong>.</p>
+    </section>
+
+    <section id="taquilla" class="role-guide" style="--role-color: var(--taquilla)">
+      <h2><span class="dot"></span>Guía para Taquilla</h2>
+      <p>Al entrar verás el evento seleccionado (con su imagen, si tiene una) y dos formas de vender:</p>
+      <ol>
+        <li><strong>Por cantidad</strong>: usa los botones <code>+</code>/<code>-</code> junto al tipo de boleto.</li>
+        <li><strong>Por asiento</strong>: si el tipo de boleto tiene mapa de asientos, primero pon cuántos vas a vender con <code>+</code>/<code>-</code> — el mapa aparece justo debajo en cuanto pones al menos 1, y ahí eliges exactamente esos asientos. Se actualiza en tiempo real, así que si alguien más (otro taquillero, o un comprador en línea) toma un asiento, deja de estar disponible al instante para ti también.</li>
+      </ol>
+      <p>Puedes mezclar ambos en una sola venta. Los datos del comprador son opcionales. Elige el método de pago (solo para tu registro, ya que el cobro se hace en persona — efectivo o terminal física) y da clic en <strong>"Completar Venta"</strong>.</p>
+      <div class="callout">Si tu organización tiene varios eventos, cámbialo desde el selector de "Evento" arriba.<br>Si tu cuenta pertenece a varias organizaciones, usa el selector junto al logo para cambiar entre ellas.</div>
+    </section>
+
+    <section id="validador" class="role-guide" style="--role-color: var(--validador)">
+      <h2><span class="dot"></span>Guía para Validador (escaneo en puerta)</h2>
+      <p>Esta cuenta es para el personal que revisa boletos en la entrada del evento. Una cuenta de <code>Organización</code> o <code>Taquilla</code> también puede escanear (útil en eventos pequeños donde una sola persona hace todo), pero solo <code>Validador</code> está pensado específicamente para esto.</p>
+
+      <h3>Cómo escanear</h3>
+      <ol>
+        <li>Elige el evento en el selector superior.</li>
+        <li>Da clic en <strong>"Encender cámara"</strong> y apunta al código QR del boleto (en el celular del asistente o impreso). El sistema lo detecta solo, sin necesidad de tomar foto.</li>
+        <li>Verás de inmediato un resultado en:
+          <ul>
+            <li>🟢 <strong>Verde — Acceso permitido</strong>: el boleto es válido y ya quedó marcado como usado. No se puede volver a usar.</li>
+            <li>🔴 <strong>Rojo — Ya fue escaneado</strong>: te muestra cuándo y con qué dispositivo entró antes. Si la persona jura que es la primera vez, probablemente su boleto se compartió o se le tomó una captura de pantalla a alguien más.</li>
+            <li>🔴 <strong>Rojo — Boleto reembolsado / de otro evento / código no reconocido</strong>: no se permite el acceso.</li>
+          </ul>
+        </li>
+        <li>Si la cámara no puede leer el código (pantalla rota, muy oscuro), usa el campo de <strong>"Código manual"</strong> para escribirlo o pegarlo a mano.</li>
+      </ol>
+      <div class="callout">Cada boleto tiene <strong>un solo código QR, siempre el mismo</strong> — en la app, en el correo, impreso, o guardado en Apple/Google Wallet. La protección contra clonación no viene de que el código cambie, sino de que <strong>se "quema" para siempre en el instante en que se escanea la primera vez</strong>: si alguien más intenta usar una foto o captura de ese mismo boleto después, el sistema ya lo ve como usado y lo rechaza.</div>
+
+      <h3>Modo sin conexión (si se satura o cae la red del lugar)</h3>
+      <p>Antes de que empiece a entrar gente, con conexión a internet todavía disponible:</p>
+      <ol>
+        <li>Elige el evento y da clic en <strong>"Preparar modo offline"</strong>. Esto descarga al dispositivo lo necesario para seguir validando boletos aunque se pierda la señal.</li>
+        <li>Si la señal se cae, el sistema lo detecta solo y aparece una barra naranja arriba: <strong>"MODO OFFLINE — N escaneos sin sincronizar"</strong>. Puedes seguir escaneando normal — cada resultado se guarda en el propio dispositivo con la etiqueta "Sin conexión".</li>
+        <li>Cuando vuelva la señal, el sistema sincroniza automáticamente (o puedes forzarlo con <strong>"Sincronizar"</strong>). Ahí es cuando cada escaneo se vuelve a verificar contra el servidor.</li>
+      </ol>
+      <div class="callout warn"><strong>Promesa honesta, no mágica:</strong> mientras hay conexión, es imposible que un mismo boleto entre dos veces. Si el lugar se queda sin señal y <strong>dos dispositivos distintos</strong> escanean el mismo boleto mientras ambos están desconectados, el sistema detecta el conflicto al sincronizar (gana el que escaneó primero, por hora real) y lo deja registrado para que el organizador lo revise después — no promete que nunca pueda pasar, promete que si pasa, quedará documentado.
+      <br><br>Si el dispositivo se queda sin conexión <strong>sin haber preparado el modo offline primero</strong>, no podrá validar boletos hasta recuperar la señal — por eso el paso 1 debe hacerse antes de que empiece el evento, no durante.</div>
+
+      <h3>Si te equivocaste de boleto</h3>
+      <p>Si escaneaste el boleto incorrecto por error, puedes dar clic en <strong>"Revertir este ingreso"</strong> justo debajo del resultado — pero solo funciona en el momento, inmediatamente después de escanearlo. Si ya pasó tiempo o cambiaste de pantalla, pide a alguien con cuenta de <code>Organización</code> que lo revierta desde el detalle del evento.</p>
+      <div class="callout">Por seguridad, una cuenta de Validador o Taquilla <strong>no puede revertir</strong> un check-in — solo una cuenta de Organización o el Super Administrador pueden hacerlo. Esto evita que, si alguien roba o clona una cuenta de puerta, pueda "reabrir" entradas ya usadas.</div>
+
+      <h3>Ver cuántos han entrado</h3>
+      <p>Abajo del selector de evento verás el contador de personas ya ingresadas, y más abajo la lista de los últimos escaneos (quién, cuándo, y si fue aceptado o rechazado) — se actualiza en tiempo real, así que si hay varios validadores escaneando al mismo tiempo, todos ven lo mismo.</p>
+      <div class="callout">Para las organizaciones: el detalle de cada evento (<code>Mis Eventos → Detalles</code>) ahora también muestra cuántos boletos ya hicieron check-in.</div>
+    </section>
+
+    <section id="broker" class="role-guide" style="--role-color: var(--broker)">
+      <h2><span class="dot"></span>Guía para Broker</h2>
+      <p>Esta cuenta es para un socio externo (promotor, agente) que trae organizaciones a la plataforma y gana un % de sus eventos. Los contratos (con cuáles organizaciones, y a qué %) los configura el Super Administrador desde "Brokers" — un broker no puede agregarse a sí mismo a una organización.</p>
+
+      <h3>Tus ganancias</h3>
+      <p>Al entrar verás:</p>
+      <ul>
+        <li><strong>Tarjetas de resumen</strong>: cuánto has ganado en total, cuánto este mes, con cuántas organizaciones tienes contrato, y en cuántos eventos.</li>
+        <li><strong>Ganancias por organización</strong>: da clic en una organización para ver el desglose por evento.</li>
+        <li><strong>Historial de transacciones</strong>: cada compra pagada que generó ganancia para ti, con fecha, evento, organización, y tu comisión — ordenadas de la más reciente a la más antigua.</li>
+      </ul>
+      <div class="callout warn"><strong>Importante:</strong> en ningún lugar del panel se muestra el ingreso real del evento (lo que realmente se vendió), ni el detalle de compradores u órdenes — solo tu ganancia, ya calculada según tu contrato. Si tu contrato es "% de venta de boletos", tu ganancia sube y baja junto con las ventas reales del evento, pero el número que ves siempre es tu comisión, nunca la venta completa.</div>
+      <p class="muted">Si un contrato se elimina o se ajusta, los cambios se reflejan de inmediato la próxima vez que entres — no hay que hacer nada de tu parte.</p>
+    </section>
+
+    <section id="usuario" class="role-guide" style="--role-color: var(--usuario)">
+      <h2><span class="dot"></span>Guía para Usuario (comprador)</h2>
+
+      <h3>Explorar eventos</h3>
+      <p>Desde la página principal puedes ver los próximos eventos destacados, o dar clic en <strong>"Ver Todos los Eventos"</strong> para ver el catálogo completo con filtros por categoría, fecha y búsqueda por nombre.</p>
+
+      <h3>Comprar un boleto</h3>
+      <ol>
+        <li>Entra al evento que te interesa y da clic para ir a la compra.</li>
+        <li><strong>Paso 1 — Tus datos</strong>: escribe tu nombre, correo y teléfono, y da clic en <strong>"Enviar código"</strong>.</li>
+        <li>Revisa tu correo — te llegará un <strong>código de 6 dígitos</strong>. Escríbelo y da clic en <strong>"Verificar código"</strong>.
+          <ul>
+            <li>Si no te llega o se te vence (tiene un tiempo límite), usa <strong>"Reenviar código"</strong>.</li>
+            <li>Si ya tenías cuenta con ese correo (por ejemplo porque ya compraste antes), el mismo código te abre tu sesión existente — no necesitas recordar ninguna contraseña.</li>
+          </ul>
+        </li>
+        <li><strong>Paso 2 — Elige tus boletos</strong>: se desbloquea después de verificar tu código.
+          <ul>
+            <li>Para cada tipo de boleto, primero pon <strong>cuántos quieres</strong> con los botones <code>+</code>/<code>-</code>.</li>
+            <li>Si ese tipo tiene asientos numerados, en cuanto pongas la cantidad aparece el mapa del recinto <strong>debajo</strong> — ahí eliges exactamente cuáles asientos quieres, ni uno más de los que pediste. El botón de compra no se activa hasta que hayas elegido todos los asientos que indicaste.</li>
+            <li>En cuanto le das clic a un asiento (o en cuanto avanzas con una cantidad sin mapa), <strong>queda apartado para ti al instante</strong> — nadie más lo puede tomar, ni siquiera taquilla, mientras sigas en el proceso.</li>
+          </ul>
+        </li>
+        <li><strong>Paso 3 — Pago</strong>: no aplica si tu selección es gratuita (cortesía). Para todo lo demás, se te muestra qué métodos acepta la plataforma (tarjeta, SPEI, efectivo) y al dar clic en <strong>"Finalizar Compra"</strong> te llevamos a una página de pago segura para completarlo con el método que prefieras.</li>
+        <li>Al terminar de pagar, regresas automáticamente a la pantalla de tu boleto.
+          <ul>
+            <li>Si pagaste con tarjeta, normalmente tu boleto (con su código QR) aparece de inmediato.</li>
+            <li>Si pagaste con SPEI o en efectivo, la confirmación del banco/tienda puede tardar — verás un mensaje de <strong>"Confirmando tu pago..."</strong> y un botón para volver a checar; en cuanto se confirme, tu boleto aparece solo, sin que tengas que hacer nada más.</li>
+          </ul>
+        </li>
+      </ol>
+      <div class="callout">Tus boletos/asientos apartados nunca se le pueden vender a alguien más mientras tu compra sigue en proceso — ver la pregunta frecuente sobre qué pasa si no terminas de pagar.</div>
+
+      <h3>Mi Wallet</h3>
+      <p>Desde el ícono de tu cuenta puedes ver todos tus boletos (próximos y pasados), con su código QR, estado (Válido / Usado / Reembolsado), y un acceso directo para ver el boleto completo.</p>
+
+      <h3>Ver un boleto</h3>
+      <p>Desde el boleto puedes ver su código QR para el acceso al evento, agregarlo a tu calendario, y dar clic en <strong>"Google Wallet"</strong> para guardarlo directamente en tu Google Wallet (celular Android o cualquier cuenta de Google), con el diseño morado de MondoTicket — el código que se guarda ahí es exactamente el mismo que ves en la app. <em>(Apple Wallet todavía está en construcción.)</em></p>
+      <div class="callout">Tu código QR es <strong>siempre el mismo</strong> — es el mismo que verás en la app, en tu correo, y (próximamente) en Apple/Google Wallet. No necesitas preocuparte porque cambie ni recargar la pantalla: simplemente muéstralo en el acceso. En cuanto el validador lo escanea, ese código queda usado para siempre — por eso no debes compartirlo con nadie antes de llegar al evento.</div>
+    </section>
+
+    <section id="faq">
+      <h2>Preguntas frecuentes</h2>
+      <div class="faq-item">
+        <div class="faq-q">¿Por qué no me llega el código para comprar?</div>
+        <p>Revisa spam/promociones. Puedes pedir uno nuevo con "Reenviar código", pero hay un límite de tiempo entre solicitudes (por seguridad, para evitar abuso).</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Puedo comprar boletos para varios eventos de organizaciones distintas?</div>
+        <p>Sí, una cuenta de comprador puede comprar de cualquier organización sin restricción.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Aparto un boleto/asiento pero no completo la compra, ¿qué pasa?</div>
+        <p>Depende de en qué paso te quedaste:</p>
+        <ul>
+          <li>Si solo elegiste el asiento pero nunca le diste "Finalizar Compra": se libera solo después de <strong>5 minutos</strong> sin actividad (o antes, si cierras la pestaña).</li>
+          <li>Si ya le diste "Finalizar Compra" y llegaste a la pantalla de pago pero no la terminaste: queda apartado hasta por <strong>72 horas</strong> — pensado para cubrir pagos en efectivo o SPEI, que pueden tardar en confirmarse. Si decides que ya no quieres comprarlo, da clic en "Cancelar" en esa misma pantalla de pago para liberarlo de inmediato en vez de esperar.</li>
+        </ul>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Ya se puede escanear el boleto en la entrada del evento?</div>
+        <p>Sí. Una cuenta de rol <code>Validador</code> (o <code>Organización</code>/<code>Taquilla</code>) puede escanear los boletos desde su panel — ver <a href="#validador">Guía para Validador</a>. Un boleto ya escaneado no se puede volver a usar.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Qué pasa si dos personas intentan entrar con el mismo boleto (por ejemplo, alguien compartió una captura de pantalla)?</div>
+        <p>Solo la primera persona en escanearse entra. La segunda ve un aviso de "Ya fue escaneado" con la hora exacta y el dispositivo con el que entró la primera vez, para que el personal de puerta pueda decidir qué hacer.</p>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Un broker puede ver cuánto vendió realmente un evento?</div>
+        <p>No. El panel del broker solo muestra su propia ganancia ya calculada, nunca el ingreso real del evento ni el detalle de órdenes o compradores — esa cuenta no tiene permiso para leer esa información, sin importar cómo la busque.</p>
+      </div>
+    </section>
+
+    <section id="changelog">
+      <h2>Historial de cambios</h2>
+
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-06</div>
+        <div class="changelog-body"><p><strong>Pago real conectado:</strong> la pasarela de pago ya no es simulada — tarjeta, SPEI y efectivo se procesan de verdad en una página de pago segura. Si pagas con SPEI o efectivo, tu boleto puede tardar en aparecer mientras se confirma ("Confirmando tu pago..."); con tarjeta normalmente es inmediato.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-06</div>
+        <div class="changelog-body"><p><strong>Elegir cantidad antes que el asiento:</strong> para boletos con asientos numerados, ahora primero indicas cuántos quieres con los botones <code>+</code>/<code>-</code>, y el mapa del recinto aparece justo después, limitado a esa cantidad exacta — antes se podía seleccionar cualquier cantidad de asientos sin relación con un número declarado. Aplica igual en compra en línea y en taquilla.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-06</div>
+        <div class="changelog-body"><p>Se agregaron cuentas de demostración para <strong>Validador</strong> y <strong>Broker</strong> (antes solo existían para los otros 4 roles). La cuenta demo de Broker ya tiene un contrato de ejemplo con "Organización Demo" para que se vean ganancias reales al entrar.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-06</div>
+        <div class="changelog-body"><p>Se agregó el rol <strong>Broker</strong>: un socio externo que gana un % de los eventos de las organizaciones que trajo a la plataforma, sin ver nunca el ingreso real ni el detalle de órdenes — solo su ganancia ya calculada. El Super Administrador crea las cuentas y configura el contrato por organización (nueva sección "Brokers"): puede ser % de la venta de boletos o % del fee de la plataforma, según lo que se acuerde con cada broker. Incluye tarjetas de resumen, ganancias por organización/evento, e historial de transacciones para el broker.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-06</div>
+        <div class="changelog-body"><p>La plataforma cambió de nombre: de "TicketBlessing" a <strong>MondoTicket</strong> (mismo sistema, solo cambia el nombre y el logo).</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-06</div>
+        <div class="changelog-body"><p>El boleto guardado en <strong>Google Wallet</strong> ahora se ve con el diseño morado de la marca (banner y logo de MondoTicket) en vez del ícono genérico gris.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-06</div>
+        <div class="changelog-body"><p>Si ya iniciaste sesión (por ejemplo con una cuenta de Organización o Taquilla) al entrar a comprar un boleto, el nombre y correo se rellenan automáticamente como punto de partida pero ahora se pueden editar libremente — antes quedaban bloqueados.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-05</div>
+        <div class="changelog-body"><p><strong>Google Wallet real:</strong> el botón "Google Wallet" en el boleto y en Mi Wallet ahora sí guarda el boleto en Google Wallet de verdad (antes no existía / abría por error Google Calendar). El código QR que se guarda ahí es el mismo que se ve en la app — no uno distinto para el wallet.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-05</div>
+        <div class="changelog-body"><p><strong>Un solo código QR por boleto:</strong> se ajustó el diseño para que cada boleto tenga siempre el mismo código QR (en app, correo, impreso, y a futuro en Apple/Google Wallet), en vez de uno que cambiara cada 30 segundos. La protección contra clonación sigue siendo real: el código se "quema" permanentemente en el instante en que se escanea la primera vez, así que una copia (foto, captura de pantalla) deja de servir de inmediato después de ese primer ingreso. <strong>Modo sin conexión</strong> en el escaneo de puerta: el validador puede preparar el dispositivo antes del evento para seguir validando boletos aunque se caiga la red del lugar, sincronizando automáticamente al recuperar señal, con detección de conflictos si dos dispositivos escanearon el mismo boleto mientras ambos estaban desconectados.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-05</div>
+        <div class="changelog-body"><p>Se agregó el rol <strong>Validador</strong> para escanear boletos en la entrada del evento (cámara con detección automática de QR, entrada manual de respaldo, contador de ingresos en tiempo real, y opción de revertir un escaneo por error). Un boleto ya escaneado no se puede volver a usar. Las cuentas de Organización y Taquilla también pueden invitar/gestionar cuentas Validador desde "Miembros". El detalle de evento (Organización) ahora muestra cuántos boletos ya hicieron check-in.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-05</div>
+        <div class="changelog-body"><p>Se agregó la tabla de credenciales de las 4 cuentas de demostración (correo + contraseña), aclarando que son independientes del código de verificación del checkout de invitados.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-05</div>
+        <div class="changelog-body"><p>Documento creado. Incluye: roles y accesos, gestión de organizaciones/convenio/usuarios (Super Admin), creación y edición de eventos con imagen, mapa de asientos, cortesías y reembolsos (Organización), venta mixta por cantidad/asiento (Taquilla), compra con verificación por código de 6 dígitos por correo en vez de contraseña compartida, wallet y visualización de boletos (Usuario). Pendientes marcados explícitamente: pasarela de pago real, escaneo en puerta, Apple/Google Wallet, Configuración (ambas).</p></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+    var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          links.forEach(function (a) { a.classList.remove('active'); });
+          var idx = sections.indexOf(entry.target);
+          if (idx !== -1) links[idx].classList.add('active');
+        });
+      }, { rootMargin: '-10% 0px -75% 0px' });
+      sections.forEach(function (s) { if (s) observer.observe(s); });
+    }
+
+    var filterInput = document.getElementById('navFilter');
+    var items = Array.prototype.slice.call(document.querySelectorAll('#toc li'));
+    var labels = Array.prototype.slice.call(document.querySelectorAll('.toc-label'));
+    filterInput.addEventListener('input', function () {
+      var q = filterInput.value.trim().toLowerCase();
+      items.forEach(function (li) {
+        var a = li.querySelector('a');
+        var text = (a.textContent + ' ' + (a.getAttribute('data-text') || '')).toLowerCase();
+        li.style.display = !q || text.indexOf(q) !== -1 ? '' : 'none';
+      });
+      labels.forEach(function (l) { l.style.display = q ? 'none' : ''; });
+    });
+  })();
+</script>

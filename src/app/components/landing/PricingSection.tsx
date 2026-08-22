@@ -77,7 +77,7 @@ export default function PricingSection() {
         //   body: JSON.stringify({ priceId: plan.priceId }),
         // });
         if (plan.name === 'Enterprise') {
-            alert('Contacta a ventas@ticketblessing.com para Enterprise');
+            alert('Contacta a ventas@mondoticket.com para Enterprise');
         } else {
             navigate('/register');
         }

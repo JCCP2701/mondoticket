@@ -58,7 +58,7 @@ export default function RegisterPage() {
                             <Ticket size={24} color="white" />
                         </div>
                         <span style={{ fontSize: '22px', fontWeight: 800, color: '#f0edff' }}>
-                            Ticket<span style={{ background: 'linear-gradient(135deg, #a78bfa, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Blessing</span>
+                            Mondo<span style={{ background: 'linear-gradient(135deg, #a78bfa, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Ticket</span>
                         </span>
                     </Link>
                 </div>
@@ -71,7 +71,7 @@ export default function RegisterPage() {
                 }}>
                     <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#f0edff', marginBottom: '6px' }}>Crear cuenta</h2>
                     <p style={{ fontSize: '14px', color: 'rgba(240,237,255,0.45)', marginBottom: '28px' }}>
-                        Únete a TicketBlessing y empieza a disfrutar eventos
+                        Únete a MondoTicket y empieza a disfrutar eventos
                     </p>
 
                     {/* Benefits */}

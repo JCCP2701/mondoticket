@@ -4,7 +4,7 @@ export default function PrivacyPolicy() {
     return (
         <LegalPageLayout title="Aviso de Privacidad" updatedAt="16 de julio de 2026">
             <p>
-                En TicketBlessing ("nosotros", "la Plataforma") respetamos tu privacidad y nos comprometemos
+                En MondoTicket ("nosotros", "la Plataforma") respetamos tu privacidad y nos comprometemos
                 a proteger los datos personales que compartes con nosotros al comprar boletos, crear una
                 cuenta o utilizar cualquiera de nuestros servicios. Este aviso describe qué información
                 recabamos, para qué la usamos y qué derechos tienes sobre ella, conforme a la Ley Federal de
@@ -48,7 +48,7 @@ export default function PrivacyPolicy() {
             <p>
                 Puedes solicitar en cualquier momento el Acceso, Rectificación, Cancelación u Oposición al
                 tratamiento de tus datos personales, así como revocar tu consentimiento, escribiendo a{' '}
-                <a href="mailto:privacidad@ticketblessing.com">privacidad@ticketblessing.com</a>. Atenderemos
+                <a href="mailto:privacidad@mondoticket.com">privacidad@mondoticket.com</a>. Atenderemos
                 tu solicitud dentro de los plazos que marca la ley aplicable.
             </p>
 
@@ -76,7 +76,7 @@ export default function PrivacyPolicy() {
             <h2>8. Contacto</h2>
             <p>
                 Si tienes dudas sobre este aviso de privacidad, escríbenos a{' '}
-                <a href="mailto:privacidad@ticketblessing.com">privacidad@ticketblessing.com</a>.
+                <a href="mailto:privacidad@mondoticket.com">privacidad@mondoticket.com</a>.
             </p>
         </LegalPageLayout>
     );

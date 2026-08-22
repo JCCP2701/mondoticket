@@ -44,7 +44,7 @@ export default function AdminFinances() {
                         <div className="p-2 bg-primary/10 rounded-lg">
                             <TrendingUp className="w-6 h-6 text-primary" />
                         </div>
-                        <p className="text-sm font-bold text-muted-foreground">Utilidad TicketBlessing</p>
+                        <p className="text-sm font-bold text-muted-foreground">Utilidad MondoTicket</p>
                     </div>
                     <p className="text-3xl font-bold text-primary">${totalProfit.toLocaleString()}</p>
                     <p className="text-xs text-muted-foreground mt-2">Suma de fees, digital + taquilla, por contrato</p>

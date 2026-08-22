@@ -19,7 +19,7 @@ export default function Footer() {
         ],
         Soporte: [
             { label: 'Centro de Ayuda', to: '#' },
-            { label: 'Contacto', to: 'mailto:soporte@ticketblessing.com' },
+            { label: 'Contacto', to: 'mailto:soporte@mondoticket.com' },
             { label: 'Status', to: '#' },
             { label: 'Seguridad', to: '#' },
         ],
@@ -50,7 +50,7 @@ export default function Footer() {
                                 <Ticket size={18} color="white" />
                             </div>
                             <span style={{ fontSize: '20px', fontWeight: 800, color: '#f0edff' }}>
-                                Ticket<span style={{ background: 'linear-gradient(135deg, #a78bfa, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Blessing</span>
+                                Mondo<span style={{ background: 'linear-gradient(135deg, #a78bfa, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Ticket</span>
                             </span>
                         </div>
                         <p style={{ fontSize: '14px', color: 'rgba(240,237,255,0.45)', lineHeight: 1.8, maxWidth: '260px', marginBottom: '24px' }}>
@@ -119,7 +119,7 @@ export default function Footer() {
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px',
                 }}>
                     <p style={{ fontSize: '13px', color: 'rgba(240,237,255,0.3)' }}>
-                        © {year} TicketBlessing. Todos los derechos reservados.
+                        © {year} MondoTicket. Todos los derechos reservados.
                     </p>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                         <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', animation: 'pulse 2s infinite' }} />

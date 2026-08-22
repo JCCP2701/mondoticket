@@ -275,7 +275,7 @@ function MembersModal({ org, onClose }: { org: Organization; onClose: () => void
     const [error, setError] = useState("");
     const [lastInvite, setLastInvite] = useState<{ email: string; temporaryPassword: string } | null>(null);
 
-    const [inviteForm, setInviteForm] = useState({ name: "", email: "", role: "taquilla" as "organization" | "taquilla" });
+    const [inviteForm, setInviteForm] = useState({ name: "", email: "", role: "taquilla" as "organization" | "taquilla" | "validador" });
     const [inviting, setInviting] = useState(false);
 
     const [existingEmail, setExistingEmail] = useState("");
@@ -313,8 +313,8 @@ function MembersModal({ org, onClose }: { org: Organization; onClose: () => void
         try {
             const profile = await dataService.findProfileByEmail(existingEmail);
             if (!profile) throw new Error("No existe ninguna cuenta con ese correo");
-            if (profile.role !== 'organization' && profile.role !== 'taquilla') {
-                throw new Error("Solo se pueden agregar cuentas con rol organización o taquilla");
+            if (profile.role !== 'organization' && profile.role !== 'taquilla' && profile.role !== 'validador') {
+                throw new Error("Solo se pueden agregar cuentas con rol organización, taquilla o validador");
             }
             await dataService.addExistingUserToOrganization(profile.id, org.id);
             setExistingEmail("");
@@ -353,7 +353,7 @@ function MembersModal({ org, onClose }: { org: Organization; onClose: () => void
                                     <p className="font-bold text-sm">{m.name}</p>
                                     <p className="text-xs text-muted-foreground">{m.email}</p>
                                 </div>
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${m.role === 'organization' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'}`}>
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${m.role === 'organization' ? 'bg-violet-100 text-violet-700' : m.role === 'validador' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
                                     {m.role}
                                 </span>
                             </div>
@@ -376,10 +376,11 @@ function MembersModal({ org, onClose }: { org: Organization; onClose: () => void
                         />
                         <select
                             value={inviteForm.role}
-                            onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value as "organization" | "taquilla" })}
+                            onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value as "organization" | "taquilla" | "validador" })}
                             className="px-3 py-2 rounded-lg border-2 border-border bg-background outline-none col-span-1"
                         >
                             <option value="taquilla">Taquilla</option>
+                            <option value="validador">Validador (puerta)</option>
                             <option value="organization">Organización</option>
                         </select>
                         <button type="submit" disabled={inviting} className="px-4 py-2 bg-primary text-white rounded-lg font-bold text-sm disabled:opacity-60 col-span-1">

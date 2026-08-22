@@ -18,7 +18,7 @@ export default function AdminSettings() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-muted-foreground">Nombre de la Plataforma</label>
-                            <input type="text" defaultValue="TicketBlessing" className="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" />
+                            <input type="text" defaultValue="MondoTicket" className="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" />
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-muted-foreground">Moneda Principal</label>

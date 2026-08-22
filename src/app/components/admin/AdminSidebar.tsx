@@ -6,7 +6,8 @@ import {
     Wallet,
     Settings,
     LogOut,
-    ChevronRight
+    ChevronRight,
+    Handshake
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
@@ -14,6 +15,7 @@ const MENU_ITEMS = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
     { id: 'organizations', label: 'Organizaciones', icon: Building2, path: '/admin/organizations' },
     { id: 'users', label: 'Usuarios', icon: Users, path: '/admin/users' },
+    { id: 'brokers', label: 'Brokers', icon: Handshake, path: '/admin/brokers' },
     { id: 'finances', label: 'Finanzas', icon: Wallet, path: '/admin/finances' },
     { id: 'settings', label: 'Configuración', icon: Settings, path: '/admin/settings' },
 ];
@@ -29,7 +31,7 @@ export default function AdminSidebar() {
                     <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
                         TB
                     </div>
-                    <span className="font-bold text-xl tracking-tight">TicketBlessing</span>
+                    <span className="font-bold text-xl tracking-tight">MondoTicket</span>
                 </div>
             </div>
 

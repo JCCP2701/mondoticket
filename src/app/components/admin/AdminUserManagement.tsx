@@ -11,7 +11,7 @@ function CreateUserModal({ organizations, onClose, onCreated }: {
 }) {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
-    const [role, setRole] = useState<'organization' | 'taquilla'>('organization');
+    const [role, setRole] = useState<'organization' | 'taquilla' | 'validador' | 'broker'>('organization');
     const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
@@ -23,14 +23,17 @@ function CreateUserModal({ organizations, onClose, onCreated }: {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim() || !email.trim() || selectedOrgIds.length === 0) {
+        // A broker's relationship to an organization is a commercial contract
+        // (set up afterward from "Brokers"), not staff membership, so it
+        // doesn't need an organization picked at account-creation time.
+        if (!name.trim() || !email.trim() || (role !== 'broker' && selectedOrgIds.length === 0)) {
             setError("Nombre, correo y al menos una organización son obligatorios.");
             return;
         }
         setSubmitting(true);
         setError("");
         try {
-            const res = await dataService.inviteStaff(name.trim(), email.trim(), role, selectedOrgIds);
+            const res = await dataService.inviteStaff(name.trim(), email.trim(), role, role === 'broker' ? [] : selectedOrgIds);
             setResult(res);
             onCreated();
         } catch (err: any) {
@@ -74,20 +77,28 @@ function CreateUserModal({ organizations, onClose, onCreated }: {
                             <select value={role} onChange={(e) => setRole(e.target.value as any)} className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none">
                                 <option value="organization">Organización</option>
                                 <option value="taquilla">Taquilla</option>
+                                <option value="validador">Validador (puerta)</option>
+                                <option value="broker">Broker</option>
                             </select>
                         </div>
-                        <div>
-                            <label className="text-sm font-bold text-muted-foreground mb-2 block">Organización(es)</label>
-                            <div className="space-y-2 max-h-40 overflow-y-auto border-2 border-border rounded-xl p-3">
-                                {organizations.length === 0 && <p className="text-xs text-muted-foreground">No hay organizaciones registradas todavía.</p>}
-                                {organizations.map((org) => (
-                                    <label key={org.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                                        <input type="checkbox" checked={selectedOrgIds.includes(org.id)} onChange={() => toggleOrg(org.id)} />
-                                        {org.name}
-                                    </label>
-                                ))}
+                        {role === 'broker' ? (
+                            <p className="text-xs text-muted-foreground italic">
+                                Un broker no se asigna a organizaciones aquí — una vez creada la cuenta, configura sus contratos por organización desde "Brokers".
+                            </p>
+                        ) : (
+                            <div>
+                                <label className="text-sm font-bold text-muted-foreground mb-2 block">Organización(es)</label>
+                                <div className="space-y-2 max-h-40 overflow-y-auto border-2 border-border rounded-xl p-3">
+                                    {organizations.length === 0 && <p className="text-xs text-muted-foreground">No hay organizaciones registradas todavía.</p>}
+                                    {organizations.map((org) => (
+                                        <label key={org.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                                            <input type="checkbox" checked={selectedOrgIds.includes(org.id)} onChange={() => toggleOrg(org.id)} />
+                                            {org.name}
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
                         {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
                         <button type="submit" disabled={submitting} className="w-full py-3 bg-primary text-white rounded-xl font-bold disabled:opacity-60">
                             {submitting ? "Creando..." : "Crear Usuario"}
@@ -110,7 +121,7 @@ function ManageUserModal({ user, organizations, onClose, onChanged }: {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
 
-    const manageable = user.role === 'organization' || user.role === 'taquilla';
+    const manageable = user.role === 'organization' || user.role === 'taquilla' || user.role === 'validador';
     const availableToAdd = organizations.filter((o) => !orgs.some((uo) => uo.id === o.id));
 
     const handleRemove = async (orgId: string) => {
@@ -213,7 +224,7 @@ export default function AdminUserManagement() {
     const [searchTerm, setSearchTerm] = useState("");
     const roleParam = searchParams.get('role');
     const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>(
-        roleParam === 'user' || roleParam === 'organization' || roleParam === 'taquilla' || roleParam === 'superadmin' ? roleParam : 'all'
+        roleParam === 'user' || roleParam === 'organization' || roleParam === 'taquilla' || roleParam === 'validador' || roleParam === 'broker' || roleParam === 'superadmin' ? roleParam : 'all'
     );
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [managingUser, setManagingUser] = useState<AuthUser | null>(null);
@@ -274,6 +285,8 @@ export default function AdminUserManagement() {
                                 <option value="user">Clientes (Normal)</option>
                                 <option value="organization">Organizaciones</option>
                                 <option value="taquilla">Taquilla</option>
+                                <option value="validador">Validador</option>
+                                <option value="broker">Broker</option>
                                 <option value="superadmin">Super Admin</option>
                             </select>
                         </div>
@@ -312,7 +325,9 @@ export default function AdminUserManagement() {
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${user.role === 'superadmin' ? "bg-red-100 text-red-700" :
                                                 user.role === 'organization' ? "bg-violet-100 text-violet-700" :
-                                                    "bg-blue-100 text-blue-700"
+                                                    user.role === 'validador' ? "bg-amber-100 text-amber-700" :
+                                                        user.role === 'broker' ? "bg-teal-100 text-teal-700" :
+                                                            "bg-blue-100 text-blue-700"
                                             }`}>
                                             {user.role === 'superadmin' ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />}
                                             {user.role.toUpperCase()}

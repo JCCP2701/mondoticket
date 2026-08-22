@@ -43,14 +43,14 @@ export default function Navbar() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                             <span style={{ fontSize: '22px', fontWeight: 800, color: '#f0edff', fontFamily: 'Outfit, sans-serif' }}>
-                                Ticket
+                                Mondo
                             </span>
                             <span style={{
                                 fontSize: '22px', fontWeight: 800, fontFamily: 'Outfit, sans-serif',
                                 background: 'linear-gradient(135deg, #a78bfa, #f59e0b)',
                                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
                             }}>
-                                Blessing
+                                Ticket
                             </span>
 
                         </div>

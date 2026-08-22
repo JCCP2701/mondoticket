@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { supabase } from '../services/supabaseClient';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-export type UserRole = 'superadmin' | 'organization' | 'user' | 'taquilla';
+export type UserRole = 'superadmin' | 'organization' | 'user' | 'taquilla' | 'validador' | 'broker';
 
 export interface OrgMembership {
   id: string;
@@ -34,6 +34,8 @@ interface AuthContextType extends AuthState {
   logout: () => void;
   verifyMFA: (code: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
+  requestGuestOtp: (email: string, name: string) => Promise<{ ok: boolean; error?: string }>;
+  verifyGuestOtp: (email: string, code: string) => Promise<AuthUser | null>;
   isFirstMFASetup: boolean;
   mfaQrCode: string | null;
   activeOrganizationId: string | null;
@@ -187,6 +189,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  // Guest checkout, passwordless: a one-time email code replaces the old
+  // shared hardcoded password (every guest used to get the same literal
+  // string, so anyone who knew a buyer's email could sign in as them and
+  // clone their ticket QR). No MFA/TOTP step here — buyers mid-checkout
+  // can't be expected to enroll an authenticator, and hold_event_seats /
+  // create_order_and_tickets only require auth.uid() to be set, not aal2.
+  const requestGuestOtp = async (email: string, name: string): Promise<{ ok: boolean; error?: string }> => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { data: { name }, shouldCreateUser: true },
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  };
+
+  const verifyGuestOtp = async (email: string, code: string): Promise<AuthUser | null> => {
+    const { data, error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
+    if (error || !data.user) return null;
+
+    const profile = await loadProfile(data.user.id);
+    if (!profile) return null;
+
+    applyActiveOrg(profile);
+    return profile;
+  };
+
   const verifyMFA = async (code: string): Promise<boolean> => {
     if (!mfaFactorId) return false;
 
@@ -210,7 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, login, logout, verifyMFA, register, isFirstMFASetup, mfaQrCode, activeOrganizationId, setActiveOrganizationId }}
+      value={{ ...state, login, logout, verifyMFA, register, requestGuestOtp, verifyGuestOtp, isFirstMFASetup, mfaQrCode, activeOrganizationId, setActiveOrganizationId }}
     >
       {children}
     </AuthContext.Provider>
@@ -222,6 +250,8 @@ export function dashboardPathForRole(role: UserRole | undefined): string {
     case 'superadmin': return '/admin';
     case 'organization': return '/organization';
     case 'taquilla': return '/taquilla';
+    case 'validador': return '/validador';
+    case 'broker': return '/broker';
     default: return '/wallet';
   }
 }

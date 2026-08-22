@@ -21,7 +21,7 @@ export default function OrganizationContract() {
             <div className="flex justify-between items-center text-foreground">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Mi Contrato y Convenio</h1>
-                    <p className="text-muted-foreground mt-1 text-lg">Términos comerciales y acuerdos de servicio con TicketBlessing</p>
+                    <p className="text-muted-foreground mt-1 text-lg">Términos comerciales y acuerdos de servicio con MondoTicket</p>
                 </div>
                 <button onClick={() => window.print()} className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg shadow-primary/20 print:hidden">
                     <Download className="w-5 h-5" />

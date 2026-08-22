@@ -92,7 +92,7 @@ export default function MFAPage() {
                             <Ticket size={24} color="white" />
                         </div>
                         <span style={{ fontSize: '22px', fontWeight: 800, color: '#f0edff' }}>
-                            Ticket<span style={{ background: 'linear-gradient(135deg, #a78bfa, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Blessing</span>
+                            Mondo<span style={{ background: 'linear-gradient(135deg, #a78bfa, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Ticket</span>
                         </span>
                     </Link>
                 </div>

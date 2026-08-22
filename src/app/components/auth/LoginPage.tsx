@@ -79,7 +79,7 @@ export default function LoginPage() {
                             <Ticket size={28} color="white" />
                         </div>
                         <span style={{ fontSize: '30px', fontWeight: 900, color: '#f0edff', letterSpacing: '-1px' }}>
-                            Ticket<span style={{ color: '#f59e0b' }}>Blessing</span>
+                            Mondo<span style={{ color: '#f59e0b' }}>Ticket</span>
                         </span>
                     </Link>
 
@@ -185,7 +185,7 @@ export default function LoginPage() {
 
                     <div style={{ marginTop: '32px', textAlign: 'center', borderTop: '1px solid rgba(167, 139, 250, 0.1)', paddingTop: '24px' }}>
                         <p style={{ fontSize: '14px', color: 'rgba(248, 250, 252, 0.4)' }}>
-                            ¿Eres nuevo en TicketBlessing?
+                            ¿Eres nuevo en MondoTicket?
                         </p>
                         <Link to="/register" style={{
                             display: 'inline-block', marginTop: '8px',

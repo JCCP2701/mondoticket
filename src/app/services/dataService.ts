@@ -55,7 +55,7 @@ export interface SeatRecord {
     seatNumber: string;
     rowIndex: number;
     colIndex: number;
-    status: 'available' | 'held' | 'sold';
+    status: 'available' | 'held' | 'reserved' | 'sold';
 }
 
 export interface TicketRecord {
@@ -88,6 +88,63 @@ export interface MyTicketRecord {
     eventImageUrl: string | null;
     venueName: string;
     createdAt: string;
+}
+
+export interface BrokerContract {
+    id: string;
+    brokerProfileId: string;
+    organizationId: string;
+    organizationName: string;
+    commissionBasis: 'ticket_revenue' | 'platform_fee';
+    commissionPercentage: number;
+    notes: string | null;
+    createdAt: string;
+}
+
+export interface BrokerTransaction {
+    orderId: string;
+    organizationId: string;
+    organizationName: string;
+    eventId: string;
+    eventName: string;
+    eventDate: string;
+    paidAt: string;
+    salesChannel: 'online' | 'taquilla';
+    commissionBasis: 'ticket_revenue' | 'platform_fee';
+    commissionPercentage: number;
+    commissionAmount: number;
+}
+
+export type CheckInOutcome = 'ok' | 'already_used' | 'cancelled' | 'wrong_event' | 'not_found' | 'invalid_signature';
+
+export interface CheckInResult {
+    result: CheckInOutcome;
+    ticketId: string | null;
+    ticketTypeName: string | null;
+    seatLabel: string | null;
+    holderName: string | null;
+    checkedInAt: string | null;
+    checkedInByName: string | null;
+}
+
+export interface GateScanRecord {
+    id: number;
+    ticketId: string | null;
+    result: CheckInOutcome;
+    scannedAt: string;
+    deviceId: string | null;
+    scannedByName: string;
+}
+
+export interface GateManifestEntry {
+    ticketId: string;
+    eventId: string;
+    status: 'valid' | 'used' | 'cancelled';
+    ticketTypeName: string | null;
+    seatLabel: string | null;
+    holderName: string | null;
+    allowStaticQr: boolean;
+    qrHash: string | null;
 }
 
 // ─── Mapping helpers ────────────────────────────────────────────────────────
@@ -513,6 +570,7 @@ export const dataService = {
         items?: { ticketTypeId: string; quantity: number }[];
         seatIds?: string[];
         salesChannel?: 'online' | 'taquilla';
+        idempotencyKey?: string;
     }): Promise<string> {
         const { data, error } = await supabase.rpc('create_order_and_tickets', {
             p_event_id: input.eventId,
@@ -525,9 +583,63 @@ export const dataService = {
             p_items: input.items ? input.items.map((i) => ({ ticket_type_id: i.ticketTypeId, quantity: i.quantity })) : null,
             p_seat_ids: input.seatIds ?? null,
             p_sales_channel: input.salesChannel ?? 'online',
+            p_idempotency_key: input.idempotencyKey ?? null,
         });
         if (error) throw error;
         return data as string;
+    },
+
+    // Real-money online purchases go through this instead of createOrder:
+    // reserves inventory/seats and creates a 'pending' order, but issues no
+    // tickets yet — those only get minted by confirm_order_paid, once the
+    // OrkestaPay webhook confirms payment. See createOrkestaCheckout below.
+    async reserveOrder(input: {
+        eventId: string;
+        organizationId: string;
+        userId: string;
+        customerName: string;
+        customerEmail: string;
+        customerPhone: string;
+        items?: { ticketTypeId: string; quantity: number }[];
+        seatIds?: string[];
+        idempotencyKey?: string;
+    }): Promise<string> {
+        const { data, error } = await supabase.rpc('reserve_order', {
+            p_event_id: input.eventId,
+            p_organization_id: input.organizationId,
+            p_user_id: input.userId,
+            p_customer_name: input.customerName,
+            p_customer_email: input.customerEmail,
+            p_customer_phone: input.customerPhone,
+            p_items: input.items ? input.items.map((i) => ({ ticket_type_id: i.ticketTypeId, quantity: i.quantity })) : null,
+            p_seat_ids: input.seatIds ?? null,
+            p_idempotency_key: input.idempotencyKey ?? null,
+        });
+        if (error) throw error;
+        return data as string;
+    },
+
+    // Builds an OrkestaPay hosted Checkout for an already-reserved order and
+    // returns the URL to send the buyer's browser to.
+    async createOrkestaCheckout(orderId: string): Promise<string> {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Not authenticated');
+        const res = await fetch('/api/payments/orkesta/create-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ orderId }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'No se pudo iniciar el pago');
+        return json.checkoutRedirectUrl;
+    },
+
+    // Releases a still-'pending' reservation (buyer canceled on OrkestaPay's
+    // hosted page) — frees inventory/seats immediately instead of waiting
+    // for the passive 72h expiry.
+    async releaseOrder(orderId: string): Promise<void> {
+        const { error } = await supabase.rpc('release_order', { p_order_id: orderId });
+        if (error) throw error;
     },
 
     // Orders/tickets for an event (organizer/superadmin view — RLS-scoped)
@@ -607,9 +719,112 @@ export const dataService = {
         return result;
     },
 
+    // Cancels the tickets in the database first (refund_tickets, unchanged),
+    // then — for any order that went through OrkestaPay — refunds the
+    // proportional amount at the gateway. Routed through a serverless
+    // endpoint (rather than calling refund_tickets directly) purely to
+    // sequence in the real gateway call; the RPC still does 100% of the
+    // authorization/DB-rollback work, unmodified.
     async refundTickets(ticketIds: string[]): Promise<void> {
-        const { error } = await supabase.rpc('refund_tickets', { p_ticket_ids: ticketIds });
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Not authenticated');
+        const res = await fetch('/api/payments/orkesta/refund', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ ticketIds }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'No se pudo procesar el reembolso');
+    },
+
+    // Gate scanning / check-in (Fase 1 del roadmap de blindaje)
+    async checkInTicket(qrCode: string, eventId: string, deviceId?: string): Promise<CheckInResult> {
+        const { data, error } = await supabase.rpc('check_in_ticket', {
+            p_qr_code: qrCode,
+            p_event_id: eventId,
+            p_device_id: deviceId ?? null,
+        });
         if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : data;
+        return {
+            result: row.result,
+            ticketId: row.ticket_id,
+            ticketTypeName: row.ticket_type_name,
+            seatLabel: row.seat_label,
+            holderName: row.holder_name,
+            checkedInAt: row.checked_in_at,
+            checkedInByName: row.checked_in_by_name,
+        };
+    },
+
+    async undoCheckIn(ticketId: string): Promise<void> {
+        const { error } = await supabase.rpc('undo_check_in', { p_ticket_id: ticketId });
+        if (error) throw error;
+    },
+
+    async getScansForEvent(eventId: string): Promise<GateScanRecord[]> {
+        const { data, error } = await supabase
+            .from('ticket_scans')
+            .select('id, ticket_id, result, scanned_at, device_id, profiles(name)')
+            .eq('event_id', eventId)
+            .order('scanned_at', { ascending: false })
+            .limit(50);
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            id: row.id,
+            ticketId: row.ticket_id,
+            result: row.result,
+            scannedAt: row.scanned_at,
+            deviceId: row.device_id,
+            scannedByName: row.profiles?.name ?? '',
+        }));
+    },
+
+    async getTicketDisplaySeed(ticketId: string): Promise<string> {
+        const { data, error } = await supabase.rpc('get_ticket_display_seed', { p_ticket_id: ticketId });
+        if (error) throw error;
+        return data as string;
+    },
+
+    // Fase 2 del roadmap de blindaje (escaneo offline).
+    async getEventSigningKey(eventId: string): Promise<string> {
+        const { data, error } = await supabase.rpc('get_event_signing_key', { p_event_id: eventId });
+        if (error) throw error;
+        return data as string;
+    },
+
+    async getEventGateManifest(eventId: string): Promise<GateManifestEntry[]> {
+        const { data, error } = await supabase.rpc('get_event_gate_manifest', { p_event_id: eventId });
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            ticketId: row.ticket_id,
+            eventId,
+            status: row.status,
+            ticketTypeName: row.ticket_type_name,
+            seatLabel: row.seat_label,
+            holderName: row.holder_name,
+            allowStaticQr: row.allow_static_qr,
+            qrHash: row.qr_hash,
+        }));
+    },
+
+    async syncTicketScans(eventId: string, scans: {
+        clientScanId: string; qrCode: string; deviceId: string; scannedAt: string;
+    }[]): Promise<{ clientScanId: string; ticketId: string | null; serverResult: CheckInOutcome; conflict: boolean }[]> {
+        // The server re-verifies each qrCode's signature against the real
+        // event key at sync time — it never trusts the device's own local
+        // (offline) resolution of which ticket a code belonged to.
+        const { data, error } = await supabase.rpc('sync_ticket_scans', {
+            p_event_id: eventId,
+            p_scans: scans.map((s) => ({ clientScanId: s.clientScanId, qrCode: s.qrCode, deviceId: s.deviceId, scannedAt: s.scannedAt })),
+        });
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            clientScanId: row.client_scan_id,
+            ticketId: row.ticket_id,
+            serverResult: row.server_result,
+            conflict: row.conflict,
+        }));
     },
 
     // Box-office (taquilla) staff account creation — goes through a
@@ -618,7 +833,7 @@ export const dataService = {
     async inviteStaff(
         name: string,
         email: string,
-        role: 'organization' | 'taquilla',
+        role: 'organization' | 'taquilla' | 'validador' | 'broker',
         organizationIds: string[]
     ): Promise<{ email: string; temporaryPassword: string }> {
         const { data: { session } } = await supabase.auth.getSession();
@@ -631,6 +846,20 @@ export const dataService = {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Failed to invite staff');
         return json;
+    },
+
+    // Builds/updates the ticket's Google Wallet pass server-side (its
+    // barcode is always the ticket's current qr_code) and returns a
+    // "Save to Google Wallet" link.
+    async getGoogleWalletSaveUrl(ticketId: string): Promise<string> {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Not authenticated');
+        const res = await fetch(`/api/wallet/google/${ticketId}`, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to build Google Wallet pass');
+        return json.saveUrl;
     },
 
     // Organization membership management (superadmin-only per RLS)
@@ -666,6 +895,107 @@ export const dataService = {
             .eq('profile_id', profileId)
             .eq('organization_id', organizationId);
         if (error) throw error;
+    },
+
+    // Broker contracts (superadmin-only per RLS) — the commercial agreement
+    // between the platform and a broker for one organization: what % they
+    // earn, and whether that % is computed from the event's ticket revenue
+    // or from the platform's own fee. A broker can have at most one
+    // contract per organization (editing replaces it, doesn't stack).
+    // Superadmin-only: every broker contract across every broker, for the
+    // "Brokers" admin page (RLS returns all rows for is_superadmin(), not
+    // just the caller's own).
+    async getAllBrokerContracts(): Promise<BrokerContract[]> {
+        const { data, error } = await supabase
+            .from('broker_contracts')
+            .select('id, broker_profile_id, organization_id, commission_basis, commission_percentage, notes, created_at, organizations(name)')
+            .order('created_at');
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            id: row.id,
+            brokerProfileId: row.broker_profile_id,
+            organizationId: row.organization_id,
+            organizationName: row.organizations?.name ?? '',
+            commissionBasis: row.commission_basis,
+            commissionPercentage: Number(row.commission_percentage),
+            notes: row.notes,
+            createdAt: row.created_at,
+        }));
+    },
+
+    async getBrokerContracts(brokerProfileId: string): Promise<BrokerContract[]> {
+        const { data, error } = await supabase
+            .from('broker_contracts')
+            .select('id, broker_profile_id, organization_id, commission_basis, commission_percentage, notes, created_at, organizations(name)')
+            .eq('broker_profile_id', brokerProfileId)
+            .order('created_at');
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            id: row.id,
+            brokerProfileId: row.broker_profile_id,
+            organizationId: row.organization_id,
+            organizationName: row.organizations?.name ?? '',
+            commissionBasis: row.commission_basis,
+            commissionPercentage: Number(row.commission_percentage),
+            notes: row.notes,
+            createdAt: row.created_at,
+        }));
+    },
+
+    async createBrokerContract(input: {
+        brokerProfileId: string;
+        organizationId: string;
+        commissionBasis: 'ticket_revenue' | 'platform_fee';
+        commissionPercentage: number;
+        notes?: string | null;
+    }): Promise<void> {
+        const { error } = await supabase.from('broker_contracts').insert({
+            broker_profile_id: input.brokerProfileId,
+            organization_id: input.organizationId,
+            commission_basis: input.commissionBasis,
+            commission_percentage: input.commissionPercentage,
+            notes: input.notes ?? null,
+        });
+        if (error) throw error;
+    },
+
+    async updateBrokerContract(id: string, input: {
+        commissionBasis: 'ticket_revenue' | 'platform_fee';
+        commissionPercentage: number;
+        notes?: string | null;
+    }): Promise<void> {
+        const { error } = await supabase.from('broker_contracts').update({
+            commission_basis: input.commissionBasis,
+            commission_percentage: input.commissionPercentage,
+            notes: input.notes ?? null,
+        }).eq('id', id);
+        if (error) throw error;
+    },
+
+    async deleteBrokerContract(id: string): Promise<void> {
+        const { error } = await supabase.from('broker_contracts').delete().eq('id', id);
+        if (error) throw error;
+    },
+
+    // The broker's own view — computed server-side (get_broker_transactions),
+    // never exposes the event's real revenue, only the broker's own
+    // already-calculated commission per paid order.
+    async getBrokerTransactions(): Promise<BrokerTransaction[]> {
+        const { data, error } = await supabase.rpc('get_broker_transactions');
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            orderId: row.order_id,
+            organizationId: row.organization_id,
+            organizationName: row.organization_name,
+            eventId: row.event_id,
+            eventName: row.event_name,
+            eventDate: row.event_date,
+            paidAt: row.paid_at,
+            salesChannel: row.sales_channel,
+            commissionBasis: row.commission_basis,
+            commissionPercentage: Number(row.commission_percentage),
+            commissionAmount: Number(row.commission_amount),
+        }));
     },
 
     async findProfileByEmail(email: string): Promise<{ id: string; name: string; email: string; role: UserRole } | null> {

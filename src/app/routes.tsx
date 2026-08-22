@@ -21,12 +21,15 @@ import AdminUserManagement from "./components/admin/AdminUserManagement";
 import AdminOrganizations from "./components/admin/AdminOrganizations";
 import AdminFinances from "./components/admin/AdminFinances";
 import AdminSettings from "./components/admin/AdminSettings";
+import AdminBrokers from "./components/admin/AdminBrokers";
+import BrokerDashboard from "./components/broker/BrokerDashboard";
 import OrganizationLayout from "./components/organization/OrganizationLayout";
 import VenueDesigner from "./components/organization/VenueDesigner";
 import OrganizationContract from "./components/organization/OrganizationContract";
 import OrganizationSettings from "./components/organization/OrganizationSettings";
 import OrganizationEvents from "./components/organization/OrganizationEvents";
 import TaquillaDashboard from "./components/taquilla/TaquillaDashboard";
+import ValidadorDashboard from "./components/validador/ValidadorDashboard";
 
 export const router = createBrowserRouter([
     {
@@ -59,6 +62,7 @@ export const router = createBrowserRouter([
                     { path: "finances", Component: AdminFinances },
                     { path: "settings", Component: AdminSettings },
                     { path: "create-organization", Component: CreateOrganization },
+                    { path: "brokers", Component: AdminBrokers },
                 ]
             },
 
@@ -97,6 +101,28 @@ export const router = createBrowserRouter([
                 element: (
                     <ProtectedRoute requiredRole="taquilla">
                         <TaquillaDashboard />
+                    </ProtectedRoute>
+                ),
+            },
+
+            // Broker routes (protected)
+            {
+                path: "broker",
+                element: (
+                    <ProtectedRoute requiredRole="broker">
+                        <BrokerDashboard />
+                    </ProtectedRoute>
+                ),
+            },
+
+            // Gate scanning / check-in (protected) — validador is the
+            // primary role, but organization/taquilla can also scan since
+            // is_event_gate_staff() authorizes all three server-side too.
+            {
+                path: "validador",
+                element: (
+                    <ProtectedRoute requiredRole={["validador", "organization", "taquilla", "superadmin"]}>
+                        <ValidadorDashboard />
                     </ProtectedRoute>
                 ),
             },

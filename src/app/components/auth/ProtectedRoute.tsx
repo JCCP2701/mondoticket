@@ -4,7 +4,7 @@ import { useAuth, UserRole, dashboardPathForRole } from '../../context/AuthConte
 
 interface ProtectedRouteProps {
     children: ReactNode;
-    requiredRole?: UserRole;
+    requiredRole?: UserRole | UserRole[];
     requireMFA?: boolean;
 }
 
@@ -27,7 +27,8 @@ export default function ProtectedRoute({
     }
 
     // Wrong role → go to their correct dashboard
-    if (requiredRole && user?.role !== requiredRole) {
+    const allowedRoles = requiredRole ? (Array.isArray(requiredRole) ? requiredRole : [requiredRole]) : null;
+    if (allowedRoles && !(user?.role && allowedRoles.includes(user.role))) {
         return <Navigate to={dashboardPathForRole(user?.role)} replace />;
     }
 

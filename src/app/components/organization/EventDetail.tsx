@@ -122,6 +122,7 @@ export default function EventDetail() {
   const stats = {
     total: tickets.length,
     valid: tickets.filter((t) => t.status === 'valid').length,
+    checkedIn: tickets.filter((t) => t.status === 'used').length,
     refunded: tickets.filter((t) => t.status === 'cancelled').length,
     courtesy: tickets.filter((t) => t.unitPrice === 0).length,
     revenue: tickets.filter((t) => t.status !== 'cancelled').reduce((sum, t) => sum + t.unitPrice, 0),
@@ -243,7 +244,7 @@ export default function EventDetail() {
       )}
 
       {/* KPI Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
         <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
           <div className="p-3 bg-primary/5 rounded-xl mb-4"><TicketIcon className="w-6 h-6 text-primary" /></div>
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Boletos Totales</p>
@@ -258,6 +259,11 @@ export default function EventDetail() {
           <div className="p-3 bg-green-500/5 rounded-xl mb-4"><CheckCircle2 className="w-6 h-6 text-green-600" /></div>
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Válidos</p>
           <p className="text-3xl font-black mt-1 text-green-600">{stats.valid}</p>
+        </div>
+        <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
+          <div className="p-3 bg-blue-500/5 rounded-xl mb-4"><TicketIcon className="w-6 h-6 text-blue-600" /></div>
+          <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Check-in</p>
+          <p className="text-3xl font-black mt-1 text-blue-600">{stats.checkedIn}</p>
         </div>
         <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
           <div className="p-3 bg-violet-500/5 rounded-xl mb-4"><Gift className="w-6 h-6 text-violet-600" /></div>

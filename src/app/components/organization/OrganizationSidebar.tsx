@@ -28,7 +28,7 @@ export default function OrganizationSidebar() {
                     <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
                         TB
                     </div>
-                    <span className="font-bold text-xl tracking-tight">TicketBlessing</span>
+                    <span className="font-bold text-xl tracking-tight">MondoTicket</span>
                 </div>
             </div>
 

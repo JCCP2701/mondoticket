@@ -19,6 +19,11 @@ export default function TaquillaDashboard() {
   const [selling, setSelling] = useState(false);
   const [sellError, setSellError] = useState("");
   const [lastSaleOrderId, setLastSaleOrderId] = useState<string | null>(null);
+  // One key per cart, not per click — a double-tap on "Completar Venta" (a
+  // busy box office) or a retry after a dropped response reuses the same
+  // key instead of selling the same cart twice. Refreshed only when the
+  // cart itself is cleared (resetSelection), not on every failed attempt.
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
     if (!activeOrganizationId) return;
@@ -41,26 +46,34 @@ export default function TaquillaDashboard() {
     setSelection((prev) => ({ ...prev, [typeId]: Math.max(0, Math.min(max, qty)) }));
   };
 
+  // `selection[t.id]` means "how many I want" for every ticket type now —
+  // for a seat-mapped type it's the target the seat map is capped at.
+  // Summing it alone reflects intent immediately, before seats are picked.
   const totalQuantity = useMemo(
-    () => Object.values(selection).reduce((sum, q) => sum + q, 0) + selectedSeats.length,
-    [selection, selectedSeats]
+    () => Object.values(selection).reduce((sum, q) => sum + q, 0),
+    [selection]
+  );
+
+  const seatSelectionsComplete = useMemo(
+    () => (event?.ticketTypes ?? [])
+      .filter((t) => t.hasSeatMap)
+      .every((t) => (selection[t.id] || 0) === (selectedSeatsByType[t.id]?.length || 0)),
+    [event, selection, selectedSeatsByType]
   );
 
   const total = useMemo(() => {
     if (!event) return 0;
-    const quantityTotal = event.ticketTypes
-      .filter((t) => !t.hasSeatMap)
-      .reduce((sum, t) => sum + (selection[t.id] || 0) * t.price, 0);
-    return quantityTotal + selectedSeats.reduce((sum, s) => sum + s.price, 0);
-  }, [event, selection, selectedSeats]);
+    return event.ticketTypes.reduce((sum, t) => sum + (selection[t.id] || 0) * t.price, 0);
+  }, [event, selection]);
 
   const resetSelection = () => {
     setSelection({});
     setSelectedSeatsByType({});
+    setIdempotencyKey(crypto.randomUUID());
   };
 
   const handleSell = async () => {
-    if (!event || totalQuantity === 0) return;
+    if (!event || totalQuantity === 0 || !seatSelectionsComplete) return;
     setSelling(true);
     setSellError("");
     setLastSaleOrderId(null);
@@ -80,6 +93,7 @@ export default function TaquillaDashboard() {
         items: items.length > 0 ? items : undefined,
         seatIds: selectedSeats.length > 0 ? selectedSeats.map((s) => s.seatId) : undefined,
         salesChannel: 'taquilla',
+        idempotencyKey,
       });
       setLastSaleOrderId(orderId);
       resetSelection();
@@ -146,16 +160,31 @@ export default function TaquillaDashboard() {
                 <div className="space-y-4">
                   {event.ticketTypes.map((t) => {
                     if (t.hasSeatMap) {
+                      const seatAvailable = t.capacity - t.sold;
+                      const seatQty = selection[t.id] || 0;
                       return (
                         <div key={t.id}>
-                          <p className="font-bold mb-2">{t.name} — {t.price === 0 ? 'Gratis' : `$${t.price.toLocaleString()}`}</p>
-                          <SeatMapPicker
-                            eventId={event.id}
-                            ticketTypeId={t.id}
-                            ticketTypes={[t]}
-                            onSelectionChange={(seats) => setSelectedSeatsByType((prev) => ({ ...prev, [t.id]: seats }))}
-                            onError={setSeatError}
-                          />
+                          <div className="flex items-center justify-between p-4 rounded-xl border border-border mb-3">
+                            <div>
+                              <p className="font-bold">{t.name}</p>
+                              <p className="text-xs text-muted-foreground">{t.price === 0 ? 'Gratis' : `$${t.price.toLocaleString()}`} · {seatAvailable} disponibles</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <button onClick={() => setQty(t.id, seatQty - 1, seatAvailable)} disabled={seatQty === 0} className="w-8 h-8 rounded-lg border border-border disabled:opacity-40"><Minus className="w-4 h-4 mx-auto" /></button>
+                              <span className="font-bold w-6 text-center">{seatQty}</span>
+                              <button onClick={() => setQty(t.id, seatQty + 1, seatAvailable)} disabled={seatQty >= seatAvailable} className="w-8 h-8 rounded-lg bg-primary text-white disabled:opacity-40"><Plus className="w-4 h-4 mx-auto" /></button>
+                            </div>
+                          </div>
+                          {seatQty > 0 && (
+                            <SeatMapPicker
+                              eventId={event.id}
+                              ticketTypeId={t.id}
+                              ticketTypes={[t]}
+                              maxSeats={seatQty}
+                              onSelectionChange={(seats) => setSelectedSeatsByType((prev) => ({ ...prev, [t.id]: seats }))}
+                              onError={setSeatError}
+                            />
+                          )}
                         </div>
                       );
                     }
@@ -212,9 +241,13 @@ export default function TaquillaDashboard() {
                 </div>
               )}
 
+              {totalQuantity > 0 && !seatSelectionsComplete && (
+                <p className="text-xs text-amber-600 text-center">Todavía faltan asientos por elegir en el mapa.</p>
+              )}
+
               <button
                 onClick={handleSell}
-                disabled={selling || totalQuantity === 0}
+                disabled={selling || totalQuantity === 0 || !seatSelectionsComplete}
                 className="w-full py-3 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 <ShoppingCart className="w-5 h-5" />
