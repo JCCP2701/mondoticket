@@ -7,7 +7,12 @@
 -- payment_reference so the column name matches what it actually stores.
 alter table orders rename column stripe_payment_intent_id to payment_reference;
 
-create or replace function create_order_and_tickets(
+-- Postgres won't let CREATE OR REPLACE rename an input parameter — drop and
+-- recreate instead. This loses the function's grants, so they're re-applied
+-- below with the exact grant already in place from 0023_phase0_hardening.sql.
+drop function create_order_and_tickets(uuid,uuid,uuid,text,text,text,text,jsonb,uuid[],text,uuid);
+
+create function create_order_and_tickets(
   p_event_id uuid,
   p_organization_id uuid,
   p_user_id uuid,
@@ -219,3 +224,5 @@ begin
   return v_order_id;
 end;
 $$;
+
+grant execute on function create_order_and_tickets(uuid, uuid, uuid, text, text, text, text, jsonb, uuid[], text, uuid) to authenticated;
