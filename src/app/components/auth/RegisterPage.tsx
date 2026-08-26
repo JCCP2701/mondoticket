@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { Ticket, Eye, EyeOff, Mail, Lock, User, ArrowRight, CheckCircle } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, dashboardPathForRole, mfaRequired } from '../../context/AuthContext';
 import '../landing/landing-theme.css';
 
 export default function RegisterPage() {
@@ -37,9 +37,9 @@ export default function RegisterPage() {
             return;
         }
         setLoading(true);
-        const ok = await register(form.name, form.email, form.password);
+        const profile = await register(form.name, form.email, form.password);
         setLoading(false);
-        if (ok) navigate('/mfa');
+        if (profile) navigate(mfaRequired(profile) ? '/mfa' : dashboardPathForRole(profile.role));
         else setError('Error al registrar. Intenta con otro correo.');
     };
 

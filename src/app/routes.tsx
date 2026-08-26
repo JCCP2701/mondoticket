@@ -18,6 +18,8 @@ import DataRightsPage from "./components/landing/DataRightsPage";
 import LoginPage from "./components/auth/LoginPage";
 import MFAPage from "./components/auth/MFAPage";
 import RegisterPage from "./components/auth/RegisterPage";
+import ForgotPasswordPage from "./components/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./components/auth/ResetPasswordPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SuperAdminDashboard from "./components/admin/SuperAdminDashboard";
 import CreateOrganization from "./components/admin/CreateOrganization";
@@ -66,6 +68,8 @@ export const router = createBrowserRouter([
             { path: "login", Component: LoginPage },
             { path: "mfa", Component: MFAPage },
             { path: "register", Component: RegisterPage },
+            { path: "forgot-password", Component: ForgotPasswordPage },
+            { path: "reset-password", Component: ResetPasswordPage },
             { path: "checkout/:eventId", Component: UserCheckout },
             { path: "ticket/:ticketId", Component: UserTicket },
 

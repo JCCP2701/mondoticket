@@ -281,10 +281,15 @@
       <h2>Cómo iniciar sesión</h2>
       <ol>
         <li>Entra a la página principal y da clic en <strong>"Iniciar Sesión"</strong>.</li>
-        <li>Escribe tu correo y contraseña.</li>
-        <li>Si tu cuenta tiene activada la verificación en dos pasos, se te pedirá un código de tu aplicación de autenticación (Google Authenticator, Authy, etc.) la primera vez que entres desde un dispositivo nuevo.</li>
+        <li>Escribe tu correo y da clic en <strong>"Continuar"</strong>. El sistema detecta automáticamente qué tipo de cuenta es:
+          <ul>
+            <li>Si eres <strong>comprador</strong> (cuenta <code>Usuario</code>), te llega un <strong>código de 6 dígitos a tu correo</strong> — escríbelo y entras directo. No se te pide contraseña ni verificación en dos pasos.</li>
+            <li>Si tu cuenta es de <strong>Super Administrador, Organización, Taquilla, Validador o Broker</strong>, se te pide tu <strong>contraseña</strong> y, la primera vez que entres desde un dispositivo nuevo, un código de tu aplicación de autenticación (Google Authenticator, Authy, etc.).</li>
+          </ul>
+        </li>
+        <li>¿Olvidaste tu contraseña? En la pantalla de contraseña da clic en <strong>"¿Olvidaste tu contraseña?"</strong>, escribe tu correo, y te llegará un enlace para crear una nueva.</li>
       </ol>
-      <div class="callout">Las cuentas de demostración (<code>@demo.com</code>) no piden verificación en dos pasos, para poder mostrar la plataforma rápidamente.</div>
+      <div class="callout">Las cuentas de demostración (<code>@demo.com</code>) siempre piden solo correo y contraseña, sin código por correo ni verificación en dos pasos, para poder mostrar la plataforma rápidamente.</div>
 
       <h3>Cuentas de demostración</h3>
       <p>Estas 6 cuentas existen solo para mostrar la plataforma. Ninguna pide verificación en dos pasos ni código por correo — entran directo con correo y contraseña.</p>
@@ -538,6 +543,18 @@
     <section id="changelog">
       <h2>Historial de cambios</h2>
 
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-26</div>
+        <div class="changelog-body"><p><strong>Inicio de sesión sin contraseña para compradores, y MFA ya no aplica a esa cuenta por el momento:</strong> ahora el login pide primero solo el correo — si es una cuenta <code>Usuario</code> (comprador) no-demo, se envía un código de 6 dígitos al correo y con eso basta para entrar, sin pedir contraseña ni verificación en dos pasos. Las cuentas de Super Administrador, Organización, Taquilla, Validador y Broker no cambian: siguen pidiendo contraseña y, la primera vez desde un dispositivo nuevo, el código de la app autenticadora. Las cuentas demo (<code>@demo.com</code>) tampoco cambian: entran igual que siempre, solo con correo y contraseña.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-26</div>
+        <div class="changelog-body"><p><strong>"¿Olvidaste tu contraseña?" ya funciona:</strong> antes el enlace no hacía nada. Ahora envía un correo con un enlace para crear una contraseña nueva.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-26</div>
+        <div class="changelog-body"><p><strong>Corrección visual en la pantalla de verificación MFA:</strong> tenía todavía la paleta morada original en vez del negro/dorado/verde del resto del sistema, y el código QR para configurar la app autenticadora a veces se veía con texto encima en lugar de la imagen limpia. Ambas cosas se corrigieron.</p></div>
+      </div>
       <div class="changelog-entry">
         <div class="changelog-date">2026-08-25</div>
         <div class="changelog-body"><p><strong>Corrección: la pasarela de pago es OrkestaPay, no Stripe:</strong> varios textos de la landing y de las páginas del pie de página mencionaban "Stripe" por error — la plataforma nunca usó Stripe para procesar pagos, siempre fue <strong>OrkestaPay</strong> (tarjeta, SPEI y efectivo). Se corrigió el texto en toda la landing (portada, precios, funcionalidades), en las páginas de Seguridad, Integraciones, Sobre Nosotros, Centro de Ayuda, Sala de Prensa y Estado del Sistema, y se eliminó del código un módulo de pago simulado con Stripe que nunca se usó en producción.</p></div>

@@ -29,10 +29,12 @@ Una cuenta de **Organización** o **Taquilla** puede pertenecer a más de una or
 ## Cómo iniciar sesión
 
 1. Entra a la página principal y da clic en **"Iniciar Sesión"**.
-2. Escribe tu correo y contraseña.
-3. Si tu cuenta tiene activada la verificación en dos pasos, se te pedirá un código de tu aplicación de autenticación (Google Authenticator, Authy, etc.) la primera vez que entres desde un dispositivo nuevo.
+2. Escribe tu correo y da clic en **"Continuar"**. El sistema detecta automáticamente qué tipo de cuenta es:
+   - Si eres **comprador** (cuenta `Usuario`), te llega un **código de 6 dígitos a tu correo** — escríbelo y entras directo. No se te pide contraseña ni verificación en dos pasos.
+   - Si tu cuenta es de **Super Administrador, Organización, Taquilla, Validador o Broker**, se te pide tu **contraseña** y, la primera vez que entres desde un dispositivo nuevo, un código de tu aplicación de autenticación (Google Authenticator, Authy, etc.).
+3. ¿Olvidaste tu contraseña? En la pantalla de contraseña da clic en **"¿Olvidaste tu contraseña?"**, escribe tu correo, y te llegará un enlace para crear una nueva.
 
-> Las cuentas de demostración (`@demo.com`) no piden verificación en dos pasos, para poder mostrar la plataforma rápidamente.
+> Las cuentas de demostración (`@demo.com`) siempre piden solo correo y contraseña, sin código por correo ni verificación en dos pasos, para poder mostrar la plataforma rápidamente.
 
 ### Cuentas de demostración
 
@@ -258,6 +260,9 @@ No. El panel del broker solo muestra su propia ganancia ya calculada, nunca el i
 
 ## Historial de cambios
 
+- **2026-08-26** — **Inicio de sesión sin contraseña para compradores, y MFA ya no aplica a esa cuenta por el momento**: ahora el login pide primero solo el correo — si es una cuenta `Usuario` (comprador) no-demo, se envía un código de 6 dígitos al correo y con eso basta para entrar, sin pedir contraseña ni verificación en dos pasos. Las cuentas de Super Administrador, Organización, Taquilla, Validador y Broker no cambian: siguen pidiendo contraseña y, la primera vez desde un dispositivo nuevo, el código de la app autenticadora. Las cuentas demo (`@demo.com`) tampoco cambian: entran igual que siempre, solo con correo y contraseña.
+- **2026-08-26** — **"¿Olvidaste tu contraseña?" ya funciona**: antes el enlace no hacía nada. Ahora envía un correo con un enlace para crear una contraseña nueva.
+- **2026-08-26** — **Corrección visual en la pantalla de verificación MFA**: tenía todavía la paleta morada original en vez del negro/dorado/verde del resto del sistema, y el código QR para configurar la app autenticadora a veces se veía con texto encima en lugar de la imagen limpia. Ambas cosas se corrigieron.
 - **2026-08-25** — **Corrección: la pasarela de pago es OrkestaPay, no Stripe**: varios textos de la landing y de las páginas del pie de página mencionaban "Stripe" por error — la plataforma nunca usó Stripe para procesar pagos, siempre fue **OrkestaPay** (tarjeta, SPEI y efectivo). Se corrigió el texto en toda la landing (portada, precios, funcionalidades), en las páginas de Seguridad, Integraciones, Sobre Nosotros, Centro de Ayuda, Sala de Prensa y Estado del Sistema, y se eliminó del código un módulo de pago simulado con Stripe que nunca se usó en producción.
 - **2026-08-25** — **Páginas nuevas en el pie de página**: los 11 enlaces del pie de página que antes no llevaban a ningún lado (Integraciones, API Docs, Nosotros, Blog, Prensa, Empleos, Centro de Ayuda, Status, Seguridad) o reutilizaban el Aviso de Privacidad (Cookies, GDPR) ahora tienen su propia página con contenido real.
 - **2026-08-25** — **Más verde de marca en el sistema**: los mensajes de éxito (guardado, creación de cuentas, ventas completadas), los indicadores de estado positivo ("Válido", "Activo", "Modo offline listo", presale "Activa") y los montos ya listos para entregar ("A Entregar", "Total Recaudado") ahora usan el verde de la marca en vez del verde genérico anterior, para verse consistentes con la nueva identidad. También se corrigieron los últimos restos de color morado en tablas y KPIs del Super Admin y de Organización, migrándolos a dorado.

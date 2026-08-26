@@ -33,9 +33,14 @@ interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<AuthUser | null>;
   logout: () => void;
   verifyMFA: (code: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string) => Promise<AuthUser | null>;
   requestGuestOtp: (email: string, name: string) => Promise<{ ok: boolean; error?: string }>;
   verifyGuestOtp: (email: string, code: string) => Promise<AuthUser | null>;
+  sendPasswordReset: (email: string) => Promise<{ ok: boolean; error?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>;
+  checkLoginMethod: (email: string) => Promise<'password' | 'otp'>;
+  requestLoginOtp: (email: string) => Promise<{ ok: boolean; error?: string }>;
+  verifyLoginOtp: (email: string, code: string) => Promise<{ user: AuthUser; skippedMfa: boolean } | null>;
   isFirstMFASetup: boolean;
   mfaQrCode: string | null;
   activeOrganizationId: string | null;
@@ -44,6 +49,17 @@ interface AuthContextType extends AuthState {
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthContextType | null>(null);
+
+// Regular buyer accounts ('user' role) don't require MFA at all, for now —
+// product decision to keep purchase friction low while MFA stays mandatory
+// for staff/admin roles (superadmin, organization, taquilla, validador,
+// broker). Demo accounts (mfa_exempt) are exempt regardless of role, same
+// as before. This is the single source of truth for "does this profile
+// need to go through /mfa" — used both to decide whether to run the TOTP
+// enroll/challenge step and to decide where callers should navigate.
+export function mfaRequired(profile: Pick<AuthUser, 'role' | 'mfaExempt'>): boolean {
+  return profile.role !== 'user' && !profile.mfaExempt;
+}
 
 async function loadProfile(userId: string): Promise<AuthUser | null> {
   const { data, error } = await supabase
@@ -102,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!profile) return;
       applyActiveOrg(profile);
 
-      if (profile.mfaExempt) {
+      if (!mfaRequired(profile)) {
         setState({ user: profile, isAuthenticated: true, mfaVerified: true, pendingRole: profile.role });
         return;
       }
@@ -121,9 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const beginMfaStep = async (profile: AuthUser) => {
-    // Demo accounts skip MFA entirely — never inferred from email, only the
-    // per-profile mfa_exempt flag set explicitly for the 4 seeded demo users.
-    if (profile.mfaExempt) {
+    if (!mfaRequired(profile)) {
       setState({ user: profile, isAuthenticated: true, mfaVerified: true, pendingRole: profile.role });
       return;
     }
@@ -158,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return profile;
   };
 
-  const register = async (name: string, email: string, password: string): Promise<boolean> => {
+  const register = async (name: string, email: string, password: string): Promise<AuthUser | null> => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -172,21 +186,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // of failing outright. If it's a real account with a different
       // password (e.g. org/admin/user, or someone who registered via
       // /register with their own password), the login attempt below just
-      // fails too and the caller sees register() return false as before.
+      // fails too and the caller sees register() return null as before.
       if (error.message?.toLowerCase().includes('already registered') || (error as any).code === 'user_already_exists') {
-        return !!(await login(email, password));
+        return login(email, password);
       }
-      return false;
+      return null;
     }
-    if (!data.user) return false;
+    if (!data.user) return null;
 
     // profiles row is auto-created by the handle_new_user() DB trigger.
     const profile = await loadProfile(data.user.id);
-    if (!profile) return false;
+    if (!profile) return null;
 
     applyActiveOrg(profile);
     await beginMfaStep(profile);
-    return true;
+    return profile;
   };
 
   // Guest checkout, passwordless: a one-time email code replaces the old
@@ -215,6 +229,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return profile;
   };
 
+  const sendPasswordReset = async (email: string): Promise<{ ok: boolean; error?: string }> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  };
+
+  const updatePassword = async (newPassword: string): Promise<{ ok: boolean; error?: string }> => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  };
+
+  // Pre-auth lookup so LoginPage knows whether to show the password step or
+  // the email-code step for a given email. Never throws — a network/API
+  // failure just falls back to the password step, which always works.
+  const checkLoginMethod = async (email: string): Promise<'password' | 'otp'> => {
+    try {
+      const res = await fetch('/api/auth/login-method', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) return 'password';
+      const json = await res.json();
+      return json.method === 'otp' ? 'otp' : 'password';
+    } catch {
+      return 'password';
+    }
+  };
+
+  // Login-only OTP for regular ('user' role, non-demo) accounts. Unlike
+  // requestGuestOtp, shouldCreateUser is false — a mistyped/unregistered
+  // email in the login form must never silently create a new account.
+  const requestLoginOtp = async (email: string): Promise<{ ok: boolean; error?: string }> => {
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  };
+
+  const verifyLoginOtp = async (email: string, code: string): Promise<{ user: AuthUser; skippedMfa: boolean } | null> => {
+    const { data, error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
+    if (error || !data.user) return null;
+
+    const profile = await loadProfile(data.user.id);
+    if (!profile) return null;
+    applyActiveOrg(profile);
+
+    // beginMfaStep (via mfaRequired) is the single source of truth for
+    // whether MFA is required — running it here, rather than trusting the
+    // earlier /api/auth/login-method routing decision, means this method
+    // can never be used (e.g. called directly, bypassing LoginPage) to
+    // dodge password+MFA on an elevated, non-exempt account.
+    await beginMfaStep(profile);
+    return { user: profile, skippedMfa: !mfaRequired(profile) };
+  };
+
   const verifyMFA = async (code: string): Promise<boolean> => {
     if (!mfaFactorId) return false;
 
@@ -238,7 +310,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, login, logout, verifyMFA, register, requestGuestOtp, verifyGuestOtp, isFirstMFASetup, mfaQrCode, activeOrganizationId, setActiveOrganizationId }}
+      value={{ ...state, login, logout, verifyMFA, register, requestGuestOtp, verifyGuestOtp, sendPasswordReset, updatePassword, checkLoginMethod, requestLoginOtp, verifyLoginOtp, isFirstMFASetup, mfaQrCode, activeOrganizationId, setActiveOrganizationId }}
     >
       {children}
     </AuthContext.Provider>

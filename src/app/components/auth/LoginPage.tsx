@@ -1,32 +1,88 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router';
-import { Shield, Eye, EyeOff, Ticket, ArrowRight, Lock, Mail } from 'lucide-react';
-import { useAuth, dashboardPathForRole } from '../../context/AuthContext';
+import { useNavigate, useLocation, Link } from 'react-router';
+import { Shield, Eye, EyeOff, Ticket, ArrowRight, Lock, Mail, ChevronLeft, CheckCircle } from 'lucide-react';
+import { useAuth, dashboardPathForRole, mfaRequired } from '../../context/AuthContext';
 import '../landing/landing-theme.css';
+
+type Step = 'email' | 'password' | 'otp';
 
 export default function LoginPage() {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const location = useLocation();
+    const { login, checkLoginMethod, requestLoginOtp, verifyLoginOtp } = useAuth();
 
+    const [step, setStep] = useState<Step>('email');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [otpCode, setOtpCode] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [checkingEmail, setCheckingEmail] = useState(false);
+    const [sendingOtp, setSendingOtp] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    const passwordReset = Boolean((location.state as { passwordReset?: boolean } | null)?.passwordReset);
+
+    const handleBackToEmail = () => {
+        setStep('email');
+        setPassword('');
+        setOtpCode('');
+        setError('');
+    };
+
+    const handleResendOtp = async () => {
+        setError('');
+        setSendingOtp(true);
+        const result = await requestLoginOtp(email.trim());
+        setSendingOtp(false);
+        if (!result.ok) setError(result.error || 'No se pudo reenviar el código.');
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        if (step === 'email') {
+            setCheckingEmail(true);
+            const method = await checkLoginMethod(email.trim());
+            if (method === 'otp') {
+                const result = await requestLoginOtp(email.trim());
+                setCheckingEmail(false);
+                if (result.ok) {
+                    setStep('otp');
+                } else {
+                    setError(result.error || 'No se pudo enviar el código de acceso. Intenta de nuevo.');
+                }
+            } else {
+                setCheckingEmail(false);
+                setStep('password');
+            }
+            return;
+        }
+
+        if (step === 'password') {
+            setLoading(true);
+            const profile = await login(email, password);
+            setLoading(false);
+            if (profile) {
+                // Demo accounts and regular ('user' role) buyers are already
+                // fully authenticated at this point — skip the MFA screen
+                // entirely instead of routing through it just to bounce back.
+                navigate(mfaRequired(profile) ? '/mfa' : dashboardPathForRole(profile.role), { state: { from: '/' } });
+            } else {
+                setError('Credenciales incorrectas. Verifica tu email y contraseña.');
+            }
+            return;
+        }
+
+        // step === 'otp'
         setLoading(true);
-        const profile = await login(email, password);
+        const result = await verifyLoginOtp(email.trim(), otpCode.trim());
         setLoading(false);
-        if (profile) {
-            // Demo accounts (mfa_exempt) are already fully authenticated at
-            // this point — skip the MFA screen entirely instead of routing
-            // through it just to bounce back.
-            navigate(profile.mfaExempt ? dashboardPathForRole(profile.role) : '/mfa', { state: { from: '/' } });
+        if (result) {
+            navigate(result.skippedMfa ? dashboardPathForRole(result.user.role) : '/mfa', { state: { from: '/' } });
         } else {
-            setError('Credenciales incorrectas. Verifica tu email y contraseña.');
+            setError('Código incorrecto o expirado.');
         }
     };
 
@@ -72,56 +128,130 @@ export default function LoginPage() {
                     padding: '32px',
                     boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
                 }}>
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mt-ink)' }}>
-                                Correo electrónico
-                            </label>
-                            <div style={{ position: 'relative' }}>
-                                <Mail size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--mt-muted)' }} />
-                                <input
-                                    id="login-email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="tunombre@ejemplo.com"
-                                    required
-                                    className="login-input"
-                                />
-                            </div>
+                    {passwordReset && step === 'email' && (
+                        <div style={{
+                            marginBottom: '18px', padding: '11px 14px', borderRadius: '10px',
+                            background: 'rgba(50,128,34,0.08)', border: '1px solid rgba(50,128,34,0.25)',
+                            color: 'var(--mt-green)', fontSize: '13px',
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                        }}>
+                            <CheckCircle size={15} />
+                            Contraseña actualizada. Ya puedes iniciar sesión.
                         </div>
+                    )}
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                        {step !== 'email' && (
+                            <button
+                                type="button"
+                                onClick={handleBackToEmail}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                    background: 'none', border: 'none', color: 'var(--mt-muted)',
+                                    fontSize: '13px', cursor: 'pointer', padding: 0, alignSelf: 'flex-start',
+                                }}
+                            >
+                                <ChevronLeft size={15} /> Usar otro correo
+                            </button>
+                        )}
+
+                        {step === 'email' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mt-ink)' }}>
-                                    Contraseña
+                                    Correo electrónico
                                 </label>
-                                <a href="#" style={{ fontSize: '12px', color: 'var(--mt-gold-dark)', textDecoration: 'none', fontWeight: 500 }}>¿Olvidaste tu contraseña?</a>
+                                <div style={{ position: 'relative' }}>
+                                    <Mail size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--mt-muted)' }} />
+                                    <input
+                                        id="login-email"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="tunombre@ejemplo.com"
+                                        required
+                                        className="login-input"
+                                    />
+                                </div>
                             </div>
-                            <div style={{ position: 'relative' }}>
-                                <Lock size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--mt-muted)' }} />
-                                <input
-                                    id="login-password"
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••••••"
-                                    required
-                                    className="login-input"
-                                    style={{ paddingRight: '44px' }}
-                                />
+                        )}
+
+                        {step === 'password' && (
+                            <>
+                                <p style={{ fontSize: '13px', color: 'var(--mt-muted)', margin: 0 }}>{email}</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mt-ink)' }}>
+                                            Contraseña
+                                        </label>
+                                        <Link to="/forgot-password" style={{ fontSize: '12px', color: 'var(--mt-gold-dark)', textDecoration: 'none', fontWeight: 500 }}>¿Olvidaste tu contraseña?</Link>
+                                    </div>
+                                    <div style={{ position: 'relative' }}>
+                                        <Lock size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--mt-muted)' }} />
+                                        <input
+                                            id="login-password"
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            placeholder="••••••••••••"
+                                            required
+                                            className="login-input"
+                                            style={{ paddingRight: '44px' }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            style={{
+                                                position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                                                background: 'none', border: 'none', color: 'var(--mt-muted)', cursor: 'pointer', padding: '4px',
+                                            }}
+                                        >
+                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {step === 'otp' && (
+                            <>
+                                <p style={{ fontSize: '13px', color: 'var(--mt-muted)', margin: 0 }}>
+                                    Código de 6 dígitos enviado a {email}
+                                </p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mt-ink)' }}>
+                                        Código de acceso
+                                    </label>
+                                    <input
+                                        id="login-otp"
+                                        type="text"
+                                        inputMode="numeric"
+                                        maxLength={6}
+                                        placeholder="000000"
+                                        value={otpCode}
+                                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                                        required
+                                        style={{
+                                            width: '100%', padding: '12px', borderRadius: '10px',
+                                            background: 'var(--mt-offwhite)', border: '1px solid var(--mt-line)',
+                                            color: 'var(--mt-ink)', outline: 'none', boxSizing: 'border-box',
+                                            letterSpacing: '4px', fontSize: '17px', textAlign: 'center',
+                                        }}
+                                    />
+                                </div>
                                 <button
                                     type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
+                                    onClick={handleResendOtp}
+                                    disabled={sendingOtp}
                                     style={{
-                                        position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
-                                        background: 'none', border: 'none', color: 'var(--mt-muted)', cursor: 'pointer', padding: '4px',
+                                        alignSelf: 'flex-start', background: 'none', border: 'none',
+                                        color: 'var(--mt-muted)', fontSize: '12px', cursor: 'pointer',
+                                        textDecoration: 'underline', padding: 0,
                                     }}
                                 >
-                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    {sendingOtp ? 'Reenviando...' : 'Reenviar código'}
                                 </button>
-                            </div>
-                        </div>
+                            </>
+                        )}
 
                         {error && (
                             <div style={{
@@ -139,17 +269,18 @@ export default function LoginPage() {
                         <button
                             id="login-submit"
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || checkingEmail || (step === 'otp' && otpCode.trim().length < 6)}
                             className="mt-btn-primary"
                             style={{ width: '100%', padding: '13px', borderRadius: '10px', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                         >
-                            {loading ? (
+                            {(loading || checkingEmail) ? (
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span className="login-spinner" /> Verificando...
+                                    <span className="login-spinner" />
+                                    {checkingEmail ? 'Verificando correo...' : step === 'otp' ? 'Verificando código...' : 'Verificando...'}
                                 </span>
                             ) : (
                                 <>
-                                    <span>Ingresar a mi Wallet</span>
+                                    <span>{step === 'email' ? 'Continuar' : step === 'otp' ? 'Verificar código' : 'Ingresar a mi Wallet'}</span>
                                     <ArrowRight size={16} />
                                 </>
                             )}

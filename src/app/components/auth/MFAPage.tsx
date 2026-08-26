@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { Ticket, Shield, RefreshCw, ArrowRight, LogOut } from 'lucide-react';
 import { useAuth, dashboardPathForRole } from '../../context/AuthContext';
+import '../landing/landing-theme.css';
 
 export default function MFAPage() {
     const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function MFAPage() {
     // Countdown timer
     useEffect(() => {
         const interval = setInterval(() => {
-            setTimeLeft((prev) => {
+            setTimeLeft(() => {
                 const seconds = Math.floor(Date.now() / 1000) % 30;
                 return 30 - seconds;
             });
@@ -74,68 +75,67 @@ export default function MFAPage() {
     };
 
     const timerPercent = (timeLeft / 30) * 100;
-    const timerColor = timeLeft > 10 ? '#10b981' : timeLeft > 5 ? '#f59e0b' : '#f43f5e';
+    const timerColor = timeLeft > 10 ? 'var(--mt-green)' : timeLeft > 5 ? 'var(--mt-gold)' : '#e11d48';
 
     return (
         <div style={{
             minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'linear-gradient(135deg, #0d0b1e 0%, #1a0a3d 50%, #0d1b4d 100%)',
-            padding: '24px', position: 'relative', overflow: 'hidden',
+            background: 'var(--mt-black)', padding: '24px',
         }}>
-            <div style={{ position: 'absolute', top: '30%', left: '10%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }} />
-
-            <div style={{ width: '100%', maxWidth: '440px', position: 'relative' }}>
+            <div style={{ width: '100%', maxWidth: '440px' }}>
                 {/* Logo */}
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
                     <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-                        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(124,58,237,0.4)' }}>
-                            <Ticket size={24} color="white" />
+                        <div style={{
+                            width: '44px', height: '44px', borderRadius: '11px',
+                            background: 'rgba(255,255,255,0.06)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <Ticket size={22} color="var(--mt-gold)" />
                         </div>
-                        <span style={{ fontSize: '22px', fontWeight: 800, color: '#f0edff' }}>
-                            Mondo<span style={{ background: 'linear-gradient(135deg, #a78bfa, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Ticket</span>
+                        <span style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'Outfit, sans-serif' }}>
+                            <span style={{ color: 'var(--mt-green-light)' }}>mondo</span>
+                            <span className="mt-gradient-gold-text">ticket</span>
                         </span>
                     </Link>
                 </div>
 
                 {/* Card */}
                 <div style={{
-                    background: 'rgba(19,16,42,0.95)', backdropFilter: 'blur(20px)',
-                    borderRadius: '24px', border: '1px solid rgba(139,92,246,0.2)',
-                    boxShadow: '0 30px 80px rgba(0,0,0,0.5)', padding: '40px',
+                    background: 'var(--mt-white)',
+                    borderRadius: '16px', border: '1px solid var(--mt-line)',
+                    boxShadow: '0 24px 60px rgba(0,0,0,0.35)', padding: '32px',
                 }}>
                     {/* Header */}
-                    <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '26px' }}>
                         <div style={{
-                            width: '64px', height: '64px', borderRadius: '16px', margin: '0 auto 16px',
-                            background: 'linear-gradient(135deg, rgba(124,58,237,0.3), rgba(139,92,246,0.1))',
-                            border: '1px solid rgba(139,92,246,0.3)',
+                            width: '56px', height: '56px', borderRadius: '14px', margin: '0 auto 14px',
+                            background: 'var(--mt-gold-wash)',
+                            border: '1px solid var(--mt-gold-border)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            animation: 'pulse-glow 2s ease-in-out infinite',
                         }}>
-                            <Shield size={30} color="#a78bfa" />
+                            <Shield size={26} color="var(--mt-gold-dark)" />
                         </div>
-                        <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#f0edff', marginBottom: '6px' }}>
+                        <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--mt-ink)', marginBottom: '6px' }}>
                             Verificación MFA
                         </h2>
-                        <p style={{ fontSize: '14px', color: 'rgba(240,237,255,0.5)', lineHeight: 1.6 }}>
-                            Hola <strong style={{ color: '#a78bfa' }}>{user?.name}</strong>. Ingresa el código de 6 dígitos de tu app autenticadora.
+                        <p style={{ fontSize: '13px', color: 'var(--mt-muted)', lineHeight: 1.6 }}>
+                            Hola <strong style={{ color: 'var(--mt-ink)' }}>{user?.name}</strong>. Ingresa el código de 6 dígitos de tu app autenticadora.
                         </p>
                     </div>
 
                     {/* QR Code section — only shown on first-time TOTP enrollment */}
                     {isFirstMFASetup && mfaQrCode && (
-                        <div style={{ marginBottom: '28px' }}>
+                        <div style={{ marginBottom: '24px' }}>
                             <button
                                 onClick={() => setShowQR(!showQR)}
                                 style={{
                                     width: '100%', padding: '10px', borderRadius: '10px',
-                                    background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
-                                    color: '#a78bfa', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                                    background: 'var(--mt-gold-wash)', border: '1px solid var(--mt-gold-border)',
+                                    color: 'var(--mt-gold-dark)', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                    transition: 'all 0.2s', marginBottom: '12px',
+                                    marginBottom: '12px',
                                 }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(139,92,246,0.15)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(139,92,246,0.08)'}
                             >
                                 {showQR ? 'Ocultar' : 'Configurar'} app autenticadora (primera vez)
                             </button>
@@ -144,12 +144,12 @@ export default function MFAPage() {
                                 <div style={{
                                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
                                     padding: '20px', borderRadius: '14px',
-                                    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(139,92,246,0.15)',
+                                    background: 'var(--mt-offwhite)', border: '1px solid var(--mt-line)',
                                 }}>
-                                    <div style={{ padding: '12px', background: 'white', borderRadius: '12px' }}
-                                        dangerouslySetInnerHTML={{ __html: mfaQrCode }}
-                                    />
-                                    <p style={{ fontSize: '12px', color: 'rgba(240,237,255,0.45)', textAlign: 'center', lineHeight: 1.6 }}>
+                                    <div style={{ padding: '12px', background: 'white', borderRadius: '12px' }}>
+                                        <img src={mfaQrCode} alt="Código QR para configurar MFA" width={180} height={180} />
+                                    </div>
+                                    <p style={{ fontSize: '12px', color: 'var(--mt-muted)', textAlign: 'center', lineHeight: 1.6 }}>
                                         Escanea con Google Authenticator, Authy o cualquier app TOTP y luego ingresa el código de 6 dígitos.
                                     </p>
                                 </div>
@@ -158,12 +158,12 @@ export default function MFAPage() {
                     )}
 
                     {/* Timer */}
-                    <div style={{ marginBottom: '24px' }}>
+                    <div style={{ marginBottom: '20px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '12px', color: 'rgba(240,237,255,0.4)', fontWeight: 500 }}>Código válido por</span>
+                            <span style={{ fontSize: '12px', color: 'var(--mt-muted)', fontWeight: 500 }}>Código válido por</span>
                             <span style={{ fontSize: '12px', fontWeight: 700, color: timerColor }}>{timeLeft}s</span>
                         </div>
-                        <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                        <div style={{ height: '4px', borderRadius: '2px', background: 'var(--mt-line)', overflow: 'hidden' }}>
                             <div style={{
                                 height: '100%', borderRadius: '2px', transition: 'width 1s linear, background-color 0.5s',
                                 width: `${timerPercent}%`, background: timerColor,
@@ -186,20 +186,20 @@ export default function MFAPage() {
                                 onKeyDown={(e) => handleKeyDown(i, e)}
                                 onPaste={handlePaste}
                                 style={{
-                                    width: '48px', height: '56px', textAlign: 'center', fontSize: '22px', fontWeight: 700,
-                                    borderRadius: '12px', border: `2px solid ${digit ? '#8b5cf6' : 'rgba(139,92,246,0.2)'}`,
-                                    background: digit ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)',
-                                    color: '#f0edff', outline: 'none', transition: 'all 0.15s', caretColor: '#8b5cf6',
+                                    width: '46px', height: '54px', textAlign: 'center', fontSize: '20px', fontWeight: 700,
+                                    borderRadius: '10px', border: `2px solid ${digit ? 'var(--mt-gold)' : 'var(--mt-line)'}`,
+                                    background: digit ? 'var(--mt-gold-wash)' : 'var(--mt-offwhite)',
+                                    color: 'var(--mt-ink)', outline: 'none', transition: 'all 0.15s', caretColor: 'var(--mt-gold-dark)',
                                 }}
-                                onFocus={(e) => (e.target.style.borderColor = '#8b5cf6')}
-                                onBlur={(e) => (e.target.style.borderColor = digit ? '#8b5cf6' : 'rgba(139,92,246,0.2)')}
+                                onFocus={(e) => (e.target.style.borderColor = 'var(--mt-gold)')}
+                                onBlur={(e) => (e.target.style.borderColor = digit ? 'var(--mt-gold)' : 'var(--mt-line)')}
                             />
                         ))}
                     </div>
 
                     {/* Error */}
                     {error && (
-                        <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)', color: '#f43f5e', fontSize: '13px', marginBottom: '16px', textAlign: 'center' }}>
+                        <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.25)', color: '#e11d48', fontSize: '13px', marginBottom: '16px', textAlign: 'center' }}>
                             {error}
                         </div>
                     )}
@@ -209,18 +209,17 @@ export default function MFAPage() {
                         id="mfa-verify"
                         onClick={handleVerify}
                         disabled={loading || code.join('').length < 6}
+                        className="mt-btn-primary"
                         style={{
-                            width: '100%', padding: '14px', borderRadius: '12px',
-                            background: code.join('').length === 6 ? 'linear-gradient(135deg, #7c3aed, #8b5cf6)' : 'rgba(139,92,246,0.2)',
-                            color: 'white', fontWeight: 700, fontSize: '15px', border: 'none',
-                            cursor: code.join('').length === 6 ? 'pointer' : 'not-allowed',
+                            width: '100%', padding: '13px', borderRadius: '10px', fontSize: '15px',
+                            cursor: (loading || code.join('').length < 6) ? 'not-allowed' : 'pointer',
+                            opacity: (loading || code.join('').length < 6) ? 0.6 : 1,
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                            boxShadow: code.join('').length === 6 ? '0 0 20px rgba(124,58,237,0.3)' : 'none',
-                            transition: 'all 0.2s', opacity: loading ? 0.7 : 1, marginBottom: '12px',
+                            marginBottom: '12px',
                         }}
                     >
                         {loading ? (
-                            <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                            <RefreshCw size={16} style={{ animation: 'mfa-spin 1s linear infinite' }} />
                         ) : (
                             <>
                                 <Shield size={16} />
@@ -233,7 +232,7 @@ export default function MFAPage() {
                     {/* Back / Logout */}
                     <button
                         onClick={() => { logout(); navigate('/login'); }}
-                        style={{ width: '100%', background: 'none', border: 'none', color: 'rgba(240,237,255,0.35)', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px' }}
+                        style={{ width: '100%', background: 'none', border: 'none', color: 'var(--mt-muted)', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px' }}
                     >
                         <LogOut size={14} />
                         Volver al inicio de sesión
@@ -242,9 +241,8 @@ export default function MFAPage() {
             </div>
 
             <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px rgba(139,92,246,0.3); } 50% { box-shadow: 0 0 40px rgba(139,92,246,0.6); } }
-      `}</style>
+                @keyframes mfa-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+            `}</style>
         </div>
     );
 }
