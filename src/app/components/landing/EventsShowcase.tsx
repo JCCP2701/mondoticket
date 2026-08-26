@@ -51,7 +51,7 @@ export default function EventsShowcase() {
                         Vive experiencias <span className="mt-gradient-gold-text">inolvidables</span>
                     </h2>
                     <p style={{ fontSize: '17px', color: 'var(--mt-muted)', maxWidth: '560px', margin: '0 auto' }}>
-                        Elige entre los eventos más exclusivos y adquiere tus boletos en segundos, sin complicaciones.
+                        Estos eventos ya se están vendiendo en tiempo real dentro de MondoTicket. Asegura tu boleto en segundos, antes de que se agoten.
                     </p>
                 </div>
 
@@ -61,7 +61,7 @@ export default function EventsShowcase() {
 
                 {!loading && events.length === 0 && (
                     <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--mt-muted)' }}>
-                        <p style={{ fontSize: '16px' }}>Todavía no hay eventos próximos publicados. Vuelve pronto.</p>
+                        <p style={{ fontSize: '16px' }}>Estamos preparando los próximos eventos en venta. Vuelve muy pronto.</p>
                     </div>
                 )}
 

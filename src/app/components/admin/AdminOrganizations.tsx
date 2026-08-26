@@ -208,7 +208,7 @@ function DetailsModal({ org, onClose, onSaved }: { org: Organization; onClose: (
                 </div>
 
                 {saved && (
-                    <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                    <div className="p-4 rounded-xl bg-success/10 border border-success/30 text-success text-sm">
                         Organización actualizada correctamente.
                     </div>
                 )}
@@ -339,7 +339,7 @@ function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: 
                 </div>
 
                 {saved && (
-                    <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                    <div className="p-4 rounded-xl bg-success/10 border border-success/30 text-success text-sm">
                         Convenio actualizado correctamente.
                     </div>
                 )}
@@ -502,8 +502,8 @@ function MembersModal({ org, onClose }: { org: Organization; onClose: () => void
 
                 {error && <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
                 {lastInvite && (
-                    <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
-                        Cuenta creada: <strong>{lastInvite.email}</strong> — contraseña temporal: <code className="font-mono bg-white px-2 py-0.5 rounded border border-green-300">{lastInvite.temporaryPassword}</code>
+                    <div className="p-4 rounded-xl bg-success/10 border border-success/30 text-success text-sm">
+                        Cuenta creada: <strong>{lastInvite.email}</strong> — contraseña temporal: <code className="font-mono bg-white px-2 py-0.5 rounded border border-success/40">{lastInvite.temporaryPassword}</code>
                     </div>
                 )}
 

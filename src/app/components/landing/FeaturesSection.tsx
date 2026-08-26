@@ -3,38 +3,38 @@ import { ShieldCheck, Zap, BarChart3, Building2, CreditCard, QrCode } from 'luci
 const features = [
     {
         icon: <Zap size={28} />,
-        title: 'Venta Online Instantánea',
-        desc: 'Publica tu evento y empieza a vender en minutos. Sin configuraciones complicadas.',
+        title: 'De cero a vendiendo en minutos',
+        desc: 'Publica tu evento y arranca la venta al instante, sin integraciones ni configuraciones complicadas.',
         accent: 'var(--mt-gold)',
     },
     {
         icon: <QrCode size={28} />,
-        title: 'Boletos con QR Único',
-        desc: 'Cada boleto genera un código QR único e infalsificable. Escaneo rápido en acceso.',
+        title: 'Cero boletos falsificados',
+        desc: 'Cada entrada lleva un QR único e infalsificable: evitas fraudes y agilizas el acceso el día del evento.',
         accent: 'var(--mt-green)',
     },
     {
         icon: <BarChart3 size={28} />,
-        title: 'Analytics en Tiempo Real',
-        desc: 'Visualiza ventas, ingresos y métricas de tus eventos en dashboards interactivos.',
+        title: 'Decisiones con datos, no corazonadas',
+        desc: 'Sigue ventas e ingresos en tiempo real y ajusta tu estrategia antes de que el evento termine.',
         accent: 'var(--mt-gold)',
     },
     {
         icon: <Building2 size={28} />,
-        title: 'Multi-Organización',
-        desc: 'Administra múltiples organizadores y eventos desde un solo panel de control.',
+        title: 'Escala sin perder el control',
+        desc: 'Administra equipos, organizadores y decenas de eventos desde un solo panel, sin hojas de cálculo.',
         accent: 'var(--mt-green)',
     },
     {
         icon: <CreditCard size={28} />,
-        title: 'Pagos con Stripe',
-        desc: 'Integración nativa con Stripe. Acepta tarjetas, OXXO y más. Liquidaciones automáticas.',
+        title: 'Cobra sin fricción',
+        desc: 'Acepta tarjeta, SPEI y OXXO con OrkestaPay, y recibe tus liquidaciones de forma automática.',
         accent: 'var(--mt-gold)',
     },
     {
         icon: <ShieldCheck size={28} />,
-        title: 'Seguridad con MFA',
-        desc: 'Autenticación de doble factor para todos los roles. Tu plataforma siempre protegida.',
+        title: 'Tu cuenta, blindada',
+        desc: 'Doble factor de autenticación en cada rol, para que nadie más controle tus eventos ni tus ingresos.',
         accent: 'var(--mt-green)',
     },
 ];
@@ -60,10 +60,10 @@ export default function FeaturesSection() {
                         marginBottom: '16px', lineHeight: 1.15, letterSpacing: '-0.02em',
                     }}>
                         Todo lo que necesitas para{' '}
-                        <span className="mt-gradient-gold-text">triunfar</span>
+                        <span className="mt-gradient-gold-text">vender más</span>
                     </h2>
                     <p style={{ fontSize: '17px', color: 'var(--mt-muted-on-dark)', maxWidth: '560px', margin: '0 auto', lineHeight: 1.7 }}>
-                        MondoTicket combina tecnología de punta con una UX impecable para llevar tus eventos al siguiente nivel.
+                        Cada función de MondoTicket está pensada para que vendas más boletos con menos esfuerzo y cero dolores de cabeza.
                     </p>
                 </div>
 

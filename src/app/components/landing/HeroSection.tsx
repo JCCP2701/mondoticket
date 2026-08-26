@@ -2,9 +2,9 @@ import { useNavigate } from 'react-router';
 import { ShieldCheck, CreditCard, QrCode, LayoutDashboard, Ticket, Users, BarChart3, ArrowRight } from 'lucide-react';
 
 const TRUST_ITEMS = [
-    { icon: ShieldCheck, label: 'MFA protegido' },
-    { icon: CreditCard, label: 'Pagos con Stripe' },
-    { icon: QrCode, label: 'Boletos con QR único' },
+    { icon: ShieldCheck, label: 'Seguridad con MFA' },
+    { icon: CreditCard, label: 'Pagos seguros con OrkestaPay' },
+    { icon: QrCode, label: 'QR antifraude' },
 ];
 
 const MOCK_EVENTS = [
@@ -97,7 +97,7 @@ export default function HeroSection() {
                             display: 'block', fontSize: '13px', fontWeight: 700, color: 'var(--mt-gold)',
                             letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '20px',
                         }}>
-                            Sistema de boletos inteligente
+                            La forma más rápida de vender boletos
                         </span>
 
                         <h1 style={{
@@ -105,16 +105,16 @@ export default function HeroSection() {
                             color: 'var(--mt-white)', marginBottom: '20px', letterSpacing: '-0.02em',
                             fontFamily: 'Outfit, sans-serif',
                         }}>
-                            Vende boletos con{' '}
-                            <span className="mt-gradient-gold-text">magia y seguridad</span>
+                            Vende boletos rápido,{' '}
+                            <span className="mt-gradient-gold-text">sin comisiones ocultas</span>
                         </h1>
 
                         <p style={{
                             fontSize: '17px', lineHeight: 1.65, color: 'var(--mt-muted-on-dark)',
                             marginBottom: '32px', maxWidth: '440px',
                         }}>
-                            Crea eventos, vende entradas, gestiona organizaciones y protege el acceso con MFA.
-                            Todo en una plataforma diseñada para el futuro.
+                            Publica tu evento en minutos, cobra con OrkestaPay sin demoras y ten el control total
+                            de cada venta. Protegido con autenticación multifactor de principio a fin.
                         </p>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '40px', flexWrap: 'wrap' }}>
@@ -127,7 +127,7 @@ export default function HeroSection() {
                                     fontSize: '15px', fontWeight: 700, cursor: 'pointer',
                                 }}
                             >
-                                Comenzar gratis
+                                Crea tu evento gratis
                             </button>
                             <button
                                 id="hero-cta-login"

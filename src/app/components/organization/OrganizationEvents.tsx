@@ -109,7 +109,7 @@ export default function OrganizationEvents() {
                                             <div className="flex flex-col items-center">
                                                 <div className="w-32 bg-secondary rounded-full h-2 mb-1.5 overflow-hidden">
                                                     <div
-                                                        className={`h-full rounded-full transition-all ${occupancyPercent >= 90 ? "bg-green-500" : occupancyPercent >= 60 ? "bg-primary" : "bg-orange-500"
+                                                        className={`h-full rounded-full transition-all ${occupancyPercent >= 90 ? "bg-success" : occupancyPercent >= 60 ? "bg-primary" : "bg-orange-500"
                                                             }`}
                                                         style={{ width: `${occupancyPercent}%` }}
                                                     />
@@ -118,9 +118,9 @@ export default function OrganizationEvents() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${event.presaleActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${event.presaleActive ? "bg-success/15 text-success" : "bg-gray-100 text-gray-500"
                                                 }`}>
-                                                {event.presaleActive && <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />}
+                                                {event.presaleActive && <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />}
                                                 {event.presaleActive ? "Activa" : "Cerrada"}
                                             </span>
                                         </td>
@@ -130,7 +130,7 @@ export default function OrganizationEvents() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-4">
-                                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-violet-600" title="Cortesías">
+                                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-primary" title="Cortesías">
                                                     <Gift className="w-3.5 h-3.5" /> {event.courtesyCount}
                                                 </span>
                                                 <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600" title="Reembolsos">
@@ -139,7 +139,7 @@ export default function OrganizationEvents() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${event.status === "completed" ? "bg-gray-200 text-gray-700" : event.status === "ongoing" ? "bg-blue-100 text-blue-700" : "bg-violet-100 text-violet-700"
+                                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${event.status === "completed" ? "bg-gray-200 text-gray-700" : event.status === "ongoing" ? "bg-blue-100 text-blue-700" : "bg-primary/10 text-primary"
                                                 }`}>
                                                 {event.status === "completed" ? "Finalizado" : event.status === "ongoing" ? "En Venta" : "Próximo"}
                                             </span>

@@ -4,6 +4,17 @@ import LandingPage from "./components/landing/LandingPage";
 import AllEventsPage from "./components/landing/AllEventsPage";
 import PrivacyPolicy from "./components/landing/PrivacyPolicy";
 import TermsAndConditions from "./components/landing/TermsAndConditions";
+import AboutPage from "./components/landing/AboutPage";
+import BlogPage from "./components/landing/BlogPage";
+import PressPage from "./components/landing/PressPage";
+import CareersPage from "./components/landing/CareersPage";
+import HelpCenterPage from "./components/landing/HelpCenterPage";
+import StatusPage from "./components/landing/StatusPage";
+import SecurityPage from "./components/landing/SecurityPage";
+import IntegrationsPage from "./components/landing/IntegrationsPage";
+import ApiDocsPage from "./components/landing/ApiDocsPage";
+import CookiesPolicyPage from "./components/landing/CookiesPolicyPage";
+import DataRightsPage from "./components/landing/DataRightsPage";
 import LoginPage from "./components/auth/LoginPage";
 import MFAPage from "./components/auth/MFAPage";
 import RegisterPage from "./components/auth/RegisterPage";
@@ -41,6 +52,17 @@ export const router = createBrowserRouter([
             { path: "events", Component: AllEventsPage },
             { path: "privacidad", Component: PrivacyPolicy },
             { path: "terminos", Component: TermsAndConditions },
+            { path: "nosotros", Component: AboutPage },
+            { path: "blog", Component: BlogPage },
+            { path: "prensa", Component: PressPage },
+            { path: "empleos", Component: CareersPage },
+            { path: "ayuda", Component: HelpCenterPage },
+            { path: "status", Component: StatusPage },
+            { path: "seguridad", Component: SecurityPage },
+            { path: "integraciones", Component: IntegrationsPage },
+            { path: "api-docs", Component: ApiDocsPage },
+            { path: "cookies", Component: CookiesPolicyPage },
+            { path: "gdpr", Component: DataRightsPage },
             { path: "login", Component: LoginPage },
             { path: "mfa", Component: MFAPage },
             { path: "register", Component: RegisterPage },

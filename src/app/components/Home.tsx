@@ -3,7 +3,7 @@ import { Shield, Building2, Ticket } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 to-white">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-white">
       <div className="max-w-4xl mx-auto px-6 py-16 text-center">
         <div className="mb-12">
           <h1 className="text-6xl font-bold mb-4 tracking-tight">

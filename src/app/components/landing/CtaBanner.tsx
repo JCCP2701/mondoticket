@@ -18,7 +18,7 @@ export default function CtaBanner() {
                         <Ticket size={20} color="var(--mt-gold)" />
                     </div>
                     <p style={{ fontSize: '18px', fontWeight: 700, color: 'var(--mt-white)', letterSpacing: '-0.01em' }}>
-                        Empieza hoy y transforma la venta de tus eventos.
+                        Cada día que esperas es una venta que se te escapa.
                     </p>
                 </div>
                 <button
@@ -32,7 +32,7 @@ export default function CtaBanner() {
                     onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
                 >
-                    Comenzar gratis
+                    Empieza a vender hoy
                 </button>
             </div>
 

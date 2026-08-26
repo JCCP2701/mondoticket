@@ -89,7 +89,7 @@ export default function TaquillaDashboard() {
         customerName: customer.name || "Venta en taquilla",
         customerEmail: customer.email || "sin-correo@taquilla.local",
         customerPhone: customer.phone,
-        paymentIntentId: `taquilla_${paymentNote}_${Date.now()}`,
+        paymentReference: `taquilla_${paymentNote}_${Date.now()}`,
         items: items.length > 0 ? items : undefined,
         seatIds: selectedSeats.length > 0 ? selectedSeats.map((s) => s.seatId) : undefined,
         salesChannel: 'taquilla',
@@ -236,7 +236,7 @@ export default function TaquillaDashboard() {
 
               {sellError && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{sellError}</div>}
               {lastSaleOrderId && (
-                <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm flex items-center gap-2">
+                <div className="p-3 rounded-lg bg-success/10 border border-success/30 text-success text-sm flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" /> Venta completada (#{lastSaleOrderId.slice(0, 8)})
                 </div>
               )}

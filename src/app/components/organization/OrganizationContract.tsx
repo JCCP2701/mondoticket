@@ -2,6 +2,7 @@ import { FileText, CheckCircle, ShieldCheck, Download, Calendar, DollarSign, Wal
 import { useEffect, useState } from "react";
 import { dataService, Organization } from "../../services/dataService";
 import { useAuth } from "../../context/AuthContext";
+import { generateContractPdf } from "../../lib/pdf";
 
 function formatHoldDuration(minutes: number): string {
     if (minutes % 1440 === 0) {
@@ -28,6 +29,24 @@ export default function OrganizationContract() {
 
     if (!org) return <div>Cargando contrato...</div>;
 
+    const handleDownloadPdf = () => {
+        generateContractPdf({
+            orgName: org.name,
+            legalName: org.legalName,
+            rfc: org.rfc,
+            address: org.address,
+            contactName: org.contactName,
+            createdAtLabel: new Date(org.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }),
+            feePercentage: String(org.feePercentage),
+            paymentTerms: String(org.paymentTerms),
+            taquillaFeeLabel: `${org.taquillaFeePercentage ?? org.feePercentage}%`,
+            taquillaFeeHint: org.taquillaFeePercentage != null ? "Fee específico para ventas en taquilla" : "Usa el mismo fee que la venta digital",
+            maxEventsPerMonthLabel: org.maxEventsPerMonth != null ? String(org.maxEventsPerMonth) : "Sin límite",
+            courtesyTicketsLabel: org.courtesyTicketsPerEvent != null ? String(org.courtesyTicketsPerEvent) : "Sin límite",
+            holdDurationLabel: formatHoldDuration(org.reservationHoldMinutes),
+        });
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex justify-between items-center text-foreground">
@@ -35,7 +54,7 @@ export default function OrganizationContract() {
                     <h1 className="text-3xl font-bold tracking-tight">Mi Contrato y Convenio</h1>
                     <p className="text-muted-foreground mt-1 text-lg">Términos comerciales y acuerdos de servicio con MondoTicket</p>
                 </div>
-                <button onClick={() => window.print()} className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg shadow-primary/20 print:hidden">
+                <button onClick={handleDownloadPdf} className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg shadow-primary/20">
                     <Download className="w-5 h-5" />
                     Descargar PDF
                 </button>

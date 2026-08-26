@@ -4,10 +4,12 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recha
 import { useEffect, useState } from "react";
 import { dataService, EventRecord } from "../../services/dataService";
 import { useAuth } from "../../context/AuthContext";
+import { generateLiquidationSummaryPdf } from "../../lib/pdf";
 
 export default function OrganizationDashboard() {
   const { activeOrganizationId } = useAuth();
   const [events, setEvents] = useState<EventRecord[]>([]);
+  const [orgName, setOrgName] = useState("");
   const [feePercentage, setFeePercentage] = useState(10);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalProfit, setTotalProfit] = useState(0);
@@ -23,7 +25,10 @@ export default function OrganizationDashboard() {
     ]).then(([evs, orgs, financeByOrg]) => {
       setEvents(evs);
       const org = orgs.find((o) => o.id === activeOrganizationId);
-      if (org) setFeePercentage(org.feePercentage);
+      if (org) {
+        setFeePercentage(org.feePercentage);
+        setOrgName(org.name);
+      }
       const own = financeByOrg.find((f) => f.organization.id === activeOrganizationId);
       setTotalRevenue(own?.totalRevenue ?? 0);
       setTotalProfit(own?.totalProfit ?? 0);
@@ -180,7 +185,18 @@ export default function OrganizationDashboard() {
                   💡 La plataforma cobra por cada boleto emitido, sin importar si el
                   cliente pagó con transferencia o efectivo.
                 </p>
-                <button onClick={() => window.print()} className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 print:hidden">
+                <button
+                  onClick={() => generateLiquidationSummaryPdf({
+                    orgName,
+                    periodLabel: new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }),
+                    activeEvents: activeEvents.length,
+                    totalSold,
+                    totalRevenue,
+                    feePercentage,
+                    totalProfit,
+                  })}
+                  className="w-full py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                >
                   <Download className="w-4 h-4" />
                   Descargar Resumen
                 </button>

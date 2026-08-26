@@ -354,7 +354,7 @@ export default function CreateOrganization() {
             {showPreview ? (
               <div className="bg-card rounded-xl border border-border p-6 sticky top-24">
                 <div className="flex items-center gap-2 mb-6">
-                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                  <CheckCircle2 className="w-6 h-6 text-success" />
                   <h3 className="font-semibold">Resumen del Convenio</h3>
                 </div>
 
@@ -397,7 +397,7 @@ export default function CreateOrganization() {
 
                 <button
                   onClick={handleConfirm}
-                  className="w-full py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all"
+                  className="w-full py-3 bg-success text-white rounded-xl font-semibold hover:bg-success/90 transition-all"
                 >
                   Confirmar y Registrar
                 </button>

@@ -30,8 +30,8 @@ export default function AdminFinances() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                            <Wallet className="w-6 h-6 text-green-700" />
+                        <div className="p-2 bg-success/10 rounded-lg">
+                            <Wallet className="w-6 h-6 text-success" />
                         </div>
                         <p className="text-sm font-bold text-muted-foreground">Total Recaudado</p>
                     </div>
@@ -104,7 +104,7 @@ export default function AdminFinances() {
                                         </div>
                                         <div>
                                             <p className="text-xs text-muted-foreground">A Entregar</p>
-                                            <p className="font-bold text-green-700">${(orgRevenue - orgProfit).toLocaleString()}</p>
+                                            <p className="font-bold text-success">${(orgRevenue - orgProfit).toLocaleString()}</p>
                                         </div>
                                     </div>
                                 </button>

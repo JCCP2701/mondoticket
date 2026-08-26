@@ -364,7 +364,7 @@
       <p>Menú lateral: <strong>Dashboard</strong>, <strong>Mis Eventos</strong>, <strong>Mi Contrato</strong>, <strong>Configuración</strong>. Si tu cuenta pertenece a más de una organización, verás un selector arriba del menú para cambiar entre ellas.</p>
 
       <h3>Dashboard</h3>
-      <p>Resumen de tu organización: eventos activos, boletos vendidos, revenue total, cuánto fee le debes a la plataforma ("Fee a Liquidar"), y un gráfico de tu inventario disponible vs. vendido. El botón <strong>"Descargar Resumen"</strong> abre el diálogo de impresión del navegador para guardarlo como PDF.</p>
+      <p>Resumen de tu organización: eventos activos, boletos vendidos, revenue total, cuánto fee le debes a la plataforma ("Fee a Liquidar"), y un gráfico de tu inventario disponible vs. vendido. El botón <strong>"Descargar Resumen"</strong> genera y descarga directamente un archivo PDF con estos datos (no depende del diálogo de impresión del navegador).</p>
 
       <h3>Mis Eventos</h3>
       <p>Lista de tus eventos con ocupación, estado de preventa, revenue, cortesías y reembolsos. Botón <strong>"Nuevo Evento"</strong> para crear uno, o <strong>"Detalles"</strong> para entrar a la gestión de uno existente.</p>
@@ -392,7 +392,7 @@
       <p>Diseña la distribución de asientos con las herramientas de Selector, Bloque y Borrador, elige a qué tipo de boleto pertenece cada asiento pintado, y da clic en <strong>"Guardar Mapa de Asientos"</strong>. Una vez que un tipo de boleto tiene asientos, los compradores eligen su asiento exacto en vez de solo la cantidad.</p>
 
       <h3>Mi Contrato</h3>
-      <p>Consulta (sin poder editar) tu convenio comercial vigente: fee digital, fee en taquilla, plazo de pago, <strong>tiempo de reserva antes de liberar boletos no pagados</strong>, límite de eventos por mes, límite de cortesías por evento, y los datos legales de tu organización. Solo el Super Administrador puede modificar estos valores. El botón <strong>"Descargar PDF"</strong> abre el diálogo de impresión del navegador.</p>
+      <p>Consulta (sin poder editar) tu convenio comercial vigente: fee digital, fee en taquilla, plazo de pago, <strong>tiempo de reserva antes de liberar boletos no pagados</strong>, límite de eventos por mes, límite de cortesías por evento, y los datos legales de tu organización. Solo el Super Administrador puede modificar estos valores. El botón <strong>"Descargar PDF"</strong> genera y descarga directamente un archivo PDF con estos datos (no depende del diálogo de impresión del navegador).</p>
 
       <h3>Configuración</h3>
       <p>Igual que en el panel de Super Administrador: esta sección todavía es solo de referencia, los cambios <strong>no se guardan todavía</strong>.</p>
@@ -538,6 +538,26 @@
     <section id="changelog">
       <h2>Historial de cambios</h2>
 
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-25</div>
+        <div class="changelog-body"><p><strong>Corrección: la pasarela de pago es OrkestaPay, no Stripe:</strong> varios textos de la landing y de las páginas del pie de página mencionaban "Stripe" por error — la plataforma nunca usó Stripe para procesar pagos, siempre fue <strong>OrkestaPay</strong> (tarjeta, SPEI y efectivo). Se corrigió el texto en toda la landing (portada, precios, funcionalidades), en las páginas de Seguridad, Integraciones, Sobre Nosotros, Centro de Ayuda, Sala de Prensa y Estado del Sistema, y se eliminó del código un módulo de pago simulado con Stripe que nunca se usó en producción.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-25</div>
+        <div class="changelog-body"><p><strong>Páginas nuevas en el pie de página:</strong> los 11 enlaces del pie de página que antes no llevaban a ningún lado (Integraciones, API Docs, Nosotros, Blog, Prensa, Empleos, Centro de Ayuda, Status, Seguridad) o reutilizaban el Aviso de Privacidad (Cookies, GDPR) ahora tienen su propia página con contenido real.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-25</div>
+        <div class="changelog-body"><p><strong>Más verde de marca en el sistema:</strong> los mensajes de éxito (guardado, creación de cuentas, ventas completadas), los indicadores de estado positivo ("Válido", "Activo", "Modo offline listo", presale "Activa") y los montos ya listos para entregar ("A Entregar", "Total Recaudado") ahora usan el verde de la marca en vez del verde genérico anterior, para verse consistentes con la nueva identidad. También se corrigieron los últimos restos de color morado en tablas y KPIs del Super Admin y de Organización, migrándolos a dorado.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-25</div>
+        <div class="changelog-body"><p><strong>Landing más vendedora:</strong> se mejoraron los textos de la portada pública (titular, subtítulo, features, planes, sección de estadísticas, banner final y carrusel de marcas) para que comuniquen el beneficio concreto de vender con MondoTicket de forma más directa. No cambió el diseño ni la estructura de la landing, solo el contenido.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-25</div>
+        <div class="changelog-body"><p><strong>PDF real en lugar de impresión:</strong> los botones "Descargar PDF" (Mi Contrato, de la Organización) y "Descargar Resumen" (Panel de Control, de la Organización) ahora generan y descargan directamente un archivo PDF con el diseño de marca de MondoTicket, en vez de abrir el diálogo de impresión del navegador.</p></div>
+      </div>
       <div class="changelog-entry">
         <div class="changelog-date">2026-08-25</div>
         <div class="changelog-body"><p><strong>Tiempo de reserva administrable:</strong> el Super Administrador ahora puede configurar, por organización (en el Convenio), cuánto tiempo se mantiene apartado un boleto seleccionado pero no pagado — de 5 minutos a 90 días (antes era un valor fijo de 72 horas para todas las organizaciones). Al cumplirse el tiempo sin pago confirmado, el boleto vuelve a estar disponible automáticamente para venta en línea o en taquilla. No aplica a cortesías ni a ventas de taquilla, ya que esas nunca quedan pendientes de pago. El comprador ve un aviso con el tiempo aplicable en la pantalla de pago, y el valor configurado también es visible (sin poder editarlo) en "Mi Contrato" de la organización.</p></div>

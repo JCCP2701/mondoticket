@@ -8,26 +8,26 @@ export default function Footer() {
         Producto: [
             { label: 'Características', to: '/#features' },
             { label: 'Precios', to: '/#pricing' },
-            { label: 'Integraciones', to: '#' },
-            { label: 'API Docs', to: '#' },
+            { label: 'Integraciones', to: '/integraciones' },
+            { label: 'API Docs', to: '/api-docs' },
         ],
         Empresa: [
-            { label: 'Nosotros', to: '/#about' },
-            { label: 'Blog', to: '#' },
-            { label: 'Prensa', to: '#' },
-            { label: 'Empleos', to: '#' },
+            { label: 'Nosotros', to: '/nosotros' },
+            { label: 'Blog', to: '/blog' },
+            { label: 'Prensa', to: '/prensa' },
+            { label: 'Empleos', to: '/empleos' },
         ],
         Soporte: [
-            { label: 'Centro de Ayuda', to: '#' },
+            { label: 'Centro de Ayuda', to: '/ayuda' },
             { label: 'Contacto', to: 'mailto:soporte@mondoticket.com' },
-            { label: 'Status', to: '#' },
-            { label: 'Seguridad', to: '#' },
+            { label: 'Status', to: '/status' },
+            { label: 'Seguridad', to: '/seguridad' },
         ],
         Legal: [
             { label: 'Privacidad', to: '/privacidad' },
             { label: 'Términos', to: '/terminos' },
-            { label: 'Cookies', to: '/privacidad' },
-            { label: 'GDPR', to: '/privacidad' },
+            { label: 'Cookies', to: '/cookies' },
+            { label: 'GDPR', to: '/gdpr' },
         ],
     };
 
@@ -55,7 +55,7 @@ export default function Footer() {
                             </span>
                         </div>
                         <p style={{ fontSize: '14px', color: 'var(--mt-muted-on-dark)', lineHeight: 1.8, maxWidth: '260px', marginBottom: '24px' }}>
-                            La plataforma de venta y gestión de boletos más avanzada de México. Seguridad MFA, pagos Stripe y QR tickets.
+                            La plataforma de venta y gestión de boletos más avanzada de México. Seguridad MFA, pagos con OrkestaPay y QR tickets.
                         </p>
                         {/* Social icons */}
                         <div style={{ display: 'flex', gap: '12px' }}>

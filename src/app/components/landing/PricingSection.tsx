@@ -6,55 +6,55 @@ const plans = [
         name: 'Básico',
         price: 'Gratis',
         period: '',
-        description: 'Perfecto para empezar a vender tus primeros eventos.',
+        description: 'Ideal para vender tus primeros boletos sin arriesgar nada.',
         priceId: 'price_basic_free',
         badge: null,
         features: [
-            '3 eventos activos',
+            'Hasta 3 eventos activos a la vez',
             'Hasta 200 boletos por evento',
-            'QR tickets básicos',
-            'Pagos con Stripe (5% comisión)',
-            'Dashboard básico',
-            'Soporte por email',
+            'Boletos con QR, listos para usar',
+            'Cobra con OrkestaPay (5% de comisión)',
+            'Panel de control esencial',
+            'Resuelve dudas sin perder ventas',
         ],
-        cta: 'Comenzar Gratis',
+        cta: 'Empezar gratis',
         highlight: false,
     },
     {
         name: 'Pro',
         price: '$999',
         period: '/mes MXN',
-        description: 'Para organizadores que quieren escalar sus operaciones.',
+        description: 'Para organizadores que quieren vender más y trabajar menos.',
         priceId: 'price_pro_monthly_mxn',
         badge: '⭐ MÁS POPULAR',
         features: [
-            'Eventos ilimitados',
-            'Boletos ilimitados',
-            'QR premium + wallet',
-            'Pagos Stripe (2.9% comisión)',
-            'Analytics avanzados',
-            'Múltiples tipos de ticket',
-            'MFA para todo el equipo',
-            'Soporte prioritario 24/7',
+            'Eventos ilimitados, sin límite de escala',
+            'Vende boletos ilimitados, sin topes',
+            'QR premium + integración con wallet',
+            'Cobra con OrkestaPay (2.9% de comisión)',
+            'Analytics avanzados para vender mejor',
+            'Múltiples tipos de boleto por evento',
+            'MFA para todo tu equipo',
+            'Soporte prioritario 24/7, nunca pierdes una venta',
         ],
-        cta: 'Activar Pro',
+        cta: 'Escalar con Pro',
         highlight: true,
     },
     {
         name: 'Enterprise',
         price: 'Custom',
         period: '',
-        description: 'Solución a medida para grandes organizaciones y festivales.',
+        description: 'Infraestructura a la medida para festivales y operaciones masivas.',
         priceId: 'price_enterprise_custom',
         badge: null,
         features: [
             'Todo lo de Pro',
-            'White-label / marca propia',
-            'API acceso completo',
+            'White-label: tu marca en cada boleto',
+            'API completa para tus propios desarrollos',
             'Manager de cuenta dedicado',
-            'SLA 99.9% garantizado',
-            'Stripe Connect personalizado',
-            'Integración con sistemas externos',
+            'SLA de 99.9% garantizado por contrato',
+            'Liquidaciones directas a tu medida',
+            'Conecta con tus sistemas externos',
         ],
         cta: 'Contactar Ventas',
         highlight: false,
@@ -65,7 +65,7 @@ export default function PricingSection() {
     const navigate = useNavigate();
 
     const handleCTA = (plan: typeof plans[0]) => {
-        // TODO Stripe: Use plan.priceId to create Stripe checkout session
+        // TODO: Use plan.priceId to create an OrkestaPay checkout for the subscription
         // const session = await fetch('/api/create-checkout-session', {
         //   method: 'POST',
         //   body: JSON.stringify({ priceId: plan.priceId }),
@@ -93,7 +93,7 @@ export default function PricingSection() {
                         <span className="mt-gradient-gold-text">perfecto</span> para ti
                     </h2>
                     <p style={{ color: 'var(--mt-muted)', fontSize: '17px', maxWidth: '500px', margin: '0 auto' }}>
-                        Sin contratos, cancela cuando quieras. Todos los planes incluyen acceso a Stripe Payments.
+                        Sin contratos ni letras chiquitas. Cancela cuando quieras y empieza a cobrar hoy mismo con OrkestaPay.
                     </p>
                 </div>
 
@@ -171,8 +171,8 @@ export default function PricingSection() {
                 </div>
 
                 <p style={{ textAlign: 'center', marginTop: '40px', fontSize: '13px', color: 'var(--mt-muted)' }}>
-                    Todos los planes incluyen SSL, uptime 99.9% y soporte técnico.
-                    Precios sujetos a IVA. Las comisiones de Stripe se aplican de forma adicional.
+                    Todos los planes incluyen SSL, 99.9% de uptime y soporte técnico real.
+                    Precios más IVA; las comisiones de OrkestaPay se aplican por separado.
                 </p>
             </div>
 

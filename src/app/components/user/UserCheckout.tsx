@@ -239,7 +239,7 @@ export default function UserCheckout() {
           customerName: formData.name,
           customerEmail: formData.email,
           customerPhone: formData.phone,
-          paymentIntentId: `free_${authedUser.id}_${Date.now()}`,
+          paymentReference: `free_${authedUser.id}_${Date.now()}`,
           items: items.length > 0 ? items : undefined,
           seatIds,
           idempotencyKey,

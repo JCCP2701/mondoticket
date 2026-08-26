@@ -10,7 +10,7 @@ export default function TrustedBy() {
                     textAlign: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--mt-muted)',
                     letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '24px',
                 }}>
-                    Confían en MondoTicket
+                    Marcas que ya venden con MondoTicket
                 </p>
 
                 <div className="mt-logo-marquee">

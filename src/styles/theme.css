@@ -29,6 +29,8 @@
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --ring: #4f9e3a;
+  --success: #328022;
+  --success-foreground: #ffffff;
   --chart-1: #d4af37;
   --chart-2: #328022;
   --chart-3: #a6821f;
@@ -72,6 +74,8 @@
   --input-background: #1c1a16;
   --switch-background: #24301e;
   --ring: #4f9e3a;
+  --success: #4f9e3a;
+  --success-foreground: #08150a;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --chart-1: #d4af37;
@@ -106,6 +110,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-input-background: var(--input-background);

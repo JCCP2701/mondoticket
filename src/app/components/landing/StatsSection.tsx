@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
 const stats = [
-    { value: 2500000, label: 'Boletos vendidos', suffix: '+', prefix: '' },
-    { value: 8400, label: 'Eventos realizados', suffix: '+', prefix: '' },
-    { value: 340, label: 'Organizaciones', suffix: '+', prefix: '' },
-    { value: 99.9, label: 'Uptime garantizado', suffix: '%', prefix: '' },
+    { value: 2500000, label: 'Boletos vendidos sin fraude', suffix: '+', prefix: '' },
+    { value: 8400, label: 'Eventos realizados con éxito', suffix: '+', prefix: '' },
+    { value: 340, label: 'Organizadores activos', suffix: '+', prefix: '' },
+    { value: 99.9, label: 'Uptime garantizado, sin caídas', suffix: '%', prefix: '' },
 ];
 
 function useCountUp(target: number, duration = 2000, started: boolean) {

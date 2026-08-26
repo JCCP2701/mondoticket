@@ -44,7 +44,7 @@ function CreateBrokerModal({ onClose, onCreated }: { onClose: () => void; onCrea
 
                 {result ? (
                     <div className="space-y-4">
-                        <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                        <div className="p-4 rounded-xl bg-success/10 border border-success/30 text-success text-sm">
                             Cuenta creada para <strong>{result.email}</strong>.
                         </div>
                         <div className="p-4 rounded-xl bg-secondary/50 border border-border">

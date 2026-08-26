@@ -422,8 +422,8 @@ export default function ValidadorDashboard() {
                                 <strong className="text-foreground">{checkedInCount}</strong> ingresados hasta ahora
                             </p>
                             <div className="flex items-center gap-2">
-                                {isOnline ? <Wifi className="w-3.5 h-3.5 text-green-600" /> : <WifiOff className="w-3.5 h-3.5 text-amber-600" />}
-                                {offlineReady && <span className="text-xs font-bold text-green-700">Modo offline listo</span>}
+                                {isOnline ? <Wifi className="w-3.5 h-3.5 text-success" /> : <WifiOff className="w-3.5 h-3.5 text-amber-600" />}
+                                {offlineReady && <span className="text-xs font-bold text-success">Modo offline listo</span>}
                             </div>
                         </div>
                     )}
@@ -533,7 +533,7 @@ export default function ValidadorDashboard() {
                                 <div className="space-y-2">
                                     {recentScans.map((s) => (
                                         <div key={s.id} className="flex items-center justify-between text-sm py-2 border-b border-border last:border-0">
-                                            <span className={s.result === 'ok' ? 'text-green-700 font-bold' : 'text-red-600 font-bold'}>
+                                            <span className={s.result === 'ok' ? 'text-success font-bold' : 'text-red-600 font-bold'}>
                                                 {RESULT_LABEL[s.result] ?? s.result}
                                             </span>
                                             <span className="text-muted-foreground text-xs">{s.scannedByName} · {new Date(s.scannedAt).toLocaleTimeString('es-MX')}</span>

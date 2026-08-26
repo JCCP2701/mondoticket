@@ -53,7 +53,7 @@ function CreateUserModal({ organizations, onClose, onCreated }: {
 
                 {result ? (
                     <div className="space-y-4">
-                        <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                        <div className="p-4 rounded-xl bg-success/10 border border-success/30 text-success text-sm">
                             Cuenta creada para <strong>{result.email}</strong>.
                         </div>
                         <div className="p-4 rounded-xl bg-secondary/50 border border-border">
@@ -324,7 +324,7 @@ export default function AdminUserManagement() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${user.role === 'superadmin' ? "bg-red-100 text-red-700" :
-                                                user.role === 'organization' ? "bg-violet-100 text-violet-700" :
+                                                user.role === 'organization' ? "bg-primary/10 text-primary" :
                                                     user.role === 'validador' ? "bg-amber-100 text-amber-700" :
                                                         user.role === 'broker' ? "bg-teal-100 text-teal-700" :
                                                             "bg-blue-100 text-blue-700"
@@ -340,7 +340,7 @@ export default function AdminUserManagement() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                            <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
                                             <span className="text-sm font-medium">Activo</span>
                                         </div>
                                     </td>

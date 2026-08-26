@@ -87,7 +87,7 @@ export default function BrokerDashboard() {
                     </div>
                     <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-green-100 rounded-lg"><Calendar className="w-6 h-6 text-green-700" /></div>
+                            <div className="p-2 bg-success/10 rounded-lg"><Calendar className="w-6 h-6 text-success" /></div>
                             <p className="text-sm font-bold text-muted-foreground">Este mes</p>
                         </div>
                         <p className="text-3xl font-bold text-foreground">{money(totalThisMonth)}</p>

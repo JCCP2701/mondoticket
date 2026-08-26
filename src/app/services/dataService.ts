@@ -597,7 +597,7 @@ export const dataService = {
         customerName: string;
         customerEmail: string;
         customerPhone: string;
-        paymentIntentId: string;
+        paymentReference: string;
         items?: { ticketTypeId: string; quantity: number }[];
         seatIds?: string[];
         salesChannel?: 'online' | 'taquilla';
@@ -610,7 +610,7 @@ export const dataService = {
             p_customer_name: input.customerName,
             p_customer_email: input.customerEmail,
             p_customer_phone: input.customerPhone,
-            p_stripe_payment_intent_id: input.paymentIntentId,
+            p_payment_reference: input.paymentReference,
             p_items: input.items ? input.items.map((i) => ({ ticket_type_id: i.ticketTypeId, quantity: i.quantity })) : null,
             p_seat_ids: input.seatIds ?? null,
             p_sales_channel: input.salesChannel ?? 'online',

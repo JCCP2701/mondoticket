@@ -89,7 +89,7 @@ export default function EventDetail() {
         customerName: courtesyForm.name,
         customerEmail: courtesyForm.email,
         customerPhone: "",
-        paymentIntentId: `comp_${Date.now()}`,
+        paymentReference: `comp_${Date.now()}`,
         items: [{ ticketTypeId: courtesyForm.ticketTypeId, quantity: 1 }],
       });
       setShowCourtesyForm(false);
@@ -104,14 +104,14 @@ export default function EventDetail() {
 
   const getStatusBadge = (status: TicketRecord["status"]) => {
     const styles = {
-      valid: "bg-green-100 text-green-700 border-green-200",
+      valid: "bg-success/15 text-success border-success/30",
       used: "bg-blue-100 text-blue-700 border-blue-200",
       cancelled: "bg-red-100 text-red-700 border-red-200",
     };
     const labels = { valid: "Válido", used: "Usado", cancelled: "Reembolsado" };
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${styles[status]}`}>
-        <div className={`w-1.5 h-1.5 rounded-full ${status === 'valid' ? 'bg-green-500' : status === 'used' ? 'bg-blue-500' : 'bg-red-500'}`} />
+        <div className={`w-1.5 h-1.5 rounded-full ${status === 'valid' ? 'bg-success' : status === 'used' ? 'bg-blue-500' : 'bg-red-500'}`} />
         {labels[status]}
       </span>
     );
@@ -251,14 +251,14 @@ export default function EventDetail() {
           <p className="text-3xl font-black mt-1">{stats.total}</p>
         </div>
         <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
-          <div className="p-3 bg-green-500/5 rounded-xl mb-4"><TrendingUp className="w-6 h-6 text-green-600" /></div>
+          <div className="p-3 bg-primary/5 rounded-xl mb-4"><TrendingUp className="w-6 h-6 text-primary" /></div>
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Revenue Total</p>
           <p className="text-3xl font-black mt-1 text-primary">${stats.revenue.toLocaleString()}</p>
         </div>
         <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
-          <div className="p-3 bg-green-500/5 rounded-xl mb-4"><CheckCircle2 className="w-6 h-6 text-green-600" /></div>
+          <div className="p-3 bg-success/10 rounded-xl mb-4"><CheckCircle2 className="w-6 h-6 text-success" /></div>
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Válidos</p>
-          <p className="text-3xl font-black mt-1 text-green-600">{stats.valid}</p>
+          <p className="text-3xl font-black mt-1 text-success">{stats.valid}</p>
         </div>
         <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
           <div className="p-3 bg-blue-500/5 rounded-xl mb-4"><TicketIcon className="w-6 h-6 text-blue-600" /></div>
@@ -266,9 +266,9 @@ export default function EventDetail() {
           <p className="text-3xl font-black mt-1 text-blue-600">{stats.checkedIn}</p>
         </div>
         <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
-          <div className="p-3 bg-violet-500/5 rounded-xl mb-4"><Gift className="w-6 h-6 text-violet-600" /></div>
+          <div className="p-3 bg-primary/5 rounded-xl mb-4"><Gift className="w-6 h-6 text-primary" /></div>
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Cortesías</p>
-          <p className="text-3xl font-black mt-1 text-violet-600">{stats.courtesy}</p>
+          <p className="text-3xl font-black mt-1 text-primary">{stats.courtesy}</p>
         </div>
         <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
           <div className="p-3 bg-amber-500/5 rounded-xl mb-4"><AlertCircle className="w-6 h-6 text-amber-600" /></div>

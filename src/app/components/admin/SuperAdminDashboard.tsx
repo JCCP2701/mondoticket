@@ -71,8 +71,8 @@ export default function SuperAdminDashboard() {
 
           <div className="bg-card p-6 rounded-xl border border-border">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-green-500/10 rounded-lg">
-                <Ticket className="w-6 h-6 text-green-600" />
+              <div className="p-3 bg-success/10 rounded-lg">
+                <Ticket className="w-6 h-6 text-success" />
               </div>
             </div>
             <p className="text-sm text-muted-foreground mb-1">Boletos Vendidos</p>
@@ -101,7 +101,7 @@ export default function SuperAdminDashboard() {
 
           <div className="bg-card p-6 rounded-xl border border-border">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-violet-500/10 rounded-lg">
+              <div className="p-3 bg-primary/10 rounded-lg">
                 <Users className="w-6 h-6 text-primary" />
               </div>
             </div>
@@ -214,7 +214,7 @@ export default function SuperAdminDashboard() {
                       <td className="px-6 py-4 text-right font-medium">
                         ${revenue.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 text-right text-green-600">
+                      <td className="px-6 py-4 text-right text-success">
                         ${toDeliver.toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-right text-primary font-bold">
@@ -222,7 +222,7 @@ export default function SuperAdminDashboard() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-4">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-violet-600" title="Cortesías">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-primary" title="Cortesías">
                             <Gift className="w-3.5 h-3.5" /> {courtesyCount}
                           </span>
                           <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600" title="Reembolsos">
@@ -304,7 +304,7 @@ export default function SuperAdminDashboard() {
               </div>
               <div className="flex justify-between pt-2 border-t border-primary/10">
                 <span className="text-sm font-medium">Total a Entregar:</span>
-                <span className="font-bold text-green-600">${(stats.totalRevenue - stats.totalProfit).toLocaleString()}</span>
+                <span className="font-bold text-success">${(stats.totalRevenue - stats.totalProfit).toLocaleString()}</span>
               </div>
             </div>
           </div>
