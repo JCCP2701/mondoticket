@@ -1,18 +1,20 @@
 import { Outlet } from "react-router";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "../ui/sidebar";
 import OrganizationSidebar from "./OrganizationSidebar";
 
 export default function OrganizationLayout() {
     return (
-        <div className="flex min-h-screen bg-background text-foreground overflow-hidden">
-            {/* Sidebar - Fixed */}
+        <SidebarProvider>
             <OrganizationSidebar />
-
-            {/* Main Content Area - Scrollable */}
-            <main className="flex-1 h-screen overflow-y-auto relative">
+            <SidebarInset>
+                <div className="md:hidden flex items-center gap-2 p-3 border-b border-border sticky top-0 bg-background z-10">
+                    <SidebarTrigger />
+                    <span className="font-bold">MondoTicket</span>
+                </div>
                 <div className="p-8 pb-20">
                     <Outlet />
                 </div>
-            </main>
-        </div>
+            </SidebarInset>
+        </SidebarProvider>
     );
 }

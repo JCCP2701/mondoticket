@@ -18,6 +18,10 @@ export interface Organization {
     maxEventsPerMonth?: number | null;
     courtesyTicketsPerEvent?: number | null;
     taquillaFeePercentage?: number | null;
+    // Minutes a pending online order keeps seats/inventory reserved before
+    // being lazily released back to public sale. Never applies to courtesy
+    // or taquilla orders — those never enter a pending state.
+    reservationHoldMinutes: number;
     status: 'active' | 'pending' | 'suspended';
     createdAt: string;
 }
@@ -165,6 +169,7 @@ function mapOrganization(row: any): Organization {
         maxEventsPerMonth: row.max_events_per_month ?? null,
         courtesyTicketsPerEvent: row.courtesy_tickets_per_event ?? null,
         taquillaFeePercentage: row.taquilla_fee_percentage != null ? Number(row.taquilla_fee_percentage) : null,
+        reservationHoldMinutes: row.reservation_hold_minutes ?? 4320,
         status: row.status,
         createdAt: row.created_at,
     };
@@ -253,6 +258,30 @@ export const dataService = {
         if (error) throw error;
     },
 
+    async updateOrganizationDetails(id: string, input: {
+        name: string;
+        legalName: string;
+        rfc: string;
+        address: string;
+        contactName: string;
+        contactEmail: string;
+        contactPhone: string;
+    }): Promise<void> {
+        const { error } = await supabase
+            .from('organizations')
+            .update({
+                name: input.name,
+                legal_name: input.legalName,
+                rfc: input.rfc,
+                address: input.address,
+                contact_name: input.contactName,
+                contact_email: input.contactEmail,
+                contact_phone: input.contactPhone,
+            })
+            .eq('id', id);
+        if (error) throw error;
+    },
+
     async updateOrganizationContract(id: string, input: {
         feePercentage: number;
         paymentTerms: number;
@@ -260,6 +289,7 @@ export const dataService = {
         maxEventsPerMonth?: number | null;
         courtesyTicketsPerEvent?: number | null;
         taquillaFeePercentage?: number | null;
+        reservationHoldMinutes: number;
     }): Promise<void> {
         const { error } = await supabase
             .from('organizations')
@@ -270,6 +300,7 @@ export const dataService = {
                 max_events_per_month: input.maxEventsPerMonth ?? null,
                 courtesy_tickets_per_event: input.courtesyTicketsPerEvent ?? null,
                 taquilla_fee_percentage: input.taquillaFeePercentage ?? null,
+                reservation_hold_minutes: input.reservationHoldMinutes,
             })
             .eq('id', id);
         if (error) throw error;
@@ -589,6 +620,15 @@ export const dataService = {
         return data as string;
     },
 
+    // organizations is RLS-restricted to members/superadmin, so a guest
+    // buyer can't read reservation_hold_minutes directly — this narrow RPC
+    // exposes just that one number for checkout's "reserved for X" message.
+    async getEventHoldMinutes(eventId: string): Promise<number> {
+        const { data, error } = await supabase.rpc('get_event_hold_minutes', { p_event_id: eventId });
+        if (error) throw error;
+        return (data as number | null) ?? 4320;
+    },
+
     // Real-money online purchases go through this instead of createOrder:
     // reserves inventory/seats and creates a 'pending' order, but issues no
     // tickets yet — those only get minted by confirm_order_paid, once the
@@ -636,7 +676,8 @@ export const dataService = {
 
     // Releases a still-'pending' reservation (buyer canceled on OrkestaPay's
     // hosted page) — frees inventory/seats immediately instead of waiting
-    // for the passive 72h expiry.
+    // for the organization's configured reservation window to lazily
+    // reclaim it on someone else's next visit.
     async releaseOrder(orderId: string): Promise<void> {
         const { error } = await supabase.rpc('release_order', { p_order_id: orderId });
         if (error) throw error;

@@ -370,7 +370,7 @@ export default function ValidadorDashboard() {
     };
 
     const resultColor = lastResult
-        ? lastResult.result === "ok" ? "#10b981" : "#ef4444"
+        ? lastResult.result === "ok" ? "#328022" : "#e11d48"
         : "#6b7280";
 
     if (loading) return <div className="p-8 text-muted-foreground">Cargando...</div>;
@@ -378,7 +378,7 @@ export default function ValidadorDashboard() {
     return (
         <div className="min-h-screen bg-background text-foreground">
             <header className="bg-card border-b border-border sticky top-0 z-10">
-                <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+                <div className="px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
                             <Ticket className="w-5 h-5 text-white" />
@@ -403,7 +403,7 @@ export default function ValidadorDashboard() {
                 </div>
             )}
 
-            <main className="max-w-3xl mx-auto px-6 py-6 space-y-6">
+            <main className="px-6 py-6 space-y-6">
                 <div className="bg-card p-6 rounded-2xl border border-border">
                     <label className="text-sm font-bold text-muted-foreground mb-2 block">Evento</label>
                     <select

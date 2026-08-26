@@ -54,24 +54,24 @@ export default function BrokerDashboard() {
 
     return (
         <div className="min-h-screen bg-background text-foreground">
-            <header className="bg-card border-b border-border sticky top-0 z-10">
-                <div className="max-w-6xl mx-auto px-8 py-4 flex items-center justify-between">
+            <header className="bg-sidebar text-sidebar-foreground border-b border-sidebar-border sticky top-0 z-10">
+                <div className="px-8 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                            <Handshake className="w-5 h-5 text-white" />
+                            <Handshake className="w-5 h-5 text-primary-foreground" />
                         </div>
                         <div>
                             <h1 className="font-bold">Broker</h1>
-                            <p className="text-xs text-muted-foreground">{user?.name}</p>
+                            <p className="text-xs text-sidebar-foreground/60">{user?.name}</p>
                         </div>
                     </div>
-                    <button onClick={() => logout()} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border hover:bg-secondary text-sm font-bold">
+                    <button onClick={() => logout()} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-sidebar-border hover:bg-sidebar-accent text-sm font-bold">
                         <LogOut className="w-4 h-4" /> Salir
                     </button>
                 </div>
             </header>
 
-            <main className="max-w-6xl mx-auto px-8 py-8 space-y-8">
+            <main className="px-8 py-8 space-y-8">
                 <div>
                     <h2 className="text-2xl font-bold tracking-tight">Tus ganancias</h2>
                     <p className="text-muted-foreground mt-1">Tu comisión ya calculada por organización y evento. No incluye el ingreso real de cada evento.</p>

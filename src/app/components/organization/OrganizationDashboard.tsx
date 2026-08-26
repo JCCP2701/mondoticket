@@ -37,7 +37,7 @@ export default function OrganizationDashboard() {
   const totalAvailable = Math.max(0, totalCapacity - totalSold);
 
   const inventoryData = [
-    { name: "Vendidos", value: totalSold, color: "#8b5cf6" },
+    { name: "Vendidos", value: totalSold, color: "#328022" },
     { name: "Disponibles", value: totalAvailable, color: "#e5e5e5" },
   ];
 

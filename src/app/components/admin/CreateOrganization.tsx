@@ -79,7 +79,7 @@ export default function CreateOrganization() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-8 py-4 flex items-center gap-4">
+        <div className="px-8 py-4 flex items-center gap-4">
           <Link
             to="/admin"
             className="p-2 hover:bg-secondary rounded-lg transition-colors"
@@ -97,7 +97,7 @@ export default function CreateOrganization() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-8 py-8">
+      <main className="px-8 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Form Section */}
           <div className="lg:col-span-2">

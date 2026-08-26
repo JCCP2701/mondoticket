@@ -1,7 +1,19 @@
-import { FileText, CheckCircle, ShieldCheck, Download, Calendar, DollarSign, Wallet, Ticket, Gift } from "lucide-react";
+import { FileText, CheckCircle, ShieldCheck, Download, Calendar, DollarSign, Wallet, Ticket, Gift, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { dataService, Organization } from "../../services/dataService";
 import { useAuth } from "../../context/AuthContext";
+
+function formatHoldDuration(minutes: number): string {
+    if (minutes % 1440 === 0) {
+        const days = minutes / 1440;
+        return `${days} ${days === 1 ? 'día' : 'días'}`;
+    }
+    if (minutes % 60 === 0) {
+        const hours = minutes / 60;
+        return `${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+    }
+    return `${minutes} minutos`;
+}
 
 export default function OrganizationContract() {
     const { activeOrganizationId } = useAuth();
@@ -17,7 +29,7 @@ export default function OrganizationContract() {
     if (!org) return <div>Cargando contrato...</div>;
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl">
+        <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex justify-between items-center text-foreground">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Mi Contrato y Convenio</h1>
@@ -46,7 +58,7 @@ export default function OrganizationContract() {
 
                 <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-violet-100 rounded-lg text-violet-700">
+                        <div className="p-2 bg-primary/10 rounded-lg text-primary">
                             <DollarSign className="w-5 h-5" />
                         </div>
                         <span className="text-sm font-bold text-muted-foreground">Comisión (Fee)</span>
@@ -70,7 +82,7 @@ export default function OrganizationContract() {
             <div className="grid md:grid-cols-3 gap-6">
                 <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-violet-100 rounded-lg text-violet-700">
+                        <div className="p-2 bg-primary/10 rounded-lg text-primary">
                             <DollarSign className="w-5 h-5" />
                         </div>
                         <span className="text-sm font-bold text-muted-foreground">Fee en Taquilla</span>
@@ -102,6 +114,19 @@ export default function OrganizationContract() {
                     <span className="text-3xl font-bold">{org.courtesyTicketsPerEvent ?? "Sin límite"}</span>
                     <p className="text-xs text-muted-foreground mt-2">Boletos gratuitos permitidos por evento</p>
                 </div>
+            </div>
+
+            <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <span className="text-sm font-bold text-muted-foreground">Tiempo de Reserva antes de Liberar Boletos</span>
+                </div>
+                <span className="text-3xl font-bold text-primary">{formatHoldDuration(org.reservationHoldMinutes)}</span>
+                <p className="text-xs text-muted-foreground mt-2">
+                    Si un comprador no completa el pago en este tiempo, el boleto vuelve a estar disponible para venta al público. No aplica a cortesías ni ventas de taquilla.
+                </p>
             </div>
 
             <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">

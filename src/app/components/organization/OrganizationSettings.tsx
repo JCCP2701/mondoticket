@@ -2,7 +2,7 @@ import { Settings, Bell, Lock, User, Save, Globe } from "lucide-react";
 
 export default function OrganizationSettings() {
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl text-foreground">
+        <div className="space-y-8 animate-in fade-in duration-500 text-foreground">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Configuración de Organización</h1>
                 <p className="text-muted-foreground mt-1 text-lg">Administra los detalles de tu cuenta y preferencias de la plataforma</p>

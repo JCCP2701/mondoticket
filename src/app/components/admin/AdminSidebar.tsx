@@ -6,10 +6,23 @@ import {
     Wallet,
     Settings,
     LogOut,
-    ChevronRight,
-    Handshake
+    Handshake,
+    Ticket,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarRail,
+    SidebarTrigger,
+} from "../ui/sidebar";
+import "../landing/landing-theme.css";
 
 const MENU_ITEMS = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
@@ -25,57 +38,64 @@ export default function AdminSidebar() {
     const { logout, user } = useAuth();
 
     return (
-        <aside className="w-64 bg-card border-r border-border flex flex-col h-screen sticky top-0">
-            <div className="p-6 border-b border-border">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
-                        TB
+        <Sidebar collapsible="icon">
+            <SidebarHeader className="border-b border-sidebar-border p-3">
+                <div className="flex items-center gap-2 group-data-[collapsible=icon]:flex-col">
+                    <SidebarTrigger className="shrink-0" />
+                    <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center bg-white/[0.06]">
+                            <Ticket className="w-[18px] h-[18px]" style={{ color: 'var(--mt-gold)' }} />
+                        </div>
+                        <span className="text-lg tracking-tight truncate group-data-[collapsible=icon]:hidden" style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700 }}>
+                            <span style={{ color: 'var(--mt-green-light)' }}>mondo</span>
+                            <span className="mt-gradient-gold-text">ticket</span>
+                        </span>
                     </div>
-                    <span className="font-bold text-xl tracking-tight">MondoTicket</span>
                 </div>
-            </div>
+            </SidebarHeader>
 
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                {MENU_ITEMS.map((item) => {
-                    const isActive = location.pathname === item.path;
-                    return (
-                        <Link
-                            key={item.id}
-                            to={item.path}
-                            className={`flex items-center justify-between p-3 rounded-xl transition-all group ${isActive
-                                    ? "bg-primary text-white shadow-lg shadow-primary/20"
-                                    : "hover:bg-secondary text-muted-foreground hover:text-foreground"
-                                }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <item.icon className={`w-5 h-5 ${isActive ? "text-white" : "group-hover:text-primary"}`} />
-                                <span className="font-medium">{item.label}</span>
-                            </div>
-                            {isActive && <ChevronRight className="w-4 h-4" />}
-                        </Link>
-                    );
-                })}
-            </nav>
+            <SidebarContent>
+                <SidebarGroup>
+                    <SidebarMenu>
+                        {MENU_ITEMS.map((item) => {
+                            const isActive = location.pathname === item.path;
+                            return (
+                                <SidebarMenuItem key={item.id}>
+                                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                                        <Link to={item.path}>
+                                            <item.icon />
+                                            <span>{item.label}</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            );
+                        })}
+                    </SidebarMenu>
+                </SidebarGroup>
+            </SidebarContent>
 
-            <div className="p-4 border-t border-border space-y-4">
-                <div className="flex items-center gap-3 p-2">
-                    <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center font-bold text-primary">
+            <SidebarFooter className="border-t border-sidebar-border p-3 gap-3">
+                <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="w-9 h-9 shrink-0 bg-sidebar-accent rounded-full flex items-center justify-center font-bold text-sidebar-accent-foreground text-sm">
                         {user?.avatar || 'AD'}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
                         <p className="text-sm font-semibold truncate">{user?.name || 'Administrador'}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                        <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
                     </div>
                 </div>
 
                 <button
                     onClick={logout}
-                    className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium"
+                    title="Cerrar sesión"
+                    className="w-full flex items-center gap-3 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors font-medium group-data-[collapsible=icon]:justify-center"
                 >
-                    <LogOut className="w-5 h-5" />
-                    Cerrar Sesión
+                    <LogOut className="w-4 h-4 shrink-0" />
+                    <span className="group-data-[collapsible=icon]:hidden">Cerrar Sesión</span>
                 </button>
-            </div>
-        </aside>
+            </SidebarFooter>
+
+            <SidebarRail />
+        </Sidebar>
     );
 }

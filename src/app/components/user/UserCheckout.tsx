@@ -7,6 +7,18 @@ import { supabase } from "../../services/supabaseClient";
 import SeatMapPicker, { SelectedSeat } from "./SeatMapPicker";
 import "../landing/landing-theme.css";
 
+function formatHoldDuration(minutes: number): string {
+  if (minutes % 1440 === 0) {
+    const days = minutes / 1440;
+    return `${days} ${days === 1 ? 'día' : 'días'}`;
+  }
+  if (minutes % 60 === 0) {
+    const hours = minutes / 60;
+    return `${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+  }
+  return `${minutes} minutos`;
+}
+
 export default function UserCheckout() {
   const navigate = useNavigate();
   const { eventId } = useParams();
@@ -17,6 +29,9 @@ export default function UserCheckout() {
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  // Org-configurable, fetched separately since `organizations` is
+  // RLS-restricted to members/superadmin — see getEventHoldMinutes.
+  const [holdMinutes, setHoldMinutes] = useState(4320);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,6 +45,11 @@ export default function UserCheckout() {
         const byId = eventId ? await dataService.getEventById(eventId) : null;
         const resolved = byId ?? (await dataService.getEvents())[0] ?? null;
         if (!cancelled) setEvent(resolved);
+        if (resolved) {
+          dataService.getEventHoldMinutes(resolved.id)
+            .then((mins) => { if (!cancelled) setHoldMinutes(mins); })
+            .catch(() => {});
+        }
       } catch (err: any) {
         if (!cancelled) setLoadError(err.message || "No se pudo cargar el evento");
       } finally {
@@ -41,8 +61,8 @@ export default function UserCheckout() {
 
   // Landing back here with ?orkesta=canceled means the buyer backed out of
   // OrkestaPay's hosted page — free the reservation right away instead of
-  // waiting on the passive 72h expiry, so the inventory is bookable by
-  // someone else immediately.
+  // waiting for it to lazily reclaim on someone else's next visit, so the
+  // inventory is bookable immediately.
   useEffect(() => {
     if (searchParams.get('orkesta') !== 'canceled') return;
     const canceledOrderId = searchParams.get('orderId');
@@ -630,10 +650,16 @@ export default function UserCheckout() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: !isFree ? '12px' : '28px' }}>
                 <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--mt-white)' }}>Total</span>
                 <span className="mt-gradient-gold-text" style={{ fontSize: '26px', fontWeight: 800 }}>${total.toLocaleString()} <span style={{ fontSize: '13px', fontWeight: 600 }}>MXN</span></span>
               </div>
+
+              {!isFree && (
+                <p style={{ marginBottom: '16px', fontSize: '12px', color: 'var(--mt-muted-on-dark)', textAlign: 'center' }}>
+                  Tus boletos quedan reservados por {formatHoldDuration(holdMinutes)} mientras completas el pago.
+                </p>
+              )}
 
               {purchaseError && (
                 <div style={{ marginBottom: '16px', padding: '11px 13px', borderRadius: '10px', background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.3)', color: '#fca5a5', fontSize: '13px' }}>

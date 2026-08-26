@@ -32,7 +32,7 @@ function rowIndexToLabel(r: number): string {
     return label;
 }
 
-const PALETTE = ["#7c3aed", "#0891b2", "#d97706", "#059669", "#be123c", "#4338ca"];
+const PALETTE = ["#d4af37", "#328022", "#9cc183", "#a6821f", "#4f9e3a", "#6b685f"];
 
 export default function VenueDesigner() {
     const { eventId } = useParams();

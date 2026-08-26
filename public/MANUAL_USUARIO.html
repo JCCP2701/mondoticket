@@ -1,24 +1,24 @@
 <title>Manual de Usuario — MondoTicket</title>
 <style>
   :root {
-    --bg: #0d0b1e;
-    --surface: #15112c;
-    --surface-2: #1c1740;
-    --border: rgba(167,139,250,0.16);
-    --border-strong: rgba(167,139,250,0.3);
-    --text: #f0edff;
-    --text-muted: rgba(240,237,255,0.6);
-    --text-faint: rgba(240,237,255,0.4);
-    --accent: #a78bfa;
-    --accent-strong: #7c3aed;
-    --accent-2: #4338ca;
-    --amber: #f59e0b;
-    --superadmin: #f59e0b;
-    --organizacion: #a78bfa;
-    --taquilla: #38bdf8;
-    --validador: #fb7185;
-    --broker: #2dd4bf;
-    --usuario: #34d399;
+    --bg: #0a0a0a;
+    --surface: #141210;
+    --surface-2: #1c1a16;
+    --border: rgba(212,175,55,0.16);
+    --border-strong: rgba(212,175,55,0.32);
+    --text: #faf9f6;
+    --text-muted: rgba(250,249,246,0.6);
+    --text-faint: rgba(250,249,246,0.4);
+    --accent: #d4af37;
+    --accent-strong: #a6821f;
+    --accent-2: #328022;
+    --amber: #d4af37;
+    --superadmin: #d4af37;
+    --organizacion: #a6821f;
+    --taquilla: #328022;
+    --validador: #6b685f;
+    --broker: #4f9e3a;
+    --usuario: #9cc183;
     --font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
@@ -26,31 +26,31 @@
   }
   @media (prefers-color-scheme: light) {
     :root {
-      --bg: #faf8ff;
+      --bg: #faf9f6;
       --surface: #ffffff;
-      --surface-2: #f3effc;
-      --border: rgba(124,58,237,0.13);
-      --border-strong: rgba(124,58,237,0.28);
-      --text: #201a33;
-      --text-muted: rgba(32,26,51,0.62);
-      --text-faint: rgba(32,26,51,0.42);
-      --accent: #7c3aed;
-      --accent-strong: #6d28d9;
-      --accent-2: #4338ca;
-      --amber: #b45309;
+      --surface-2: #f0ede2;
+      --border: rgba(166,130,31,0.15);
+      --border-strong: rgba(166,130,31,0.3);
+      --text: #13120f;
+      --text-muted: rgba(19,18,15,0.62);
+      --text-faint: rgba(19,18,15,0.42);
+      --accent: #a6821f;
+      --accent-strong: #8a6a18;
+      --accent-2: #328022;
+      --amber: #a6821f;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0d0b1e; --surface: #15112c; --surface-2: #1c1740;
-    --border: rgba(167,139,250,0.16); --border-strong: rgba(167,139,250,0.3);
-    --text: #f0edff; --text-muted: rgba(240,237,255,0.6); --text-faint: rgba(240,237,255,0.4);
-    --accent: #a78bfa; --accent-strong: #7c3aed; --accent-2: #4338ca; --amber: #f59e0b;
+    --bg: #0a0a0a; --surface: #141210; --surface-2: #1c1a16;
+    --border: rgba(212,175,55,0.16); --border-strong: rgba(212,175,55,0.32);
+    --text: #faf9f6; --text-muted: rgba(250,249,246,0.6); --text-faint: rgba(250,249,246,0.4);
+    --accent: #d4af37; --accent-strong: #a6821f; --accent-2: #328022; --amber: #d4af37;
   }
   :root[data-theme="light"] {
-    --bg: #faf8ff; --surface: #ffffff; --surface-2: #f3effc;
-    --border: rgba(124,58,237,0.13); --border-strong: rgba(124,58,237,0.28);
-    --text: #201a33; --text-muted: rgba(32,26,51,0.62); --text-faint: rgba(32,26,51,0.42);
-    --accent: #7c3aed; --accent-strong: #6d28d9; --accent-2: #4338ca; --amber: #b45309;
+    --bg: #faf9f6; --surface: #ffffff; --surface-2: #f0ede2;
+    --border: rgba(166,130,31,0.15); --border-strong: rgba(166,130,31,0.3);
+    --text: #13120f; --text-muted: rgba(19,18,15,0.62); --text-faint: rgba(19,18,15,0.42);
+    --accent: #a6821f; --accent-strong: #8a6a18; --accent-2: #328022; --amber: #a6821f;
   }
 
   * { box-sizing: border-box; }
@@ -85,12 +85,15 @@
   .brand { display: flex; align-items: center; gap: 10px; padding: 0 4px; }
   .brand-mark {
     width: 34px; height: 34px; border-radius: 9px; flex: 0 0 auto;
-    background: linear-gradient(135deg, var(--accent-strong), var(--accent-2));
+    background: #0a0a0a; border: 1.5px solid var(--accent);
     display: flex; align-items: center; justify-content: center;
-    color: #fff; font-family: var(--font-display); font-weight: 900; font-size: 17px;
+    color: var(--accent); font-family: var(--font-display); font-weight: 900; font-size: 17px;
   }
-  .brand-name { font-family: var(--font-display); font-weight: 800; font-size: 17px; letter-spacing: -0.01em; }
-  .brand-name b { color: var(--accent); font-weight: 800; }
+  .brand-name { font-family: var(--font-display); font-weight: 800; font-size: 17px; letter-spacing: -0.01em; color: var(--accent-2); }
+  .brand-name b {
+    font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
   .brand-tag { font-size: 12px; color: var(--text-faint); padding: 0 4px; margin-top: -12px; }
 
   .filter-box { position: relative; }
@@ -313,11 +316,13 @@
       <p>Lista de todas las organizaciones registradas. Desde aquí puedes:</p>
       <ul>
         <li><strong>Nueva Organización</strong> (botón superior derecho): da de alta a un nuevo cliente — nombre comercial, razón social, RFC, dirección, contacto y los términos comerciales iniciales.</li>
+        <li><strong>Detalle</strong> (botón por fila): edita en cualquier momento los datos generales de esa organización — nombre comercial, razón social, RFC, dirección fiscal, representante legal, correo y teléfono de contacto. Útil para corregir un dato mal capturado sin tener que dar de baja y recrear la organización.</li>
         <li><strong>Convenio</strong> (botón por fila): edita en cualquier momento el convenio comercial de esa organización:
           <ul>
             <li><strong>Fee por Ticket (%)</strong> — lo que cobra la plataforma por cada boleto vendido en línea.</li>
             <li><strong>Fee para Ventas en Taquilla (%)</strong> — opcional; si se deja vacío, se usa el mismo fee general. Útil si quieres cobrar distinto por las ventas presenciales.</li>
             <li><strong>Plazo de Pago (días)</strong> — cuántos días tiene la organización para pagar el fee.</li>
+            <li><strong>Tiempo de Reserva antes de Liberar Boletos</strong> — cuánto tiempo se mantiene apartado un boleto que un comprador seleccionó pero todavía no ha pagado (por ejemplo, si eligió pagar en efectivo o SPEI y ese pago tarda en confirmarse). Se configura en minutos, horas o días (de 5 minutos a 90 días; por defecto 72 horas). Si el tiempo se cumple sin que se confirme el pago, el boleto vuelve a estar disponible para que alguien más lo compre, en línea o en taquilla. <strong>No aplica a cortesías ni a ventas de taquilla</strong> — esas nunca quedan "pendientes de pago", se confirman al instante.</li>
             <li><strong>Eventos por Mes</strong> — opcional; límite de eventos nuevos que puede crear por mes calendario. Si se deja vacío, no hay límite.</li>
             <li><strong>Cortesías por Evento</strong> — opcional; límite de boletos gratuitos que puede emitir por evento. Si se deja vacío, no hay límite.</li>
             <li><strong>Notas del Convenio</strong> — cualquier condición especial por escrito.</li>
@@ -387,7 +392,7 @@
       <p>Diseña la distribución de asientos con las herramientas de Selector, Bloque y Borrador, elige a qué tipo de boleto pertenece cada asiento pintado, y da clic en <strong>"Guardar Mapa de Asientos"</strong>. Una vez que un tipo de boleto tiene asientos, los compradores eligen su asiento exacto en vez de solo la cantidad.</p>
 
       <h3>Mi Contrato</h3>
-      <p>Consulta (sin poder editar) tu convenio comercial vigente: fee digital, fee en taquilla, plazo de pago, límite de eventos por mes, límite de cortesías por evento, y los datos legales de tu organización. Solo el Super Administrador puede modificar estos valores. El botón <strong>"Descargar PDF"</strong> abre el diálogo de impresión del navegador.</p>
+      <p>Consulta (sin poder editar) tu convenio comercial vigente: fee digital, fee en taquilla, plazo de pago, <strong>tiempo de reserva antes de liberar boletos no pagados</strong>, límite de eventos por mes, límite de cortesías por evento, y los datos legales de tu organización. Solo el Super Administrador puede modificar estos valores. El botón <strong>"Descargar PDF"</strong> abre el diálogo de impresión del navegador.</p>
 
       <h3>Configuración</h3>
       <p>Igual que en el panel de Super Administrador: esta sección todavía es solo de referencia, los cambios <strong>no se guardan todavía</strong>.</p>
@@ -513,7 +518,7 @@
         <p>Depende de en qué paso te quedaste:</p>
         <ul>
           <li>Si solo elegiste el asiento pero nunca le diste "Finalizar Compra": se libera solo después de <strong>5 minutos</strong> sin actividad (o antes, si cierras la pestaña).</li>
-          <li>Si ya le diste "Finalizar Compra" y llegaste a la pantalla de pago pero no la terminaste: queda apartado hasta por <strong>72 horas</strong> — pensado para cubrir pagos en efectivo o SPEI, que pueden tardar en confirmarse. Si decides que ya no quieres comprarlo, da clic en "Cancelar" en esa misma pantalla de pago para liberarlo de inmediato en vez de esperar.</li>
+          <li>Si ya le diste "Finalizar Compra" y llegaste a la pantalla de pago pero no la terminaste: queda apartado por el <strong>tiempo de reserva que definió el organizador</strong> en su convenio (por defecto 72 horas / 3 días, pero puede ser desde 5 minutos hasta 90 días) — pensado para cubrir pagos en efectivo o SPEI, que pueden tardar en confirmarse. En la pantalla de pago se te avisa cuánto tiempo tienes. Si decides que ya no quieres comprarlo, da clic en "Cancelar" en esa misma pantalla de pago para liberarlo de inmediato en vez de esperar. Si se cumple el tiempo sin que pagues, el boleto vuelve a estar disponible automáticamente para cualquier otra persona.</li>
         </ul>
       </div>
       <div class="faq-item">
@@ -533,6 +538,18 @@
     <section id="changelog">
       <h2>Historial de cambios</h2>
 
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-25</div>
+        <div class="changelog-body"><p><strong>Tiempo de reserva administrable:</strong> el Super Administrador ahora puede configurar, por organización (en el Convenio), cuánto tiempo se mantiene apartado un boleto seleccionado pero no pagado — de 5 minutos a 90 días (antes era un valor fijo de 72 horas para todas las organizaciones). Al cumplirse el tiempo sin pago confirmado, el boleto vuelve a estar disponible automáticamente para venta en línea o en taquilla. No aplica a cortesías ni a ventas de taquilla, ya que esas nunca quedan pendientes de pago. El comprador ve un aviso con el tiempo aplicable en la pantalla de pago, y el valor configurado también es visible (sin poder editarlo) en "Mi Contrato" de la organización.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-25</div>
+        <div class="changelog-body"><p>Se agregó el botón <strong>"Detalle"</strong> en Organizaciones (Super Admin) para ver y corregir los datos generales de una organización ya existente — nombre comercial, razón social, RFC, dirección, representante legal y contacto — sin tener que darla de baja y crearla de nuevo.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-08-25</div>
+        <div class="changelog-body"><p><strong>Nueva identidad visual:</strong> la landing, inicio de sesión, registro, compra de boletos, y todo el sistema interno (Super Admin, Organización, Taquilla, Validador, Broker) cambiaron del morado original a la nueva paleta de marca — negro, dorado y verde. Se agregó también un carrusel de "empresas que confían en MondoTicket" en la landing, y el menú lateral de Super Admin y Organización ahora se puede colapsar a solo íconos para aprovechar más espacio en pantalla.</p></div>
+      </div>
       <div class="changelog-entry">
         <div class="changelog-date">2026-08-06</div>
         <div class="changelog-body"><p><strong>Pago real conectado:</strong> la pasarela de pago ya no es simulada — tarjeta, SPEI y efectivo se procesan de verdad en una página de pago segura. Si pagas con SPEI o efectivo, tu boleto puede tardar en aparecer mientras se confirma ("Confirmando tu pago..."); con tarjeta normalmente es inmediato.</p></div>

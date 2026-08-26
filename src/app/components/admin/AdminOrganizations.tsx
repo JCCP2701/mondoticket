@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Building2, Search, Plus, Users, X, UserPlus, Mail, FileEdit } from "lucide-react";
+import { Building2, Search, Plus, Users, X, UserPlus, Mail, FileEdit, Pencil } from "lucide-react";
 import { Link } from "react-router";
 import { dataService, Organization } from "../../services/dataService";
 import { AuthUser } from "../../context/AuthContext";
@@ -10,6 +10,7 @@ export default function AdminOrganizations() {
     const [searchTerm, setSearchTerm] = useState("");
     const [membersOrg, setMembersOrg] = useState<Organization | null>(null);
     const [contractOrg, setContractOrg] = useState<Organization | null>(null);
+    const [detailsOrg, setDetailsOrg] = useState<Organization | null>(null);
 
     const load = () => {
         dataService.getOrganizations().then(setOrgs);
@@ -104,7 +105,7 @@ export default function AdminOrganizations() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="space-y-1">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-violet-100 text-violet-700">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary">
                                                 {org.feePercentage}% Fee
                                             </span>
                                             <p className="text-xs text-muted-foreground">Pago: {org.paymentTerms} días</p>
@@ -118,6 +119,13 @@ export default function AdminOrganizations() {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => setDetailsOrg(org)}
+                                                className="flex items-center gap-2 px-3 py-2 hover:bg-primary/10 rounded-lg transition-colors text-primary font-bold text-sm"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                                Detalle
+                                            </button>
                                             <button
                                                 onClick={() => setContractOrg(org)}
                                                 className="flex items-center gap-2 px-3 py-2 hover:bg-primary/10 rounded-lg transition-colors text-primary font-bold text-sm"
@@ -148,17 +156,22 @@ export default function AdminOrganizations() {
             {contractOrg && (
                 <ContractModal org={contractOrg} onClose={() => setContractOrg(null)} onSaved={load} />
             )}
+
+            {detailsOrg && (
+                <DetailsModal org={detailsOrg} onClose={() => setDetailsOrg(null)} onSaved={load} />
+            )}
         </div>
     );
 }
 
-function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: () => void; onSaved: () => void }) {
-    const [feePercentage, setFeePercentage] = useState(String(org.feePercentage));
-    const [paymentTerms, setPaymentTerms] = useState(String(org.paymentTerms));
-    const [contractNotes, setContractNotes] = useState(org.contractNotes ?? "");
-    const [maxEventsPerMonth, setMaxEventsPerMonth] = useState(org.maxEventsPerMonth != null ? String(org.maxEventsPerMonth) : "");
-    const [courtesyTicketsPerEvent, setCourtesyTicketsPerEvent] = useState(org.courtesyTicketsPerEvent != null ? String(org.courtesyTicketsPerEvent) : "");
-    const [taquillaFeePercentage, setTaquillaFeePercentage] = useState(org.taquillaFeePercentage != null ? String(org.taquillaFeePercentage) : "");
+function DetailsModal({ org, onClose, onSaved }: { org: Organization; onClose: () => void; onSaved: () => void }) {
+    const [name, setName] = useState(org.name);
+    const [legalName, setLegalName] = useState(org.legalName);
+    const [rfc, setRfc] = useState(org.rfc);
+    const [address, setAddress] = useState(org.address);
+    const [contactName, setContactName] = useState(org.contactName);
+    const [contactEmail, setContactEmail] = useState(org.contactEmail);
+    const [contactPhone, setContactPhone] = useState(org.contactPhone);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     const [saved, setSaved] = useState(false);
@@ -168,6 +181,137 @@ function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: 
         setSaving(true);
         setError("");
         try {
+            await dataService.updateOrganizationDetails(org.id, {
+                name: name.trim(),
+                legalName: legalName.trim(),
+                rfc: rfc.trim(),
+                address: address.trim(),
+                contactName: contactName.trim(),
+                contactEmail: contactEmail.trim(),
+                contactPhone: contactPhone.trim(),
+            });
+            setSaved(true);
+            onSaved();
+        } catch (err: any) {
+            setError(err.message || "No se pudo guardar la organización");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+            <div className="bg-card rounded-2xl border border-border shadow-xl p-8 max-w-lg w-full space-y-6 max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-xl font-bold flex items-center gap-2"><Pencil className="w-5 h-5 text-primary" /> Detalle de {org.name}</h3>
+                    <button onClick={onClose} className="p-2 hover:bg-secondary rounded-lg"><X className="w-4 h-4" /></button>
+                </div>
+
+                {saved && (
+                    <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                        Organización actualizada correctamente.
+                    </div>
+                )}
+
+                <form onSubmit={handleSave} className="space-y-4">
+                    <div>
+                        <label className="text-sm font-bold text-muted-foreground mb-2 block">Nombre Comercial</label>
+                        <input
+                            required value={name} onChange={(e) => setName(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-sm font-bold text-muted-foreground mb-2 block">Razón Social</label>
+                        <input
+                            required value={legalName} onChange={(e) => setLegalName(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-sm font-bold text-muted-foreground mb-2 block">RFC</label>
+                            <input
+                                required value={rfc} onChange={(e) => setRfc(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-sm font-bold text-muted-foreground mb-2 block">Teléfono de Contacto</label>
+                            <input
+                                required value={contactPhone} onChange={(e) => setContactPhone(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-sm font-bold text-muted-foreground mb-2 block">Dirección Fiscal</label>
+                        <input
+                            required value={address} onChange={(e) => setAddress(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-sm font-bold text-muted-foreground mb-2 block">Representante Legal</label>
+                        <input
+                            required value={contactName} onChange={(e) => setContactName(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-sm font-bold text-muted-foreground mb-2 block">Correo de Contacto</label>
+                        <input
+                            required type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                        />
+                    </div>
+                    {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
+                    <button type="submit" disabled={saving} className="w-full py-3 bg-primary text-white rounded-xl font-bold disabled:opacity-60">
+                        {saving ? "Guardando..." : "Guardar Cambios"}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+const HOLD_UNIT_MINUTES = { minutes: 1, hours: 60, days: 1440 } as const;
+type HoldUnit = keyof typeof HOLD_UNIT_MINUTES;
+const HOLD_MIN_MINUTES = 5;
+const HOLD_MAX_MINUTES = 129600; // 90 days
+
+function minutesToValueUnit(mins: number): { value: string; unit: HoldUnit } {
+    if (mins % 1440 === 0) return { value: String(mins / 1440), unit: 'days' };
+    if (mins % 60 === 0) return { value: String(mins / 60), unit: 'hours' };
+    return { value: String(mins), unit: 'minutes' };
+}
+
+function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: () => void; onSaved: () => void }) {
+    const [feePercentage, setFeePercentage] = useState(String(org.feePercentage));
+    const [paymentTerms, setPaymentTerms] = useState(String(org.paymentTerms));
+    const [contractNotes, setContractNotes] = useState(org.contractNotes ?? "");
+    const [maxEventsPerMonth, setMaxEventsPerMonth] = useState(org.maxEventsPerMonth != null ? String(org.maxEventsPerMonth) : "");
+    const [courtesyTicketsPerEvent, setCourtesyTicketsPerEvent] = useState(org.courtesyTicketsPerEvent != null ? String(org.courtesyTicketsPerEvent) : "");
+    const [taquillaFeePercentage, setTaquillaFeePercentage] = useState(org.taquillaFeePercentage != null ? String(org.taquillaFeePercentage) : "");
+    const initialHold = minutesToValueUnit(org.reservationHoldMinutes);
+    const [holdValue, setHoldValue] = useState(initialHold.value);
+    const [holdUnit, setHoldUnit] = useState<HoldUnit>(initialHold.unit);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
+    const [saved, setSaved] = useState(false);
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+
+        const reservationHoldMinutes = Math.round(parseFloat(holdValue) * HOLD_UNIT_MINUTES[holdUnit]);
+        if (!Number.isFinite(reservationHoldMinutes) || reservationHoldMinutes < HOLD_MIN_MINUTES || reservationHoldMinutes > HOLD_MAX_MINUTES) {
+            setError("El tiempo de reserva debe ser entre 5 minutos y 90 días.");
+            return;
+        }
+
+        setSaving(true);
+        try {
             await dataService.updateOrganizationContract(org.id, {
                 feePercentage: parseFloat(feePercentage),
                 paymentTerms: parseInt(paymentTerms, 10),
@@ -175,6 +319,7 @@ function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: 
                 maxEventsPerMonth: maxEventsPerMonth.trim() ? parseInt(maxEventsPerMonth, 10) : null,
                 courtesyTicketsPerEvent: courtesyTicketsPerEvent.trim() ? parseInt(courtesyTicketsPerEvent, 10) : null,
                 taquillaFeePercentage: taquillaFeePercentage.trim() ? parseFloat(taquillaFeePercentage) : null,
+                reservationHoldMinutes,
             });
             setSaved(true);
             onSaved();
@@ -229,6 +374,27 @@ function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: 
                             placeholder={`Vacío = usa el fee general (${feePercentage}%)`}
                         />
                         <p className="text-xs text-muted-foreground mt-1">Si se deja vacío, se aplica el mismo fee que a la venta digital.</p>
+                    </div>
+                    <div>
+                        <label className="text-sm font-bold text-muted-foreground mb-2 block">Tiempo de Reserva antes de Liberar Boletos</label>
+                        <div className="flex gap-3">
+                            <input
+                                type="number" min="1" step="1" required
+                                value={holdValue} onChange={(e) => setHoldValue(e.target.value)}
+                                className="flex-1 px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                            />
+                            <select
+                                value={holdUnit} onChange={(e) => setHoldUnit(e.target.value as HoldUnit)}
+                                className="px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                            >
+                                <option value="minutes">Minutos</option>
+                                <option value="hours">Horas</option>
+                                <option value="days">Días</option>
+                            </select>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Si el comprador no completa el pago en este tiempo, el boleto vuelve a estar disponible. No aplica a cortesías ni ventas de taquilla. Entre 5 minutos y 90 días.
+                        </p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -353,7 +519,7 @@ function MembersModal({ org, onClose }: { org: Organization; onClose: () => void
                                     <p className="font-bold text-sm">{m.name}</p>
                                     <p className="text-xs text-muted-foreground">{m.email}</p>
                                 </div>
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${m.role === 'organization' ? 'bg-violet-100 text-violet-700' : m.role === 'validador' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${m.role === 'organization' ? 'bg-primary/10 text-primary' : m.role === 'validador' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
                                     {m.role}
                                 </span>
                             </div>

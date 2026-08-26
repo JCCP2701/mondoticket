@@ -111,27 +111,27 @@ export default function TaquillaDashboard() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="bg-card border-b border-border sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-8 py-4 flex items-center justify-between">
+      <header className="bg-sidebar text-sidebar-foreground border-b border-sidebar-border sticky top-0 z-10">
+        <div className="px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <Ticket className="w-5 h-5 text-white" />
+              <Ticket className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
               <h1 className="font-bold">Taquilla</h1>
-              <p className="text-xs text-muted-foreground">{user?.name}</p>
+              <p className="text-xs text-sidebar-foreground/60">{user?.name}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <OrgSwitcher />
-            <button onClick={() => logout()} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border hover:bg-secondary text-sm font-bold">
+            <OrgSwitcher variant="dark" />
+            <button onClick={() => logout()} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-sidebar-border hover:bg-sidebar-accent text-sm font-bold">
               <LogOut className="w-4 h-4" /> Salir
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-8 py-8 space-y-6">
+      <main className="px-8 py-8 space-y-6">
         <div className="bg-card p-6 rounded-2xl border border-border">
           <label className="text-sm font-bold text-muted-foreground mb-2 block">Evento</label>
           <select

@@ -63,10 +63,12 @@ Resumen general: ganancia estimada, boletos vendidos, boletos por vender, númer
 ### Organizaciones
 Lista de todas las organizaciones registradas. Desde aquí puedes:
 - **Nueva Organización** (botón superior derecho): da de alta a un nuevo cliente — nombre comercial, razón social, RFC, dirección, contacto y los términos comerciales iniciales.
+- **Detalle** (botón por fila): edita en cualquier momento los datos generales de esa organización — nombre comercial, razón social, RFC, dirección fiscal, representante legal, correo y teléfono de contacto. Útil para corregir un dato mal capturado sin tener que dar de baja y recrear la organización.
 - **Convenio** (botón por fila): edita en cualquier momento el convenio comercial de esa organización:
   - **Fee por Ticket (%)** — lo que cobra la plataforma por cada boleto vendido en línea.
   - **Fee para Ventas en Taquilla (%)** — opcional; si se deja vacío, se usa el mismo fee general. Útil si quieres cobrar distinto por las ventas presenciales.
   - **Plazo de Pago (días)** — cuántos días tiene la organización para pagar el fee.
+  - **Tiempo de Reserva antes de Liberar Boletos** — cuánto tiempo se mantiene apartado un boleto que un comprador seleccionó pero todavía no ha pagado (por ejemplo, si eligió pagar en efectivo o SPEI y ese pago tarda en confirmarse). Se configura en minutos, horas o días (de 5 minutos a 90 días; por defecto 72 horas). Si el tiempo se cumple sin que se confirme el pago, el boleto vuelve a estar disponible para que alguien más lo compre, en línea o en taquilla. **No aplica a cortesías ni a ventas de taquilla** — esas nunca quedan "pendientes de pago", se confirman al instante.
   - **Eventos por Mes** — opcional; límite de eventos nuevos que puede crear por mes calendario. Si se deja vacío, no hay límite.
   - **Cortesías por Evento** — opcional; límite de boletos gratuitos que puede emitir por evento. Si se deja vacío, no hay límite.
   - **Notas del Convenio** — cualquier condición especial por escrito.
@@ -126,7 +128,7 @@ Desde aquí puedes:
 Diseña la distribución de asientos con las herramientas de Selector, Bloque y Borrador, elige a qué tipo de boleto pertenece cada asiento pintado, y da clic en **"Guardar Mapa de Asientos"**. Una vez que un tipo de boleto tiene asientos, los compradores eligen su asiento exacto en vez de solo la cantidad.
 
 ### Mi Contrato
-Consulta (sin poder editar) tu convenio comercial vigente: fee digital, fee en taquilla, plazo de pago, límite de eventos por mes, límite de cortesías por evento, y los datos legales de tu organización. Solo el Super Administrador puede modificar estos valores. El botón **"Descargar PDF"** abre el diálogo de impresión del navegador.
+Consulta (sin poder editar) tu convenio comercial vigente: fee digital, fee en taquilla, plazo de pago, **tiempo de reserva antes de liberar boletos no pagados**, límite de eventos por mes, límite de cortesías por evento, y los datos legales de tu organización. Solo el Super Administrador puede modificar estos valores. El botón **"Descargar PDF"** abre el diálogo de impresión del navegador.
 
 ### Configuración
 Igual que en el panel de Super Administrador: esta sección todavía es solo de referencia, los cambios **no se guardan todavía**.
@@ -241,7 +243,7 @@ Sí, una cuenta de comprador puede comprar de cualquier organización sin restri
 **Aparto un boleto/asiento pero no completo la compra, ¿qué pasa?**
 Depende de en qué paso te quedaste:
 - Si solo elegiste el asiento pero nunca le diste "Finalizar Compra": se libera solo después de **5 minutos** sin actividad (o antes, si cierras la pestaña).
-- Si ya le diste "Finalizar Compra" y llegaste a la pantalla de pago pero no la terminaste: queda apartado hasta por **72 horas** — pensado para cubrir pagos en efectivo o SPEI, que pueden tardar en confirmarse. Si decides que ya no quieres comprarlo, da clic en "Cancelar" en esa misma pantalla de pago para liberarlo de inmediato en vez de esperar.
+- Si ya le diste "Finalizar Compra" y llegaste a la pantalla de pago pero no la terminaste: queda apartado por el **tiempo de reserva que definió el organizador** en su convenio (por defecto 72 horas / 3 días, pero puede ser desde 5 minutos hasta 90 días) — pensado para cubrir pagos en efectivo o SPEI, que pueden tardar en confirmarse. En la pantalla de pago se te avisa cuánto tiempo tienes. Si decides que ya no quieres comprarlo, da clic en "Cancelar" en esa misma pantalla de pago para liberarlo de inmediato en vez de esperar. Si se cumple el tiempo sin que pagues, el boleto vuelve a estar disponible automáticamente para cualquier otra persona.
 
 **¿Ya se puede escanear el boleto en la entrada del evento?**
 Sí. Una cuenta de rol `Validador` (o `Organización`/`Taquilla`) puede escanear los boletos desde su panel — ver [Guía para Validador](#guía-para-validador-escaneo-en-puerta). Un boleto ya escaneado no se puede volver a usar.
@@ -256,6 +258,9 @@ No. El panel del broker solo muestra su propia ganancia ya calculada, nunca el i
 
 ## Historial de cambios
 
+- **2026-08-25** — **Tiempo de reserva administrable**: el Super Administrador ahora puede configurar, por organización (en el Convenio), cuánto tiempo se mantiene apartado un boleto seleccionado pero no pagado — de 5 minutos a 90 días (antes era un valor fijo de 72 horas para todas las organizaciones). Al cumplirse el tiempo sin pago confirmado, el boleto vuelve a estar disponible automáticamente para venta en línea o en taquilla. No aplica a cortesías ni a ventas de taquilla, ya que esas nunca quedan pendientes de pago. El comprador ve un aviso con el tiempo aplicable en la pantalla de pago, y el valor configurado también es visible (sin poder editarlo) en "Mi Contrato" de la organización.
+- **2026-08-25** — Se agregó el botón **"Detalle"** en Organizaciones (Super Admin) para ver y corregir los datos generales de una organización ya existente — nombre comercial, razón social, RFC, dirección, representante legal y contacto — sin tener que darla de baja y crearla de nuevo.
+- **2026-08-25** — **Nueva identidad visual**: la landing, inicio de sesión, registro, compra de boletos, y todo el sistema interno (Super Admin, Organización, Taquilla, Validador, Broker) cambiaron del morado original a la nueva paleta de marca — negro, dorado y verde. Se agregó también un carrusel de "empresas que confían en MondoTicket" en la landing, y el menú lateral de Super Admin y Organización ahora se puede colapsar a solo íconos para aprovechar más espacio en pantalla.
 - **2026-08-06** — **Pago real conectado**: la pasarela de pago ya no es simulada — tarjeta, SPEI y efectivo se procesan de verdad en una página de pago segura. Si pagas con SPEI o efectivo, tu boleto puede tardar en aparecer mientras se confirma (verás "Confirmando tu pago..."); con tarjeta normalmente es inmediato. Ver la sección [Comprar un boleto](#comprar-un-boleto) actualizada, y la pregunta frecuente sobre cuánto tiempo se aparta un boleto si no terminas de pagar.
 - **2026-08-06** — **Elegir cantidad antes que el asiento**: para boletos con asientos numerados, ahora primero indicas cuántos quieres con los botones `+`/`-`, y el mapa del recinto aparece justo después, limitado a esa cantidad exacta — antes se podía seleccionar cualquier cantidad de asientos sin relación con un número declarado. Aplica igual en compra en línea y en taquilla.
 - **2026-08-06** — Se agregaron cuentas de demostración para **Validador** y **Broker** (antes solo existían para los otros 4 roles). La cuenta demo de Broker ya tiene un contrato de ejemplo con "Organización Demo" para que se vean ganancias reales al entrar.
