@@ -9,9 +9,10 @@ MondoTicket es la plataforma donde:
 - Los **compradores** eligen y pagan sus boletos en línea.
 - El personal de **taquilla** vende boletos físicamente en el evento.
 - Los **brokers** son socios externos que ganan un % por las organizaciones que traen a la plataforma.
+- Los **promotores** venden boletos a nombre de una organización, con una meta de ventas y comisión opcional.
 - El **superadministrador** da de alta a las organizaciones y supervisa todo el negocio.
 
-Existen 6 tipos de cuenta (roles). Cada uno entra a una pantalla distinta automáticamente al iniciar sesión.
+Existen 7 tipos de cuenta (roles). Cada uno entra a una pantalla distinta automáticamente al iniciar sesión.
 
 | Rol | ¿Quién es? | ¿A dónde entra? |
 |---|---|---|
@@ -20,6 +21,7 @@ Existen 6 tipos de cuenta (roles). Cada uno entra a una pantalla distinta autom�
 | **Taquilla** | El personal que vende boletos en el lugar del evento | Panel de venta en taquilla |
 | **Validador** | El personal que revisa boletos en la entrada del evento | Panel de escaneo de boletos |
 | **Broker** | Socio externo que gana un % por las organizaciones que trajo | Panel de ganancias del broker |
+| **Promotor** | Vende boletos para una organización y tiene una meta de ventas | Panel de venta y meta del promotor |
 | **Usuario** | La persona que compra boletos para asistir | Su cartera de boletos ("Mi Wallet") |
 
 Una cuenta de **Organización** o **Taquilla** puede pertenecer a más de una organización al mismo tiempo (por ejemplo, si la misma persona administra dos recintos). En ese caso aparece un selector para cambiar entre organizaciones en la barra lateral.
@@ -31,14 +33,14 @@ Una cuenta de **Organización** o **Taquilla** puede pertenecer a más de una or
 1. Entra a la página principal y da clic en **"Iniciar Sesión"**.
 2. Escribe tu correo y da clic en **"Continuar"**. El sistema detecta automáticamente qué tipo de cuenta es:
    - Si eres **comprador** (cuenta `Usuario`), te llega un **código de 6 dígitos a tu correo** — escríbelo y entras directo. No se te pide contraseña ni verificación en dos pasos.
-   - Si tu cuenta es de **Super Administrador, Organización, Taquilla, Validador o Broker**, se te pide tu **contraseña** y, la primera vez que entres desde un dispositivo nuevo, un código de tu aplicación de autenticación (Google Authenticator, Authy, etc.).
+   - Si tu cuenta es de **Super Administrador, Organización, Taquilla, Validador, Broker o Promotor**, se te pide tu **contraseña** y, la primera vez que entres desde un dispositivo nuevo, un código de tu aplicación de autenticación (Google Authenticator, Authy, etc.).
 3. ¿Olvidaste tu contraseña? En la pantalla de contraseña da clic en **"¿Olvidaste tu contraseña?"**, escribe tu correo, y te llegará un enlace para crear una nueva.
 
 > Las cuentas de demostración (`@demo.com`) siempre piden solo correo y contraseña, sin código por correo ni verificación en dos pasos, para poder mostrar la plataforma rápidamente.
 
 ### Cuentas de demostración
 
-Estas 6 cuentas existen solo para mostrar la plataforma. Ninguna pide verificación en dos pasos ni código por correo — entran directo con correo y contraseña.
+Estas 7 cuentas existen solo para mostrar la plataforma. Ninguna pide verificación en dos pasos ni código por correo — entran directo con correo y contraseña.
 
 | Rol | Correo | Contraseña |
 |---|---|---|
@@ -47,17 +49,18 @@ Estas 6 cuentas existen solo para mostrar la plataforma. Ninguna pide verificaci
 | Taquilla | `taquilla@demo.com` | `Demo123!` |
 | Validador | `validador@demo.com` | `Demo123!` |
 | Broker | `broker@demo.com` | `Demo123!` |
+| Promotor | `promotor@demo.com` | `Demo123!` |
 | Usuario (comprador) | `user@demo.com` | `Demo123!` |
 
-> La cuenta demo de Broker ya tiene un contrato de ejemplo con "Organización Demo" (10% de la venta de boletos), así que al entrar se ven ganancias reales de inmediato, no un panel vacío.
+> La cuenta demo de Broker ya tiene un contrato de ejemplo con "Organización Demo" (10% de la venta de boletos), así que al entrar se ven ganancias reales de inmediato, no un panel vacío. La cuenta demo de Promotor, también ligada a "Organización Demo", ya tiene una meta de ejemplo (50 boletos, agosto–septiembre) y una comisión de ejemplo (8%) configuradas.
 
-> Estas cuentas de demostración son distintas del código de verificación por correo que se pide al comprar como invitado (ver [Comprar un boleto](#comprar-un-boleto)) — ese flujo es solo para compradores nuevos sin cuenta, no aplica a estas 6 cuentas.
+> Estas cuentas de demostración son distintas del código de verificación por correo que se pide al comprar como invitado (ver [Comprar un boleto](#comprar-un-boleto)) — ese flujo es solo para compradores nuevos sin cuenta, no aplica a estas 7 cuentas.
 
 ---
 
 ## Guía para Super Administrador
 
-Al entrar verás el menú lateral con: **Dashboard**, **Organizaciones**, **Usuarios**, **Brokers**, **Finanzas**, **Configuración**.
+Al entrar verás el menú lateral con: **Dashboard**, **Organizaciones**, **Usuarios**, **Brokers**, **Promotores**, **Finanzas**, **Configuración**.
 
 ### Dashboard
 Resumen general: ganancia estimada, boletos vendidos, boletos por vender, número de organizaciones, gráfica de recaudación de los últimos 6 meses, y una tabla con cada organización donde puedes editar rápidamente su fee (%) haciendo clic sobre el porcentaje.
@@ -78,7 +81,7 @@ Lista de todas las organizaciones registradas. Desde aquí puedes:
 
 ### Usuarios
 Lista de todas las cuentas del sistema (clientes, organizaciones, taquilla, superadmins), con buscador y filtro por rol.
-- **Nuevo Usuario** (botón superior): crea directamente una cuenta de `Organización` o `Taquilla` y la asigna a una o varias organizaciones desde el momento de creación.
+- **Nuevo Usuario** (botón superior): crea directamente una cuenta de `Organización`, `Taquilla`, `Validador`, `Broker` o `Promotor` — para todas menos `Broker` la asignas a una o varias organizaciones desde el momento de creación (un broker se contrata por organización después, desde "Brokers").
 - Ícono de engranaje (por fila): administra a qué organización(es) pertenece esa persona — quitarla de una, o agregarla a otra. Para cuentas de rol `Usuario` o `Super Admin` este botón no aplica (no pertenecen a ninguna organización).
 
 ### Brokers
@@ -91,6 +94,13 @@ Aquí se crean las cuentas de **Broker** y se configura su contrato comercial co
 
 > El broker **nunca ve el ingreso real** de un evento ni el detalle de las órdenes — solo su ganancia ya calculada. Esto no es una preferencia de la interfaz: la cuenta de broker no tiene ningún permiso para leer boletos u órdenes directamente en la base de datos, así que no hay manera de que vea esos números aunque lo intente.
 
+### Promotores
+Lista de todas las cuentas de **Promotor**, con la(s) organización(es) a la(s) que pertenece cada una. Da clic en un promotor para desplegar, por cada organización a la que pertenece:
+- **Comisión** — configúrale (o edítale, o quítale) un % de comisión sobre sus propias ventas. Si no se configura, el promotor sigue viendo su meta de ventas normalmente, solo no se calcula comisión.
+- **Metas** — agrega, edita o elimina periodos de meta (fecha de inicio, fecha de fin, y cuántos boletos debe vender en ese periodo). Un promotor puede tener varios periodos a lo largo del tiempo; el que esté vigente hoy es el que ve activo en su panel.
+
+> Esto mismo también lo puede hacer directamente la organización desde su propia sección "Promotores" — no es exclusivo del Super Administrador.
+
 ### Finanzas
 Recaudación real por organización. Da clic en una organización para desplegar el detalle evento por evento, separando lo vendido en línea de lo vendido en taquilla (porque pueden tener un fee distinto).
 
@@ -101,7 +111,7 @@ Esta sección todavía es solo una vista de referencia — los cambios que se ha
 
 ## Guía para Organización
 
-Menú lateral: **Dashboard**, **Mis Eventos**, **Mi Contrato**, **Configuración**. Si tu cuenta pertenece a más de una organización, verás un selector arriba del menú para cambiar entre ellas.
+Menú lateral: **Dashboard**, **Mis Eventos**, **Mi Contrato**, **Promotores**, **Configuración**. Si tu cuenta pertenece a más de una organización, verás un selector arriba del menú para cambiar entre ellas.
 
 ### Dashboard
 Resumen de tu organización: eventos activos, boletos vendidos, revenue total, cuánto fee le debes a la plataforma ("Fee a Liquidar"), y un gráfico de tu inventario disponible vs. vendido. El botón **"Descargar Resumen"** genera y descarga directamente un archivo PDF con estos datos (no depende del diálogo de impresión del navegador).
@@ -131,6 +141,15 @@ Diseña la distribución de asientos con las herramientas de Selector, Bloque y 
 
 ### Mi Contrato
 Consulta (sin poder editar) tu convenio comercial vigente: fee digital, fee en taquilla, plazo de pago, **tiempo de reserva antes de liberar boletos no pagados**, límite de eventos por mes, límite de cortesías por evento, y los datos legales de tu organización. Solo el Super Administrador puede modificar estos valores. El botón **"Descargar PDF"** genera y descarga directamente un archivo PDF con estos datos (no depende del diálogo de impresión del navegador).
+
+### Promotores
+Aquí das de alta e integras a tus promotores:
+- **Invitar promotor**: nombre y correo — te da una contraseña temporal para compartirle, igual que al invitar taquilla o validador desde "Miembros".
+- Por cada promotor de tu organización, despliega su tarjeta para configurar:
+  - **Comisión** — un % opcional sobre sus propias ventas. Si no se configura, no gana comisión, pero su meta de ventas sigue funcionando igual.
+  - **Metas** — periodos (fecha de inicio, fecha de fin y cuántos boletos debe vender) que tú defines y puedes cambiar cuando quieras; no hay un periodo fijo del sistema.
+
+> El promotor ve su meta vigente, cuánto lleva vendido, y su comisión ganada (si aplica) arriba de su propia pantalla de venta.
 
 ### Configuración
 Igual que en el panel de Super Administrador: esta sección todavía es solo de referencia, los cambios **no se guardan todavía**.
@@ -188,7 +207,7 @@ Abajo del selector de evento verás el contador de personas ya ingresadas, y má
 
 ## Guía para Broker
 
-Esta cuenta es para un socio externo (promotor, agente) que trae organizaciones a la plataforma y gana un % de sus eventos. Los contratos (con cuáles organizaciones, y a qué %) los configura el Super Administrador desde "Brokers" — un broker no puede agregarse a sí mismo a una organización.
+Esta cuenta es para un socio externo (agente comercial) que trae organizaciones a la plataforma y gana un % de sus eventos. Los contratos (con cuáles organizaciones, y a qué %) los configura el Super Administrador desde "Brokers" — un broker no puede agregarse a sí mismo a una organización.
 
 ### Tus ganancias
 Al entrar verás:
@@ -199,6 +218,23 @@ Al entrar verás:
 > **Importante**: en ningún lugar del panel se muestra el ingreso real del evento (lo que realmente se vendió), ni el detalle de compradores u órdenes — solo tu ganancia, ya calculada según tu contrato. Si tu contrato es "% de venta de boletos", tu ganancia sube y baja junto con las ventas reales del evento, pero el número que ves siempre es tu comisión, nunca la venta completa.
 
 Si un contrato se elimina o se ajusta, los cambios se reflejan de inmediato la próxima vez que entres — no hay que hacer nada de tu parte.
+
+---
+
+## Guía para Promotor
+
+Esta cuenta es para alguien que vende boletos a nombre de una organización — el mismo tipo de venta que Taquilla — pero cuyas ventas quedan registradas a su nombre, para que la organización pueda medir su meta y, si aplica, pagarle una comisión. Tu organización (o el Super Administrador) te invita desde "Promotores" y también configura ahí tu meta y tu comisión — tú no puedes cambiarlas, solo verlas.
+
+### Vender boletos
+Igual que en Taquilla: elige el evento arriba, indica cuántos boletos quieres vender por tipo (o selecciona asientos si el tipo de boleto tiene mapa), captura los datos del comprador si los tienes (son opcionales), y da clic en **"Completar Venta"**.
+
+### Tu meta de ventas
+Arriba de la pantalla de venta ves tu meta vigente:
+- **Meta de boletos** y **Boletos vendidos** en el periodo actual, con una barra de progreso.
+- **Comisión ganada**, solo si tu organización te configuró un %.
+- Debajo, una tabla con tus periodos pasados o futuros, si tu organización ya te configuró más de uno.
+
+> Si tu organización todavía no te configuró un periodo de meta activo, puedes seguir vendiendo boletos con total normalidad — no es un requisito para poder vender, solo una forma de que veas tu avance.
 
 ---
 
@@ -260,6 +296,9 @@ No. El panel del broker solo muestra su propia ganancia ya calculada, nunca el i
 
 ## Historial de cambios
 
+- **2026-08-27** — Se agregó la cuenta de demostración de **Promotor** (`promotor@demo.com`), con una meta y una comisión de ejemplo ya configuradas en "Organización Demo".
+- **2026-08-26** — **Nuevo rol: Promotor**: una cuenta más para vender boletos, igual que Taquilla, pero cuyas ventas quedan atribuidas a esa persona. La organización (o el Super Administrador) invita promotores desde una nueva sección "Promotores" en su panel, donde también configura — por promotor — su meta de boletos por periodo (fechas y cantidad, sin un periodo fijo del sistema) y, opcionalmente, un % de comisión sobre sus propias ventas. El promotor ve su propio progreso (meta vs. acumulado, y comisión ganada si aplica) arriba de su pantalla de venta, que funciona igual que la de Taquilla.
+- **2026-08-26** — **Interfaz de Validador en negro**: la pantalla de escaneo de boletos usaba un tema claro; ahora usa la misma paleta negro/dorado/verde que el resto del sistema.
 - **2026-08-26** — **Inicio de sesión sin contraseña para compradores, y MFA ya no aplica a esa cuenta por el momento**: ahora el login pide primero solo el correo — si es una cuenta `Usuario` (comprador) no-demo, se envía un código de 6 dígitos al correo y con eso basta para entrar, sin pedir contraseña ni verificación en dos pasos. Las cuentas de Super Administrador, Organización, Taquilla, Validador y Broker no cambian: siguen pidiendo contraseña y, la primera vez desde un dispositivo nuevo, el código de la app autenticadora. Las cuentas demo (`@demo.com`) tampoco cambian: entran igual que siempre, solo con correo y contraseña.
 - **2026-08-26** — **"¿Olvidaste tu contraseña?" ya funciona**: antes el enlace no hacía nada. Ahora envía un correo con un enlace para crear una contraseña nueva.
 - **2026-08-26** — **Corrección visual en la pantalla de verificación MFA**: tenía todavía la paleta morada original en vez del negro/dorado/verde del resto del sistema, y el código QR para configurar la app autenticadora a veces se veía con texto encima en lugar de la imagen limpia. Ambas cosas se corrigieron.

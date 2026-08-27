@@ -9,9 +9,9 @@ import { createClient } from '@supabase/supabase-js';
 //
 // Two callers are allowed:
 //   - superadmin: can invite any role, to any organization(s).
-//   - organization (manager): can only invite 'taquilla' or 'validador'
-//     (never another 'organization' account, never 'broker'), and only into
-//     organization(s) they themselves belong to.
+//   - organization (manager): can only invite 'taquilla', 'validador' or
+//     'promotor' (never another 'organization' account, never 'broker'), and
+//     only into organization(s) they themselves belong to.
 //
 // 'broker' accounts never join organization_members — their relationship to
 // an organization is a commercial contract (broker_contracts), set up
@@ -38,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const callerToken = authHeader.slice('Bearer '.length);
 
   const { name, email, role, organizationIds } = req.body ?? {};
-  const validRoles = ['organization', 'taquilla', 'validador', 'broker'];
+  const validRoles = ['organization', 'taquilla', 'validador', 'broker', 'promotor'];
   const requiresOrgIds = role !== 'broker';
   if (
     typeof name !== 'string' || !name.trim() ||
@@ -46,7 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     !validRoles.includes(role) ||
     (requiresOrgIds && (!Array.isArray(organizationIds) || organizationIds.length === 0 || !organizationIds.every((id) => typeof id === 'string')))
   ) {
-    res.status(400).json({ error: 'name, a valid email, role (organization|taquilla|validador|broker), and a non-empty organizationIds array (not required for broker) are required' });
+    res.status(400).json({ error: 'name, a valid email, role (organization|taquilla|validador|broker|promotor), and a non-empty organizationIds array (not required for broker) are required' });
     return;
   }
 
@@ -76,8 +76,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (isSuperadmin) {
     // may invite any role, to any organization(s) — no further checks.
   } else if (isOrgManager) {
-    if ((role !== 'taquilla' && role !== 'validador') || !organizationIds.every((id: string) => callerOrgIds.has(id))) {
-      res.status(403).json({ error: 'An organization account can only invite taquilla or validador staff into its own organization(s)' });
+    if ((role !== 'taquilla' && role !== 'validador' && role !== 'promotor') || !organizationIds.every((id: string) => callerOrgIds.has(id))) {
+      res.status(403).json({ error: 'An organization account can only invite taquilla, validador or promotor staff into its own organization(s)' });
       return;
     }
   } else {

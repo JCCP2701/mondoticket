@@ -7,6 +7,7 @@ import {
     Settings,
     LogOut,
     Handshake,
+    Megaphone,
     Ticket,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -29,6 +30,7 @@ const MENU_ITEMS = [
     { id: 'organizations', label: 'Organizaciones', icon: Building2, path: '/admin/organizations' },
     { id: 'users', label: 'Usuarios', icon: Users, path: '/admin/users' },
     { id: 'brokers', label: 'Brokers', icon: Handshake, path: '/admin/brokers' },
+    { id: 'promoters', label: 'Promotores', icon: Megaphone, path: '/admin/promoters' },
     { id: 'finances', label: 'Finanzas', icon: Wallet, path: '/admin/finances' },
     { id: 'settings', label: 'Configuración', icon: Settings, path: '/admin/settings' },
 ];

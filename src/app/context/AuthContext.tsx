@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { supabase } from '../services/supabaseClient';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-export type UserRole = 'superadmin' | 'organization' | 'user' | 'taquilla' | 'validador' | 'broker';
+export type UserRole = 'superadmin' | 'organization' | 'user' | 'taquilla' | 'validador' | 'broker' | 'promotor';
 
 export interface OrgMembership {
   id: string;
@@ -53,8 +53,8 @@ const AuthContext = createContext<AuthContextType | null>(null);
 // Regular buyer accounts ('user' role) don't require MFA at all, for now —
 // product decision to keep purchase friction low while MFA stays mandatory
 // for staff/admin roles (superadmin, organization, taquilla, validador,
-// broker). Demo accounts (mfa_exempt) are exempt regardless of role, same
-// as before. This is the single source of truth for "does this profile
+// broker, promotor). Demo accounts (mfa_exempt) are exempt regardless of
+// role, same as before. This is the single source of truth for "does this profile
 // need to go through /mfa" — used both to decide whether to run the TOTP
 // enroll/challenge step and to decide where callers should navigate.
 export function mfaRequired(profile: Pick<AuthUser, 'role' | 'mfaExempt'>): boolean {
@@ -324,6 +324,7 @@ export function dashboardPathForRole(role: UserRole | undefined): string {
     case 'taquilla': return '/taquilla';
     case 'validador': return '/validador';
     case 'broker': return '/broker';
+    case 'promotor': return '/promotor';
     default: return '/wallet';
   }
 }

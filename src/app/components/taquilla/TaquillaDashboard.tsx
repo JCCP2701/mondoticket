@@ -1,111 +1,38 @@
-import { useEffect, useMemo, useState } from "react";
 import { Ticket, LogOut, Minus, Plus, ShoppingCart, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { dataService, EventRecord } from "../../services/dataService";
-import SeatMapPicker, { SelectedSeat } from "../user/SeatMapPicker";
+import SeatMapPicker from "../user/SeatMapPicker";
 import OrgSwitcher from "../shared/OrgSwitcher";
+import { useTicketSaleFlow } from "../../lib/useTicketSaleFlow";
 
 export default function TaquillaDashboard() {
   const { user, logout, activeOrganizationId } = useAuth();
-  const [events, setEvents] = useState<EventRecord[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<string>("");
-  const [loading, setLoading] = useState(true);
-
-  const [selection, setSelection] = useState<Record<string, number>>({});
-  const [selectedSeatsByType, setSelectedSeatsByType] = useState<Record<string, SelectedSeat[]>>({});
-  const [seatError, setSeatError] = useState("");
-  const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
-  const [paymentNote, setPaymentNote] = useState<"cash" | "card">("cash");
-  const [selling, setSelling] = useState(false);
-  const [sellError, setSellError] = useState("");
-  const [lastSaleOrderId, setLastSaleOrderId] = useState<string | null>(null);
-  // One key per cart, not per click — a double-tap on "Completar Venta" (a
-  // busy box office) or a retry after a dropped response reuses the same
-  // key instead of selling the same cart twice. Refreshed only when the
-  // cart itself is cleared (resetSelection), not on every failed attempt.
-  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
-
-  useEffect(() => {
-    if (!activeOrganizationId) return;
-    setLoading(true);
-    dataService.getEventsByOrganization(activeOrganizationId).then((evs) => {
-      setEvents(evs);
-      setSelectedEventId(evs.length > 0 ? evs[0].id : "");
-      setLoading(false);
-    });
-  }, [activeOrganizationId]);
-
-  const event = events.find((e) => e.id === selectedEventId) ?? null;
-
-  const selectedSeats = useMemo(
-    () => Object.values(selectedSeatsByType).flat(),
-    [selectedSeatsByType]
-  );
-
-  const setQty = (typeId: string, qty: number, max: number) => {
-    setSelection((prev) => ({ ...prev, [typeId]: Math.max(0, Math.min(max, qty)) }));
-  };
-
-  // `selection[t.id]` means "how many I want" for every ticket type now —
-  // for a seat-mapped type it's the target the seat map is capped at.
-  // Summing it alone reflects intent immediately, before seats are picked.
-  const totalQuantity = useMemo(
-    () => Object.values(selection).reduce((sum, q) => sum + q, 0),
-    [selection]
-  );
-
-  const seatSelectionsComplete = useMemo(
-    () => (event?.ticketTypes ?? [])
-      .filter((t) => t.hasSeatMap)
-      .every((t) => (selection[t.id] || 0) === (selectedSeatsByType[t.id]?.length || 0)),
-    [event, selection, selectedSeatsByType]
-  );
-
-  const total = useMemo(() => {
-    if (!event) return 0;
-    return event.ticketTypes.reduce((sum, t) => sum + (selection[t.id] || 0) * t.price, 0);
-  }, [event, selection]);
-
-  const resetSelection = () => {
-    setSelection({});
-    setSelectedSeatsByType({});
-    setIdempotencyKey(crypto.randomUUID());
-  };
-
-  const handleSell = async () => {
-    if (!event || totalQuantity === 0 || !seatSelectionsComplete) return;
-    setSelling(true);
-    setSellError("");
-    setLastSaleOrderId(null);
-    try {
-      const items = event.ticketTypes
-        .filter((t) => !t.hasSeatMap && (selection[t.id] || 0) > 0)
-        .map((t) => ({ ticketTypeId: t.id, quantity: selection[t.id] }));
-
-      const orderId = await dataService.createOrder({
-        eventId: event.id,
-        organizationId: event.organizationId,
-        userId: null,
-        customerName: customer.name || "Venta en taquilla",
-        customerEmail: customer.email || "sin-correo@taquilla.local",
-        customerPhone: customer.phone,
-        paymentReference: `taquilla_${paymentNote}_${Date.now()}`,
-        items: items.length > 0 ? items : undefined,
-        seatIds: selectedSeats.length > 0 ? selectedSeats.map((s) => s.seatId) : undefined,
-        salesChannel: 'taquilla',
-        idempotencyKey,
-      });
-      setLastSaleOrderId(orderId);
-      resetSelection();
-      setCustomer({ name: "", email: "", phone: "" });
-      const refreshed = activeOrganizationId ? await dataService.getEventsByOrganization(activeOrganizationId) : [];
-      setEvents(refreshed);
-    } catch (err: any) {
-      setSellError(err.message || "No se pudo completar la venta");
-    } finally {
-      setSelling(false);
-    }
-  };
+  const {
+    events,
+    selectedEventId,
+    setSelectedEventId,
+    event,
+    loading,
+    loadError,
+    selection,
+    setQty,
+    selectedSeatsByType,
+    setSelectedSeatsByType,
+    seatError,
+    setSeatError,
+    selectedSeats,
+    totalQuantity,
+    seatSelectionsComplete,
+    total,
+    customer,
+    setCustomer,
+    paymentNote,
+    setPaymentNote,
+    selling,
+    sellError,
+    lastSaleOrderId,
+    handleSell,
+    resetSelection,
+  } = useTicketSaleFlow(activeOrganizationId, 'taquilla');
 
   if (loading) return <div className="p-8 text-muted-foreground">Cargando...</div>;
 
@@ -132,6 +59,9 @@ export default function TaquillaDashboard() {
       </header>
 
       <main className="px-8 py-8 space-y-6">
+        {loadError && (
+          <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{loadError}</div>
+        )}
         <div className="bg-card p-6 rounded-2xl border border-border">
           <label className="text-sm font-bold text-muted-foreground mb-2 block">Evento</label>
           <select

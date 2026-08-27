@@ -11,7 +11,7 @@ function CreateUserModal({ organizations, onClose, onCreated }: {
 }) {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
-    const [role, setRole] = useState<'organization' | 'taquilla' | 'validador' | 'broker'>('organization');
+    const [role, setRole] = useState<'organization' | 'taquilla' | 'validador' | 'broker' | 'promotor'>('organization');
     const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
@@ -79,6 +79,7 @@ function CreateUserModal({ organizations, onClose, onCreated }: {
                                 <option value="taquilla">Taquilla</option>
                                 <option value="validador">Validador (puerta)</option>
                                 <option value="broker">Broker</option>
+                                <option value="promotor">Promotor</option>
                             </select>
                         </div>
                         {role === 'broker' ? (

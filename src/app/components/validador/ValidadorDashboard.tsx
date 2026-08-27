@@ -60,6 +60,7 @@ export default function ValidadorDashboard() {
     const [events, setEvents] = useState<EventRecord[]>([]);
     const [selectedEventId, setSelectedEventId] = useState<string>("");
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
 
     const [scanning, setScanning] = useState(false);
     const [cameraError, setCameraError] = useState("");
@@ -87,11 +88,19 @@ export default function ValidadorDashboard() {
     const deviceId = useRef(getDeviceId());
 
     useEffect(() => {
-        if (!activeOrganizationId) return;
+        // A superadmin account (allowed on this route to oversee gate
+        // scanning) belongs to zero organizations, so activeOrganizationId
+        // never becomes truthy for it — bail out of the loading state
+        // instead of spinning forever with no way to escape.
+        if (!activeOrganizationId) { setLoading(false); return; }
         setLoading(true);
+        setLoadError("");
         dataService.getEventsByOrganization(activeOrganizationId).then((evs) => {
             setEvents(evs);
             setSelectedEventId((prev) => prev || evs[0]?.id || "");
+            setLoading(false);
+        }).catch(() => {
+            setLoadError("No se pudieron cargar los eventos. Verifica tu conexión e intenta de nuevo.");
             setLoading(false);
         });
     }, [activeOrganizationId]);
@@ -373,10 +382,25 @@ export default function ValidadorDashboard() {
         ? lastResult.result === "ok" ? "#328022" : "#e11d48"
         : "#6b7280";
 
-    if (loading) return <div className="p-8 text-muted-foreground">Cargando...</div>;
+    if (loading) return <div className="dark min-h-screen bg-background p-8 text-muted-foreground">Cargando...</div>;
+
+    if (!activeOrganizationId) {
+        return (
+            <div className="dark min-h-screen bg-background text-foreground flex items-center justify-center p-8">
+                <div className="max-w-sm text-center space-y-3">
+                    <Ticket className="w-8 h-8 mx-auto text-muted-foreground" />
+                    <p className="font-bold">Esta cuenta no pertenece a ninguna organización</p>
+                    <p className="text-sm text-muted-foreground">No hay ningún evento que validar desde aquí. Inicia sesión con una cuenta de Validador, Taquilla u Organización para escanear boletos.</p>
+                    <button onClick={() => logout()} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border hover:bg-secondary text-sm font-bold">
+                        <LogOut className="w-4 h-4" /> Cerrar sesión
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-background text-foreground">
+        <div className="dark min-h-screen bg-background text-foreground">
             <header className="bg-card border-b border-border sticky top-0 z-10">
                 <div className="px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -389,7 +413,7 @@ export default function ValidadorDashboard() {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <OrgSwitcher />
+                        <OrgSwitcher variant="dark" />
                         <button onClick={() => logout()} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border hover:bg-secondary text-sm font-bold">
                             <LogOut className="w-4 h-4" /> Salir
                         </button>
@@ -404,6 +428,9 @@ export default function ValidadorDashboard() {
             )}
 
             <main className="px-6 py-6 space-y-6">
+                {loadError && (
+                    <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{loadError}</div>
+                )}
                 <div className="bg-card p-6 rounded-2xl border border-border">
                     <label className="text-sm font-bold text-muted-foreground mb-2 block">Evento</label>
                     <select
@@ -501,7 +528,7 @@ export default function ValidadorDashboard() {
                                     {lastResult.result === "ok" ? <CheckCircle2 className="w-8 h-8" style={{ color: resultColor }} /> : <XCircle className="w-8 h-8" style={{ color: resultColor }} />}
                                     <h3 className="text-xl font-black" style={{ color: resultColor }}>{RESULT_LABEL[lastResult.result]}</h3>
                                     {lastResult.offline && (
-                                        <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-amber-100 text-amber-700">Sin conexión</span>
+                                        <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-amber-500/15 text-amber-400">Sin conexión</span>
                                     )}
                                 </div>
                                 {lastResult.holderName && <p className="text-sm"><strong>Comprador:</strong> {lastResult.holderName}</p>}

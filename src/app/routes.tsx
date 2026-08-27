@@ -43,6 +43,9 @@ import OrganizationSettings from "./components/organization/OrganizationSettings
 import OrganizationEvents from "./components/organization/OrganizationEvents";
 import TaquillaDashboard from "./components/taquilla/TaquillaDashboard";
 import ValidadorDashboard from "./components/validador/ValidadorDashboard";
+import PromoterDashboard from "./components/promotor/PromoterDashboard";
+import AdminPromoters from "./components/admin/AdminPromoters";
+import OrganizationPromoters from "./components/organization/OrganizationPromoters";
 
 export const router = createBrowserRouter([
     {
@@ -89,6 +92,7 @@ export const router = createBrowserRouter([
                     { path: "settings", Component: AdminSettings },
                     { path: "create-organization", Component: CreateOrganization },
                     { path: "brokers", Component: AdminBrokers },
+                    { path: "promoters", Component: AdminPromoters },
                 ]
             },
 
@@ -108,6 +112,7 @@ export const router = createBrowserRouter([
                     { path: "contract", Component: OrganizationContract },
                     { path: "settings", Component: OrganizationSettings },
                     { path: "event/:eventId", Component: EventDetail },
+                    { path: "promoters", Component: OrganizationPromoters },
                 ]
             },
 
@@ -137,6 +142,16 @@ export const router = createBrowserRouter([
                 element: (
                     <ProtectedRoute requiredRole="broker">
                         <BrokerDashboard />
+                    </ProtectedRoute>
+                ),
+            },
+
+            // Promoter routes (protected)
+            {
+                path: "promotor",
+                element: (
+                    <ProtectedRoute requiredRole="promotor">
+                        <PromoterDashboard />
                     </ProtectedRoute>
                 ),
             },

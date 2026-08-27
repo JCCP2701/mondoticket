@@ -119,6 +119,40 @@ export interface BrokerTransaction {
     commissionAmount: number;
 }
 
+export interface PromoterTerms {
+    id: string;
+    promoterProfileId: string;
+    organizationId: string;
+    organizationName: string;
+    commissionPercentage: number;
+    notes: string | null;
+    createdAt: string;
+}
+
+export interface PromoterGoal {
+    id: string;
+    promoterProfileId: string;
+    organizationId: string;
+    periodStart: string;
+    periodEnd: string;
+    targetTicketCount: number;
+    notes: string | null;
+    createdAt: string;
+}
+
+export interface PromoterProgress {
+    organizationId: string;
+    organizationName: string;
+    periodId: string;
+    periodStart: string;
+    periodEnd: string;
+    targetTicketCount: number;
+    ticketsSold: number;
+    revenue: number;
+    commissionPercentage: number | null;
+    commissionEarned: number | null;
+}
+
 export type CheckInOutcome = 'ok' | 'already_used' | 'cancelled' | 'wrong_event' | 'not_found' | 'invalid_signature';
 
 export interface CheckInResult {
@@ -874,7 +908,7 @@ export const dataService = {
     async inviteStaff(
         name: string,
         email: string,
-        role: 'organization' | 'taquilla' | 'validador' | 'broker',
+        role: 'organization' | 'taquilla' | 'validador' | 'broker' | 'promotor',
         organizationIds: string[]
     ): Promise<{ email: string; temporaryPassword: string }> {
         const { data: { session } } = await supabase.auth.getSession();
@@ -1036,6 +1070,161 @@ export const dataService = {
             commissionBasis: row.commission_basis,
             commissionPercentage: Number(row.commission_percentage),
             commissionAmount: Number(row.commission_amount),
+        }));
+    },
+
+    // Promoter terms (superadmin-only per RLS) — the commercial agreement
+    // between the platform and a promoter for one organization: the
+    // commission % they earn on top of their goal tracking. A promoter can
+    // have at most one terms record per organization (editing replaces it,
+    // doesn't stack).
+    // Superadmin-only: every promoter terms record across every promoter,
+    // for the "Promotores" admin page (RLS returns all rows for
+    // is_superadmin(), not just the caller's own).
+    async getAllPromoterTerms(): Promise<PromoterTerms[]> {
+        const { data, error } = await supabase
+            .from('promoter_terms')
+            .select('id, promoter_profile_id, organization_id, commission_percentage, notes, created_at, organizations(name)')
+            .order('created_at');
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            id: row.id,
+            promoterProfileId: row.promoter_profile_id,
+            organizationId: row.organization_id,
+            organizationName: row.organizations?.name ?? '',
+            commissionPercentage: Number(row.commission_percentage),
+            notes: row.notes,
+            createdAt: row.created_at,
+        }));
+    },
+
+    async getPromoterTermsForOrganization(organizationId: string): Promise<PromoterTerms[]> {
+        const { data, error } = await supabase
+            .from('promoter_terms')
+            .select('id, promoter_profile_id, organization_id, commission_percentage, notes, created_at, organizations(name)')
+            .eq('organization_id', organizationId)
+            .order('created_at');
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            id: row.id,
+            promoterProfileId: row.promoter_profile_id,
+            organizationId: row.organization_id,
+            organizationName: row.organizations?.name ?? '',
+            commissionPercentage: Number(row.commission_percentage),
+            notes: row.notes,
+            createdAt: row.created_at,
+        }));
+    },
+
+    async createPromoterTerms(input: {
+        promoterProfileId: string;
+        organizationId: string;
+        commissionPercentage: number;
+        notes?: string | null;
+    }): Promise<void> {
+        const { error } = await supabase.from('promoter_terms').insert({
+            promoter_profile_id: input.promoterProfileId,
+            organization_id: input.organizationId,
+            commission_percentage: input.commissionPercentage,
+            notes: input.notes ?? null,
+        });
+        if (error) throw error;
+    },
+
+    async updatePromoterTerms(id: string, input: {
+        commissionPercentage: number;
+        notes?: string | null;
+    }): Promise<void> {
+        const { error } = await supabase.from('promoter_terms').update({
+            commission_percentage: input.commissionPercentage,
+            notes: input.notes ?? null,
+        }).eq('id', id);
+        if (error) throw error;
+    },
+
+    async deletePromoterTerms(id: string): Promise<void> {
+        const { error } = await supabase.from('promoter_terms').delete().eq('id', id);
+        if (error) throw error;
+    },
+
+    // Promoter goals — the ticket-count target a promoter commits to for a
+    // given date period, within one organization.
+    async getPromoterGoals(promoterProfileId: string, organizationId: string): Promise<PromoterGoal[]> {
+        const { data, error } = await supabase
+            .from('promoter_goals')
+            .select('id, promoter_profile_id, organization_id, period_start, period_end, target_ticket_count, notes, created_at')
+            .eq('promoter_profile_id', promoterProfileId)
+            .eq('organization_id', organizationId)
+            .order('period_start', { ascending: false });
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            id: row.id,
+            promoterProfileId: row.promoter_profile_id,
+            organizationId: row.organization_id,
+            periodStart: row.period_start,
+            periodEnd: row.period_end,
+            targetTicketCount: row.target_ticket_count,
+            notes: row.notes,
+            createdAt: row.created_at,
+        }));
+    },
+
+    async createPromoterGoal(input: {
+        promoterProfileId: string;
+        organizationId: string;
+        periodStart: string;
+        periodEnd: string;
+        targetTicketCount: number;
+        notes?: string | null;
+    }): Promise<void> {
+        const { error } = await supabase.from('promoter_goals').insert({
+            promoter_profile_id: input.promoterProfileId,
+            organization_id: input.organizationId,
+            period_start: input.periodStart,
+            period_end: input.periodEnd,
+            target_ticket_count: input.targetTicketCount,
+            notes: input.notes ?? null,
+        });
+        if (error) throw error;
+    },
+
+    async updatePromoterGoal(id: string, input: {
+        periodStart: string;
+        periodEnd: string;
+        targetTicketCount: number;
+        notes?: string | null;
+    }): Promise<void> {
+        const { error } = await supabase.from('promoter_goals').update({
+            period_start: input.periodStart,
+            period_end: input.periodEnd,
+            target_ticket_count: input.targetTicketCount,
+            notes: input.notes ?? null,
+        }).eq('id', id);
+        if (error) throw error;
+    },
+
+    async deletePromoterGoal(id: string): Promise<void> {
+        const { error } = await supabase.from('promoter_goals').delete().eq('id', id);
+        if (error) throw error;
+    },
+
+    // The promoter's own progress view — computed server-side
+    // (get_promoter_progress), one row per goal period with tickets sold,
+    // revenue, and the earned commission (if the promoter has terms set).
+    async getPromoterProgress(): Promise<PromoterProgress[]> {
+        const { data, error } = await supabase.rpc('get_promoter_progress');
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            organizationId: row.organization_id,
+            organizationName: row.organization_name,
+            periodId: row.period_id,
+            periodStart: row.period_start,
+            periodEnd: row.period_end,
+            targetTicketCount: row.target_ticket_count,
+            ticketsSold: Number(row.tickets_sold),
+            revenue: Number(row.revenue),
+            commissionPercentage: row.commission_percentage != null ? Number(row.commission_percentage) : null,
+            commissionEarned: row.commission_earned != null ? Number(row.commission_earned) : null,
         }));
     },
 
