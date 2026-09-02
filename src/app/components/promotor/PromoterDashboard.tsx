@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Megaphone, LogOut, Minus, Plus, ShoppingCart, CheckCircle2, Target, TrendingUp, Wallet } from "lucide-react";
+import { Megaphone, LogOut, Minus, Plus, ShoppingCart, CheckCircle2, Target, TrendingUp, Wallet, Ticket } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import SeatMapPicker from "../user/SeatMapPicker";
 import OrgSwitcher from "../shared/OrgSwitcher";
 import { useTicketSaleFlow } from "../../lib/useTicketSaleFlow";
 import { dataService, PromoterProgress } from "../../services/dataService";
+import { StatCard, type StatStatus } from "../shared/dashboard/StatCard";
+import { StatCardGrid } from "../shared/dashboard/StatCardGrid";
+import { DashboardTableCard } from "../shared/dashboard/DashboardTableCard";
+import { SectionHeader } from "../shared/dashboard/SectionHeader";
+import { Progress } from "../ui/progress";
 
 function money(n: number): string {
   return `$${n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -45,6 +50,27 @@ export default function PromoterDashboard() {
     ? Math.min(100, (currentPeriod.ticketsSold / currentPeriod.targetTicketCount) * 100)
     : 0;
 
+  // Pacing: how far along the period is in time vs. how far along the goal
+  // is in sales — the one genuinely new insight here (everything else is
+  // re-styling), fully client-side from data already in `currentPeriod`.
+  const timeElapsedPct = useMemo(() => {
+    if (!currentPeriod) return 0;
+    const start = new Date(`${currentPeriod.periodStart}T00:00:00`).getTime();
+    const end = new Date(`${currentPeriod.periodEnd}T00:00:00`).getTime();
+    if (end <= start) return 100;
+    return Math.min(100, Math.max(0, ((Date.now() - start) / (end - start)) * 100));
+  }, [currentPeriod]);
+
+  const pacingStatus: StatStatus = !currentPeriod
+    ? "neutral"
+    : progressPct >= 100
+    ? "good"
+    : progressPct < timeElapsedPct - 15
+    ? "warning"
+    : "neutral";
+  const pacingLabel = pacingStatus === "good" ? "Meta cumplida" : pacingStatus === "warning" ? "Por debajo del ritmo" : undefined;
+  const pacingIndicatorClass = pacingStatus === "good" ? "bg-success" : pacingStatus === "warning" ? "bg-warning" : "bg-primary";
+
   if (sale.loading) return <div className="p-8 text-muted-foreground">Cargando...</div>;
 
   return (
@@ -84,43 +110,37 @@ export default function PromoterDashboard() {
             <p className="text-sm text-muted-foreground">Cargando meta...</p>
           ) : currentPeriod ? (
             <>
-              <div className={`grid grid-cols-1 md:grid-cols-2 ${currentPeriod.commissionPercentage !== null ? 'lg:grid-cols-3' : ''} gap-6`}>
-                <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-primary/10 rounded-lg"><Target className="w-6 h-6 text-primary" /></div>
-                    <p className="text-sm font-bold text-muted-foreground">Meta de boletos</p>
-                  </div>
-                  <p className="text-3xl font-bold text-foreground">{currentPeriod.targetTicketCount}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{currentPeriod.organizationName}</p>
-                </div>
-                <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-success/10 rounded-lg"><TrendingUp className="w-6 h-6 text-success" /></div>
-                    <p className="text-sm font-bold text-muted-foreground">Boletos vendidos</p>
-                  </div>
-                  <p className="text-3xl font-bold text-foreground">{currentPeriod.ticketsSold}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{formatDate(currentPeriod.periodStart)} – {formatDate(currentPeriod.periodEnd)}</p>
-                </div>
+              <StatCardGrid columns={currentPeriod.commissionPercentage !== null ? 3 : 2}>
+                <StatCard
+                  label="Meta de boletos"
+                  value={String(currentPeriod.targetTicketCount)}
+                  icon={Target}
+                  caption={currentPeriod.organizationName}
+                />
+                <StatCard
+                  label="Boletos vendidos"
+                  value={String(currentPeriod.ticketsSold)}
+                  icon={TrendingUp}
+                  status={pacingStatus}
+                  statusLabel={pacingLabel}
+                  caption={`${formatDate(currentPeriod.periodStart)} – ${formatDate(currentPeriod.periodEnd)}`}
+                />
                 {currentPeriod.commissionPercentage !== null && (
-                  <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 bg-amber-100 rounded-lg"><Wallet className="w-6 h-6 text-amber-700" /></div>
-                      <p className="text-sm font-bold text-muted-foreground">Comisión ganada</p>
-                    </div>
-                    <p className="text-3xl font-bold text-primary">{money(currentPeriod.commissionEarned ?? 0)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{currentPeriod.commissionPercentage}% sobre ventas</p>
-                  </div>
+                  <StatCard
+                    label="Comisión ganada"
+                    value={money(currentPeriod.commissionEarned ?? 0)}
+                    icon={Wallet}
+                    caption={`${currentPeriod.commissionPercentage}% sobre ventas`}
+                  />
                 )}
-              </div>
+              </StatCardGrid>
 
               <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-bold text-muted-foreground">Progreso del periodo</p>
                   <p className="text-sm font-bold text-foreground">{progressPct.toFixed(0)}%</p>
                 </div>
-                <div className="w-full h-3 rounded-full bg-secondary/20 overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progressPct}%` }} />
-                </div>
+                <Progress value={progressPct} indicatorClassName={pacingIndicatorClass} />
               </div>
             </>
           ) : (
@@ -130,11 +150,7 @@ export default function PromoterDashboard() {
           )}
 
           {otherPeriods.length > 0 && (
-            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
-              <div className="p-6 border-b border-border bg-secondary/10">
-                <h3 className="font-bold text-lg">Otros periodos</h3>
-                <p className="text-sm text-muted-foreground mt-1">Metas pasadas o futuras de tu organización</p>
-              </div>
+            <DashboardTableCard title="Otros periodos" subtitle="Metas pasadas o futuras de tu organización">
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
@@ -159,9 +175,18 @@ export default function PromoterDashboard() {
                   </tbody>
                 </table>
               </div>
-            </div>
+            </DashboardTableCard>
           )}
         </section>
+
+        <div className="border-t border-border pt-6">
+          <SectionHeader
+            eyebrow="Venta en curso"
+            icon={Ticket}
+            title="Vender boletos"
+            subtitle="Selecciona el evento y completa la venta."
+          />
+        </div>
 
         <div className="bg-card p-6 rounded-2xl border border-border">
           <label className="text-sm font-bold text-muted-foreground mb-2 block">Evento</label>

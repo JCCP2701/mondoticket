@@ -1,12 +1,17 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import jsQR from "jsqr";
-import { Ticket, LogOut, Camera, CameraOff, Keyboard, CheckCircle2, XCircle, AlertTriangle, RotateCcw, Search, WifiOff, Wifi, DownloadCloud, RefreshCw } from "lucide-react";
+import { Ticket, LogOut, Camera, CameraOff, Keyboard, CheckCircle2, XCircle, AlertTriangle, RotateCcw, Search, WifiOff, Wifi, DownloadCloud, RefreshCw, TicketCheck, PieChart, UserX } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { dataService, EventRecord, CheckInResult, GateScanRecord, CheckInOutcome } from "../../services/dataService";
 import { supabase } from "../../services/supabaseClient";
 import OrgSwitcher from "../shared/OrgSwitcher";
 import { verifyScannedCode } from "../../lib/offlineVerify";
 import { saveManifest, getManifestEntry, findManifestEntryByHash, markLocalUsed, queueScan, getPendingScans, markScansSynced, type PendingScan } from "../../lib/offlineGate";
+import { StatCard } from "../shared/dashboard/StatCard";
+import { StatCardGrid } from "../shared/dashboard/StatCardGrid";
+import { ChartCard } from "../shared/dashboard/ChartCard";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { ChartTooltip, ChartTooltipContent, type ChartConfig } from "../ui/chart";
 
 const DEVICE_ID_KEY = "tb_validador_device_id";
 
@@ -378,9 +383,31 @@ export default function ValidadorDashboard() {
         }
     };
 
-    const resultColor = lastResult
-        ? lastResult.result === "ok" ? "#328022" : "#e11d48"
-        : "#6b7280";
+    // At-a-glance strip for the selected event — attendance combines data
+    // already fetched two different ways (event.ticketTypes for sold/
+    // capacity, recentScans for check-ins), no new query. The denial
+    // breakdown is explicitly capped to the same last-50 scans the rest of
+    // this screen already uses (getScansForEvent's limit) — the footnote
+    // makes that scope visible instead of implying full-event precision.
+    const event = events.find((e) => e.id === selectedEventId) ?? null;
+    const eventSold = event ? event.ticketTypes.reduce((s, t) => s + t.sold, 0) : 0;
+    const eventCapacity = event ? event.ticketTypes.reduce((s, t) => s + t.capacity, 0) : 0;
+    const attendanceOverSoldPct = eventSold > 0 ? (checkedInCount / eventSold) * 100 : 0;
+    const attendanceOverCapacityPct = eventCapacity > 0 ? (checkedInCount / eventCapacity) * 100 : 0;
+    const deniedCount = recentScans.filter((s) => s.result !== "ok").length;
+
+    const denialBreakdown = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const s of recentScans) {
+            if (s.result === "ok") continue;
+            counts[s.result] = (counts[s.result] ?? 0) + 1;
+        }
+        return Object.entries(counts)
+            .map(([result, count]) => ({ key: result, name: RESULT_LABEL[result] ?? result, count }))
+            .sort((a, b) => b.count - a.count);
+    }, [recentScans]);
+
+    const denialBreakdownConfig: ChartConfig = { count: { label: "Escaneos", color: "var(--chart-3)" } };
 
     if (loading) return <div className="dark min-h-screen bg-background p-8 text-muted-foreground">Cargando...</div>;
 
@@ -422,7 +449,7 @@ export default function ValidadorDashboard() {
             </header>
 
             {!isOnline && (
-                <div className="bg-amber-500 text-white text-sm font-bold text-center py-2 flex items-center justify-center gap-2">
+                <div className="bg-warning text-warning-foreground text-sm font-bold text-center py-2 flex items-center justify-center gap-2">
                     <WifiOff className="w-4 h-4" /> MODO OFFLINE — {pendingCount} escaneo{pendingCount !== 1 ? 's' : ''} sin sincronizar
                 </div>
             )}
@@ -444,14 +471,9 @@ export default function ValidadorDashboard() {
                         ))}
                     </select>
                     {selectedEventId && (
-                        <div className="flex items-center justify-between mt-3">
-                            <p className="text-xs text-muted-foreground">
-                                <strong className="text-foreground">{checkedInCount}</strong> ingresados hasta ahora
-                            </p>
-                            <div className="flex items-center gap-2">
-                                {isOnline ? <Wifi className="w-3.5 h-3.5 text-success" /> : <WifiOff className="w-3.5 h-3.5 text-amber-600" />}
-                                {offlineReady && <span className="text-xs font-bold text-success">Modo offline listo</span>}
-                            </div>
+                        <div className="flex items-center justify-end gap-2 mt-3">
+                            {isOnline ? <Wifi className="w-3.5 h-3.5 text-success" /> : <WifiOff className="w-3.5 h-3.5 text-warning" />}
+                            {offlineReady && <span className="text-xs font-bold text-success">Modo offline listo</span>}
                         </div>
                     )}
 
@@ -483,6 +505,13 @@ export default function ValidadorDashboard() {
 
                 {selectedEventId && (
                     <>
+                        <StatCardGrid columns={4}>
+                            <StatCard label="Ingresados" value={checkedInCount.toLocaleString()} icon={TicketCheck} />
+                            <StatCard label="% asistencia sobre vendidos" value={`${attendanceOverSoldPct.toFixed(0)}%`} icon={PieChart} />
+                            <StatCard label="% de aforo total" value={`${attendanceOverCapacityPct.toFixed(0)}%`} icon={PieChart} />
+                            <StatCard label="Denegados" value={deniedCount.toLocaleString()} icon={UserX} caption="De los últimos 50 escaneos" />
+                        </StatCardGrid>
+
                         <div className="bg-card p-6 rounded-2xl border border-border space-y-4">
                             <div className="flex items-center justify-between">
                                 <h3 className="font-bold">Escanear boleto</h3>
@@ -523,10 +552,10 @@ export default function ValidadorDashboard() {
                         </div>
 
                         {lastResult && (
-                            <div className="rounded-2xl border-2 p-6 space-y-3" style={{ borderColor: resultColor, background: `${resultColor}0f` }}>
+                            <div className={`rounded-2xl border-2 p-6 space-y-3 ${lastResult.result === "ok" ? "border-success/30 bg-success/10" : "border-destructive/30 bg-destructive/10"}`}>
                                 <div className="flex items-center gap-3">
-                                    {lastResult.result === "ok" ? <CheckCircle2 className="w-8 h-8" style={{ color: resultColor }} /> : <XCircle className="w-8 h-8" style={{ color: resultColor }} />}
-                                    <h3 className="text-xl font-black" style={{ color: resultColor }}>{RESULT_LABEL[lastResult.result]}</h3>
+                                    {lastResult.result === "ok" ? <CheckCircle2 className="w-8 h-8 text-success" /> : <XCircle className="w-8 h-8 text-destructive" />}
+                                    <h3 className={`text-xl font-black ${lastResult.result === "ok" ? "text-success" : "text-destructive"}`}>{RESULT_LABEL[lastResult.result]}</h3>
                                     {lastResult.offline && (
                                         <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-amber-500/15 text-amber-400">Sin conexión</span>
                                     )}
@@ -569,6 +598,23 @@ export default function ValidadorDashboard() {
                                 </div>
                             )}
                         </div>
+
+                        <ChartCard
+                            title="Motivos de rechazo"
+                            subtitle="Escaneos que no dieron acceso, agrupados por motivo"
+                            footnote="Basado en los últimos 50 escaneos"
+                            config={denialBreakdownConfig}
+                            empty={denialBreakdown.length === 0}
+                            emptyMessage="Sin rechazos en los últimos escaneos."
+                        >
+                            <BarChart data={denialBreakdown} layout="vertical" margin={{ left: 8 }}>
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-border" />
+                                <XAxis type="number" className="fill-muted-foreground" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                                <YAxis type="category" dataKey="name" className="fill-muted-foreground" fontSize={12} tickLine={false} axisLine={false} width={140} />
+                                <ChartTooltip content={<ChartTooltipContent />} />
+                                <Bar dataKey="count" fill="var(--color-count)" radius={[0, 4, 4, 0]} />
+                            </BarChart>
+                        </ChartCard>
                     </>
                 )}
             </main>

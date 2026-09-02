@@ -13,8 +13,15 @@ export default function ProtectedRoute({
     requiredRole,
     requireMFA = true,
 }: ProtectedRouteProps) {
-    const { isAuthenticated, mfaVerified, user, user: authUser } = useAuth();
+    const { isAuthenticated, mfaVerified, user, user: authUser, authLoading } = useAuth();
     const location = useLocation();
+
+    // Session restore (getSession + profile load) hasn't finished yet — wait
+    // instead of redirecting, otherwise every page refresh briefly sees
+    // user=null and bounces an already-logged-in user to /login.
+    if (authLoading) {
+        return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Cargando...</div>;
+    }
 
     // Not logged in at all → go to login
     if (!authUser) {

@@ -3,11 +3,13 @@ import { Calendar, MapPin, Clock, Plus, Trash2, Image as ImageIcon, Info, FileTe
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { dataService } from "../../services/dataService";
+import { cn } from "../ui/utils";
 
 interface TicketTypeForm {
   name: string;
   price: string;
   capacity: string;
+  hasSeatMap: boolean;
 }
 
 export default function CreateEvent() {
@@ -24,7 +26,7 @@ export default function CreateEvent() {
     instructions: "",
   });
   const [ticketTypes, setTicketTypes] = useState<TicketTypeForm[]>([
-    { name: "General", price: "", capacity: "" },
+    { name: "General", price: "", capacity: "", hasSeatMap: false },
   ]);
 
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
@@ -36,15 +38,19 @@ export default function CreateEvent() {
   const [imageError, setImageError] = useState("");
 
   const addTicketType = () => {
-    setTicketTypes([...ticketTypes, { name: "", price: "", capacity: "" }]);
+    setTicketTypes([...ticketTypes, { name: "", price: "", capacity: "", hasSeatMap: false }]);
   };
 
   const removeTicketType = (index: number) => {
     setTicketTypes(ticketTypes.filter((_, i) => i !== index));
   };
 
-  const updateTicketType = (index: number, field: keyof TicketTypeForm, value: string) => {
+  const updateTicketType = (index: number, field: keyof Omit<TicketTypeForm, "hasSeatMap">, value: string) => {
     setTicketTypes(ticketTypes.map((t, i) => (i === index ? { ...t, [field]: value } : t)));
+  };
+
+  const setTicketTypeHasSeatMap = (index: number, hasSeatMap: boolean) => {
+    setTicketTypes(ticketTypes.map((t, i) => (i === index ? { ...t, hasSeatMap } : t)));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,6 +92,7 @@ export default function CreateEvent() {
           name: t.name,
           price: parseFloat(t.price),
           capacity: parseInt(t.capacity, 10),
+          hasSeatMap: t.hasSeatMap,
         })),
       });
       navigate("/organization/events");
@@ -278,6 +285,28 @@ export default function CreateEvent() {
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
+                  <div className="col-span-4 flex gap-2 -mt-1">
+                    <button
+                      type="button"
+                      onClick={() => setTicketTypeHasSeatMap(i, false)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-colors",
+                        !t.hasSeatMap ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
+                      )}
+                    >
+                      Aforo general
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTicketTypeHasSeatMap(i, true)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-colors",
+                        t.hasSeatMap ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
+                      )}
+                    >
+                      Con asientos asignados
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

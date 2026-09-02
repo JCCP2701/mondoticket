@@ -75,7 +75,7 @@ Lista de todas las organizaciones registradas. Desde aquí puedes:
   - **Plazo de Pago (días)** — cuántos días tiene la organización para pagar el fee.
   - **Tiempo de Reserva antes de Liberar Boletos** — cuánto tiempo se mantiene apartado un boleto que un comprador seleccionó pero todavía no ha pagado (por ejemplo, si eligió pagar en efectivo o SPEI y ese pago tarda en confirmarse). Se configura en minutos, horas o días (de 5 minutos a 90 días; por defecto 72 horas). Si el tiempo se cumple sin que se confirme el pago, el boleto vuelve a estar disponible para que alguien más lo compre, en línea o en taquilla. **No aplica a cortesías ni a ventas de taquilla** — esas nunca quedan "pendientes de pago", se confirman al instante.
   - **Eventos por Mes** — opcional; límite de eventos nuevos que puede crear por mes calendario. Si se deja vacío, no hay límite.
-  - **Cortesías por Evento** — opcional; límite de boletos gratuitos que puede emitir por evento. Si se deja vacío, no hay límite.
+  - **Cortesías por Evento** — opcional; elige el modo: un **número fijo** de boletos gratuitos por evento, o un **% del aforo** de cada evento (se recalcula automáticamente según la capacidad de cada uno). Si se deja vacío, no hay límite. La organización nunca puede cambiar este número — solo lo ve, en "Mi Contrato" y en su Panel de Control.
   - **Notas del Convenio** — cualquier condición especial por escrito.
 - **Miembros** (botón por fila): ver quién pertenece a esa organización, invitar a una persona nueva (te da una contraseña temporal para compartirle) o agregar a una cuenta que ya existe.
 
@@ -114,7 +114,13 @@ Esta sección todavía es solo una vista de referencia — los cambios que se ha
 Menú lateral: **Dashboard**, **Mis Eventos**, **Mi Contrato**, **Promotores**, **Configuración**. Si tu cuenta pertenece a más de una organización, verás un selector arriba del menú para cambiar entre ellas.
 
 ### Dashboard
-Resumen de tu organización: eventos activos, boletos vendidos, revenue total, cuánto fee le debes a la plataforma ("Fee a Liquidar"), y un gráfico de tu inventario disponible vs. vendido. El botón **"Descargar Resumen"** genera y descarga directamente un archivo PDF con estos datos (no depende del diálogo de impresión del navegador).
+Arriba de todo puedes filtrar todo el panel por **evento** y por **periodo** (Todo / Este mes / Últimos 30 días / Personalizado) con un solo botón, junto a **"Descargar Resumen"** (genera un PDF con el mismo desglose que ves en pantalla) y **"Crear Evento"**.
+
+Debajo verás:
+- **Tarjetas de resumen**: Boletos Totales (la capacidad de tus eventos), Boletos Vendidos (con el % que representa del total), Disponibles, y Monto Bruto — estas dos últimas ya respetan el evento/periodo que hayas filtrado.
+- **Resumen de Liquidación**: Monto Bruto Generado, Fee de Plataforma, **Comisión de Promotores** (según el convenio de cada uno) y **Margen Neto** (lo que te queda después de restar el fee y las comisiones).
+- **Ventas en el periodo**: gráfica de barras por canal (En línea / Taquilla directo / Por promotor / Cortesías), con el **pico de ventas** señalado como dato explícito debajo de la gráfica.
+- **Inventario en Tiempo Real**: capacidad total, **% de cupo usado** (vendido + cortesía reservada, aunque todavía no se haya emitido el boleto), y el desglose exacto de cada categoría con su propia barra — este bloque siempre refleja el estado de tus eventos completo, sin importar el filtro de fecha (la capacidad no es algo que tenga sentido "por periodo").
 
 ### Mis Eventos
 Lista de tus eventos con ocupación, estado de preventa, revenue, cortesías y reembolsos. Botón **"Nuevo Evento"** para crear uno, o **"Detalles"** para entrar a la gestión de uno existente.
@@ -122,25 +128,35 @@ Lista de tus eventos con ocupación, estado de preventa, revenue, cortesías y r
 #### Crear un evento
 1. Completa nombre, categoría, descripción, sede, dirección, fecha y hora.
 2. Puedes subir una imagen real para el evento (se mostrará en el sitio y en el checkout).
-3. Agrega uno o varios **tipos de boleto** (por ejemplo General, VIP) con su precio y aforo. Un tipo de boleto con precio $0 funciona como boleto de cortesía.
+3. Agrega uno o varios **tipos de boleto** (por ejemplo General, VIP) con su precio y aforo, y elige si es de **aforo general** (solo un número de boletos disponibles, sin lugar asignado — pensado para eventos al aire libre o sin butacas) o **con asientos asignados** (se diseña la distribución exacta después, en el Mapa de Asientos).
 4. Da clic en **"Publicar Evento"**.
+
+> Para las cortesías del contrato de tu organización ya no hace falta crear tú un tipo de boleto a $0 — se administran solas, ver [Mapa de Asientos](#mapa-de-asientos).
 
 > Si tu organización tiene un límite de "Eventos por Mes" en su convenio y ya lo alcanzaste ese mes, el sistema no dejará crear uno nuevo hasta el siguiente mes.
 
 #### Detalle de un evento
+Arriba verás: **Boletos Totales** (la capacidad configurada del evento, no solo lo ya vendido), **Monto Bruto**, **Válidos** (vendidos + cortesías, sin usar todavía), **Check-in** (boletos vendidos ya escaneados), **Cortesías** (cortesías ya escaneadas) y **Reembolsados**.
+
 Desde aquí puedes:
 - **Editar Evento**: cambiar nombre, categoría, descripción o la imagen del evento en cualquier momento.
-- **Mapa de Asientos**: diseñar el mapa de asientos para los tipos de boleto que lo requieran (ver siguiente sección).
-- **Asignar Cortesía**: dar un boleto gratuito a alguien (solo visible si el evento tiene algún tipo de boleto con precio $0).
+- **Mapa de Asientos**: gestionar los tipos de boleto de este evento y diseñar la distribución para los que tengan asientos asignados (ver siguiente sección).
+- **Asignar Cortesía**: dar un boleto gratuito a alguien (solo visible si el evento tiene algún tipo de boleto con precio $0, incluido el tipo "Cortesía" automático).
 - Ver la lista de boletos vendidos, buscarlos, filtrarlos por estado (Válido / Usado / Reembolsado), y **seleccionar boletos para reembolsar**.
 
 > Si tu convenio tiene un límite de "Cortesías por Evento" y ya lo alcanzaste, el sistema no dejará asignar más cortesías para ese evento.
 
 #### Mapa de Asientos
-Diseña la distribución de asientos con las herramientas de Selector, Bloque y Borrador, elige a qué tipo de boleto pertenece cada asiento pintado, y da clic en **"Guardar Mapa de Asientos"**. Una vez que un tipo de boleto tiene asientos, los compradores eligen su asiento exacto en vez de solo la cantidad.
+Aquí gestionas los tipos de boleto de este evento (incluso después de haberlo creado) y, para los que tengan asientos asignados, diseñas su distribución.
+
+- **Agregar Tipo de Boleto**: crea un tipo nuevo en cualquier momento — por ejemplo, si necesitas ampliar tu oferta con un precio distinto. Elige si es de aforo general o con asientos. Solo acepta precios mayores a $0 (para cortesías, ver el aviso de abajo).
+- **Boletos de Aforo General**: cada tipo sin asientos aparece con su capacidad, que puedes editar cuando quieras (respetando lo que ya se haya vendido).
+- **Tipo de Boleto a Pintar**: los tipos con asientos aparecen aquí como pincel — elige uno y pinta el grid con las herramientas de Selector, Bloque y Borrador. Da clic en **"Guardar Mapa de Asientos"** al terminar. Una vez que un tipo de boleto tiene asientos, los compradores eligen su asiento exacto en vez de solo la cantidad.
+
+> **Las cortesías del contrato se administran solas**: en cuanto entras al Mapa de Asientos, MondoTicket crea (si todavía no existe) un tipo de boleto llamado "Cortesía" con precio $0 y la cantidad exacta que permite tu convenio (fijo o % de la capacidad del evento, según lo haya configurado el Super Administrador). Esa cantidad **se resta de tus tipos pagados**, nunca se suma aparte — así el total de boletos de tu evento no cambia. Si tu evento tiene asientos, puedes elegir "Cortesía" como pincel para marcar específicamente cuáles asientos regalas, sin poder pasarte del límite de tu contrato (el sistema te avisa y detiene el pintado si llegas al tope). Si es de aforo general, la cantidad ya viene fija según tu convenio y no se puede aumentar desde aquí.
 
 ### Mi Contrato
-Consulta (sin poder editar) tu convenio comercial vigente: fee digital, fee en taquilla, plazo de pago, **tiempo de reserva antes de liberar boletos no pagados**, límite de eventos por mes, límite de cortesías por evento, y los datos legales de tu organización. Solo el Super Administrador puede modificar estos valores. El botón **"Descargar PDF"** genera y descarga directamente un archivo PDF con estos datos (no depende del diálogo de impresión del navegador).
+Consulta (sin poder editar) tu convenio comercial vigente: fee digital, fee en taquilla, plazo de pago, **tiempo de reserva antes de liberar boletos no pagados**, límite de eventos por mes, límite de cortesías por evento (fijo o como % del aforo de cada evento), y los datos legales de tu organización. Solo el Super Administrador puede modificar estos valores. El botón **"Descargar PDF"** genera y descarga directamente un archivo PDF con estos datos (no depende del diálogo de impresión del navegador).
 
 ### Promotores
 Aquí das de alta e integras a tus promotores:
@@ -213,7 +229,7 @@ Esta cuenta es para un socio externo (agente comercial) que trae organizaciones 
 Al entrar verás:
 - **Tarjetas de resumen**: cuánto has ganado en total, cuánto este mes, con cuántas organizaciones tienes contrato, y en cuántos eventos.
 - **Ganancias por organización**: da clic en una organización para ver el desglose por evento.
-- **Historial de transacciones**: cada compra pagada que generó ganancia para ti, con fecha, evento, organización, y tu comisión — ordenadas de la más reciente a la más antigua.
+- **Historial de transacciones**: una fila por evento (sumando todas las ventas de ese evento), con la organización, tu base de comisión, cuántas ventas contribuyeron y tu comisión total — ordenado del evento con venta más reciente primero.
 
 > **Importante**: en ningún lugar del panel se muestra el ingreso real del evento (lo que realmente se vendió), ni el detalle de compradores u órdenes — solo tu ganancia, ya calculada según tu contrato. Si tu contrato es "% de venta de boletos", tu ganancia sube y baja junto con las ventas reales del evento, pero el número que ves siempre es tu comisión, nunca la venta completa.
 
@@ -296,6 +312,13 @@ No. El panel del broker solo muestra su propia ganancia ya calculada, nunca el i
 
 ## Historial de cambios
 
+- **2026-09-02** — **Comisión de broker corregida y el historial ahora es por evento**: la comisión que ve el broker ahora refleja correctamente el % configurado sobre el fee de la plataforma (no sobre el total vendido) cuando el contrato así lo especifica. El "Historial de transacciones" ahora muestra una fila por evento (sumando todas las ventas de ese evento y cuántas fueron), en vez de una fila por cada venta individual.
+- **2026-09-02** — **Diseñador de Asientos: aforo general y cortesía automática**: al crear un tipo de boleto ahora eliges si es de **aforo general** (solo un número de boletos) o **con asientos asignados**. En el Mapa de Asientos ahora puedes agregar tipos de boleto nuevos en cualquier momento (antes solo se podía al crear el evento) y editar la capacidad de los tipos de aforo general. Las cortesías del contrato ahora se administran solas: MondoTicket crea automáticamente un tipo "Cortesía" con la cantidad exacta que permite tu convenio, restándola de tus tipos pagados (nunca se suma aparte, para que el total del evento no cambie) — si tu evento tiene asientos, puedes elegir específicamente cuáles regalas sin poder pasarte del límite de tu contrato.
+- **2026-09-02** — **Cortesías por contrato: fijas o por porcentaje, definidas solo por el Super Administrador**: en el Convenio de cada organización, el límite de "Cortesías por Evento" ahora puede ser un número fijo o un % del aforo de cada evento (se recalcula según la capacidad de cada uno). La organización solo puede verlo (en "Mi Contrato" y en su Panel de Control), nunca cambiarlo.
+- **2026-09-02** — **Panel de Control de Organización, mucho más completo**: ahora se puede filtrar todo el panel por evento y por periodo (Todo / Este mes / Últimos 30 días / Personalizado) desde un solo botón junto a "Crear Evento". Se agregaron tarjetas de Boletos Totales, Vendidos y Disponibles; la gráfica de ventas ahora se desglosa por canal (en línea, taquilla directo, por promotor, cortesías) y señala el pico de ventas como dato explícito; el "Resumen de Liquidación" ahora incluye Comisión de Promotores y Margen Neto, además del Monto Bruto y el Fee de Plataforma; y "Inventario en Tiempo Real" muestra el % de cupo usado (vendido + cortesía reservada) y el desglose exacto de cada categoría. El botón "Descargar Resumen" (PDF) se movió junto a "Crear Evento" y ahora incluye todo este detalle.
+- **2026-09-02** — **Corrección de sesión: recargar la página ya no cierra la sesión**: había una condición de carrera donde, justo al recargar cualquier pantalla del sistema, se te sacaba a la pantalla de inicio de sesión por una fracción de segundo antes de que se terminara de restaurar tu sesión real. Ya no pasa.
+- **2026-09-02** — **Corrección en el detalle de evento (Organización)**: "Boletos Totales" ahora muestra la capacidad configurada del evento (antes mostraba 0 en un evento sin ventas todavía, aunque sí tuviera boletos configurados). Se renombró "Revenue Total" a "Monto Bruto", y "Check-in"/"Cortesías" ahora cuentan boletos ya escaneados (antes "Cortesías" contaba todas las cortesías asignadas, se hubieran usado o no).
+- **2026-09-02** — **Rediseño ejecutivo de los 6 paneles**: los dashboards de Super Administrador, Organización, Taquilla, Validador, Broker y Promotor se rediseñaron para dar más información de un vistazo, con tarjetas de KPI, gráficas y tablas más claras y consistentes entre sí.
 - **2026-08-27** — Se agregó la cuenta de demostración de **Promotor** (`promotor@demo.com`), con una meta y una comisión de ejemplo ya configuradas en "Organización Demo".
 - **2026-08-26** — **Nuevo rol: Promotor**: una cuenta más para vender boletos, igual que Taquilla, pero cuyas ventas quedan atribuidas a esa persona. La organización (o el Super Administrador) invita promotores desde una nueva sección "Promotores" en su panel, donde también configura — por promotor — su meta de boletos por periodo (fechas y cantidad, sin un periodo fijo del sistema) y, opcionalmente, un % de comisión sobre sus propias ventas. El promotor ve su propio progreso (meta vs. acumulado, y comisión ganada si aplica) arriba de su pantalla de venta, que funciona igual que la de Taquilla.
 - **2026-08-26** — **Interfaz de Validador en negro**: la pantalla de escaneo de boletos usaba un tema claro; ahora usa la misma paleta negro/dorado/verde que el resto del sistema.

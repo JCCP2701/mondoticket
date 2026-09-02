@@ -45,6 +45,11 @@ interface AuthContextType extends AuthState {
   mfaQrCode: string | null;
   activeOrganizationId: string | null;
   setActiveOrganizationId: (id: string) => void;
+  // True only until the initial session-restore effect finishes (session
+  // fetch + profile load). ProtectedRoute must wait for this before deciding
+  // to redirect to /login — otherwise every page refresh briefly sees
+  // user=null and bounces an already-logged-in user out.
+  authLoading: boolean;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -100,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mfaQrCode, setMfaQrCode] = useState<string | null>(null);
   const [isFirstMFASetup, setIsFirstMFASetup] = useState(false);
   const [activeOrganizationId, setActiveOrganizationId] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const applyActiveOrg = (profile: AuthUser) => {
     setActiveOrganizationId((prev) =>
@@ -110,28 +116,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Restore session (e.g. after a page refresh) and re-sync MFA/aal status.
   useEffect(() => {
     const restore = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const session = sessionData.session;
-      if (!session) return;
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData.session;
+        if (!session) return;
 
-      const profile = await loadProfile(session.user.id);
-      if (!profile) return;
-      applyActiveOrg(profile);
+        const profile = await loadProfile(session.user.id);
+        if (!profile) return;
+        applyActiveOrg(profile);
 
-      if (!mfaRequired(profile)) {
-        setState({ user: profile, isAuthenticated: true, mfaVerified: true, pendingRole: profile.role });
-        return;
+        if (!mfaRequired(profile)) {
+          setState({ user: profile, isAuthenticated: true, mfaVerified: true, pendingRole: profile.role });
+          return;
+        }
+
+        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        const mfaVerified = aal?.currentLevel === 'aal2';
+
+        setState({
+          user: profile,
+          isAuthenticated: mfaVerified,
+          mfaVerified,
+          pendingRole: profile.role,
+        });
+      } finally {
+        setAuthLoading(false);
       }
-
-      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      const mfaVerified = aal?.currentLevel === 'aal2';
-
-      setState({
-        user: profile,
-        isAuthenticated: mfaVerified,
-        mfaVerified,
-        pendingRole: profile.role,
-      });
     };
     restore();
   }, []);
@@ -310,7 +320,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, login, logout, verifyMFA, register, requestGuestOtp, verifyGuestOtp, sendPasswordReset, updatePassword, checkLoginMethod, requestLoginOtp, verifyLoginOtp, isFirstMFASetup, mfaQrCode, activeOrganizationId, setActiveOrganizationId }}
+      value={{ ...state, login, logout, verifyMFA, register, requestGuestOtp, verifyGuestOtp, sendPasswordReset, updatePassword, checkLoginMethod, requestLoginOtp, verifyLoginOtp, isFirstMFASetup, mfaQrCode, activeOrganizationId, setActiveOrganizationId, authLoading }}
     >
       {children}
     </AuthContext.Provider>

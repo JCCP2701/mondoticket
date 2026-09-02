@@ -16,7 +16,13 @@ export interface Organization {
     paymentTerms: number;
     contractNotes?: string;
     maxEventsPerMonth?: number | null;
+    // courtesyTicketsPerEvent solo se usa cuando courtesyMode='fixed';
+    // courtesyPercentage solo cuando courtesyMode='percentage' (% del aforo
+    // de cada evento). null en la que esté activa según el modo = sin
+    // límite — nunca "cero". Cambiar de modo no borra el otro valor.
     courtesyTicketsPerEvent?: number | null;
+    courtesyMode: 'fixed' | 'percentage';
+    courtesyPercentage: number | null;
     taquillaFeePercentage?: number | null;
     // Minutes a pending online order keeps seats/inventory reserved before
     // being lazily released back to public sale. Never applies to courtesy
@@ -202,6 +208,8 @@ function mapOrganization(row: any): Organization {
         contractNotes: row.contract_notes ?? undefined,
         maxEventsPerMonth: row.max_events_per_month ?? null,
         courtesyTicketsPerEvent: row.courtesy_tickets_per_event ?? null,
+        courtesyMode: row.courtesy_mode ?? 'fixed',
+        courtesyPercentage: row.courtesy_percentage != null ? Number(row.courtesy_percentage) : null,
         taquillaFeePercentage: row.taquilla_fee_percentage != null ? Number(row.taquilla_fee_percentage) : null,
         reservationHoldMinutes: row.reservation_hold_minutes ?? 4320,
         status: row.status,
@@ -227,13 +235,13 @@ function mapEvent(row: any): EventRecord {
             price: Number(t.price),
             capacity: t.capacity,
             sold: t.sold,
-            hasSeatMap: (t.event_seats?.[0]?.count ?? 0) > 0,
+            hasSeatMap: t.has_seat_map,
         })),
         // True if ANY ticket type has a seat map — used only where a
         // per-event summary is useful (e.g. showing the "seat map" button).
         // Checkout/taquilla must branch per ticket type, not on this,
         // since a single event can mix seat-mapped and quantity-based types.
-        hasSeatMap: (row.event_ticket_types ?? []).some((t: any) => (t.event_seats?.[0]?.count ?? 0) > 0),
+        hasSeatMap: (row.event_ticket_types ?? []).some((t: any) => t.has_seat_map),
         imageUrl: row.image_url ?? null,
     };
 }
@@ -251,7 +259,76 @@ function mapSeat(row: any): SeatRecord {
     };
 }
 
-const EVENT_SELECT = 'id, organization_id, name, description, category, venue_id, event_date, status, image_url, venues(name), event_ticket_types(id, name, description, price, capacity, sold, event_seats(count))';
+const EVENT_SELECT = 'id, organization_id, name, description, category, venue_id, event_date, status, image_url, venues(name), event_ticket_types(id, name, description, price, capacity, sold, has_seat_map)';
+
+// ─── Sales time-series bucketing helpers (getOrganizationSalesDetail) ─────────
+// A bare `new Date('2026-08-30')` parses as UTC midnight per the ECMAScript
+// spec, not local midnight — for a Mexico-based org owner that silently drops
+// the first few hours of that calendar day from a "Desde"/"Hasta" filter.
+// Splitting the string and using the numeric Date constructor forces local
+// midnight, matching the calendar day the org owner actually picked.
+function localDayBoundaryIso(dateStr: string, offsetDays = 0): string {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d + offsetDays, 0, 0, 0, 0).toISOString();
+}
+function dayKey(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function dayLabel(d: Date): string {
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }); // "24 ago"
+}
+function mondayOf(d: Date): Date {
+    const day = d.getDay(); // 0=domingo..6=sábado
+    const diff = (day === 0 ? -6 : 1) - day;
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff);
+}
+function weekLabel(monday: Date): string {
+    const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+    const sameMonth = monday.getMonth() === sunday.getMonth();
+    const start = monday.toLocaleDateString('es-MX', { day: 'numeric', month: sameMonth ? undefined : 'short' });
+    const end = sunday.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+    return `${start}-${end}`; // "24-30 ago"
+}
+function monthKey(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function monthLabel(d: Date): string {
+    // Siempre incluye el año — un rango "Todo" puede cruzar años, y "ago" solo
+    // confundiría agosto 2025 con agosto 2026.
+    return d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' }); // "ago 26"
+}
+
+type SalesGranularity = 'day' | 'week' | 'month';
+interface BucketBreakdown { online: number; taquillaDirecto: number; promotor: number; cortesia: number; }
+interface SalesBucket { key: string; bucketLabel: string; bucketStart: string; ticketsSold: number; revenue: number; breakdown: BucketBreakdown; }
+
+export interface OrganizationSalesDetail {
+    // breakdown por bucket: mismas 4 categorías que el total (ver abajo),
+    // para poder graficar barras apiladas por canal en el tiempo — sin esto
+    // la gráfica de "Ventas en el periodo" no puede distinguir taquilla
+    // directo de promotor dentro de un mismo periodo.
+    series: { bucketLabel: string; bucketStart: string; ticketsSold: number; revenue: number; breakdown: BucketBreakdown }[];
+    totalTicketsSold: number;
+    totalRevenue: number;
+    revenueOnline: number;
+    revenueTaquilla: number;
+    peak: { bucketLabel: string; ticketsSold: number } | null;
+    // Mutuamente excluyente, precedencia cortesía > online > promotor >
+    // taquillaDirecto (ver clasificación en getOrganizationSalesDetail).
+    // cortesia no lleva revenue: por definición price===0, siempre sería 0.
+    breakdown: {
+        online: { count: number; revenue: number };
+        taquillaDirecto: { count: number; revenue: number };
+        promotor: { count: number; revenue: number };
+        cortesia: { count: number };
+    };
+    // Revenue de canal "promotor" desglosado por profile_id individual (no
+    // solo el agregado de breakdown.promotor) — necesario porque cada
+    // promotor puede tener un % de comisión distinto (promoter_terms), así
+    // que calcular la comisión total requiere revenue por promotor, no un
+    // solo número combinado.
+    promoterRevenueById: Record<string, number>;
+}
 
 // ─── Data Service ─────────────────────────────────────────────────────────────
 export const dataService = {
@@ -322,6 +399,8 @@ export const dataService = {
         contractNotes?: string;
         maxEventsPerMonth?: number | null;
         courtesyTicketsPerEvent?: number | null;
+        courtesyMode: 'fixed' | 'percentage';
+        courtesyPercentage?: number | null;
         taquillaFeePercentage?: number | null;
         reservationHoldMinutes: number;
     }): Promise<void> {
@@ -333,6 +412,8 @@ export const dataService = {
                 contract_notes: input.contractNotes ?? null,
                 max_events_per_month: input.maxEventsPerMonth ?? null,
                 courtesy_tickets_per_event: input.courtesyTicketsPerEvent ?? null,
+                courtesy_mode: input.courtesyMode,
+                courtesy_percentage: input.courtesyPercentage ?? null,
                 taquilla_fee_percentage: input.taquillaFeePercentage ?? null,
                 reservation_hold_minutes: input.reservationHoldMinutes,
             })
@@ -373,7 +454,7 @@ export const dataService = {
         date: string;
         instructions?: string;
         imageUrl?: string | null;
-        ticketTypes: { name: string; description?: string; price: number; capacity: number }[];
+        ticketTypes: { name: string; description?: string; price: number; capacity: number; hasSeatMap: boolean }[];
     }): Promise<EventRecord> {
         const { data: venue, error: venueError } = await supabase
             .from('venues')
@@ -405,6 +486,7 @@ export const dataService = {
                 description: t.description ?? null,
                 price: t.price,
                 capacity: t.capacity,
+                has_seat_map: t.hasSeatMap,
                 sort_order: i,
             }))
         );
@@ -413,6 +495,55 @@ export const dataService = {
         const created = await dataService.getEventById(event.id);
         if (!created) throw new Error('Failed to load created event');
         return created;
+    },
+
+    // Agregar un tipo de boleto a un evento YA EXISTENTE — antes de esto
+    // event_ticket_types solo se insertaba una vez, en createEvent(), lo que
+    // hacía imposible crear después un tipo de cortesía ($0) sin rehacer el
+    // evento. RLS ya lo permite (0018_org_membership_rls.sql: la policy de
+    // INSERT no distingue eventos nuevos de existentes, solo verifica que el
+    // caller administre la organización).
+    async createEventTicketType(input: {
+        eventId: string;
+        name: string;
+        description?: string;
+        price: number;
+        capacity: number;
+        hasSeatMap: boolean;
+    }): Promise<void> {
+        const { count } = await supabase
+            .from('event_ticket_types')
+            .select('*', { count: 'exact', head: true })
+            .eq('event_id', input.eventId);
+        const { error } = await supabase.from('event_ticket_types').insert({
+            event_id: input.eventId,
+            name: input.name,
+            description: input.description ?? null,
+            price: input.price,
+            capacity: input.capacity,
+            has_seat_map: input.hasSeatMap,
+            sort_order: count ?? 0,
+        });
+        if (error) throw error;
+    },
+
+    // Edición post-creación (nombre/precio/capacidad). has_seat_map
+    // deliberadamente no es editable aquí — un tipo con asientos ya
+    // vendidos no puede "perderlos" de forma segura sin una migración de
+    // datos aparte, fuera de alcance por ahora.
+    async updateEventTicketType(id: string, input: {
+        name?: string;
+        description?: string;
+        price?: number;
+        capacity?: number;
+    }): Promise<void> {
+        const patch: Record<string, unknown> = {};
+        if (input.name !== undefined) patch.name = input.name;
+        if (input.description !== undefined) patch.description = input.description;
+        if (input.price !== undefined) patch.price = input.price;
+        if (input.capacity !== undefined) patch.capacity = input.capacity;
+        const { error } = await supabase.from('event_ticket_types').update(patch).eq('id', id);
+        if (error) throw error;
     },
 
     // Uploads a real event cover image to the public 'event-images' storage
@@ -553,6 +684,140 @@ export const dataService = {
             if (bucket) bucket.revenue += Number(row.subtotal ?? 0);
         }
         return buckets.map((b) => ({ month: b.label, revenue: b.revenue }));
+    },
+
+    // Single source of truth for "how many tickets / how much revenue, over
+    // what time" on the organization dashboard — replaces the two previously
+    // disconnected sources (event_ticket_types.sold for the count,
+    // getFinanceSummaryByOrganization for the revenue) with one query that
+    // can also be scoped to one event and/or a date range. Anchored on
+    // `orders` (not `tickets`) so every filter is a plain top-level column
+    // filter, matching every other query in this file — the nested
+    // tickets(...) embed is fetched unfiltered and reduced in JS excluding
+    // cancelled tickets, exactly like getFinanceSummaryByOrganization already
+    // does, so a partial refund is reflected correctly even though
+    // orders.subtotal is never decremented by refund_tickets().
+    async getOrganizationSalesDetail(
+        organizationId: string,
+        filters?: { eventId?: string; dateFrom?: string; dateTo?: string }
+    ): Promise<OrganizationSalesDetail> {
+        let query = supabase
+            .from('orders')
+            .select('paid_at, event_id, sales_channel, sold_by, profiles!sold_by(role), tickets(status, event_ticket_types(price))')
+            .eq('organization_id', organizationId)
+            .in('status', ['paid', 'refunded'])
+            .not('paid_at', 'is', null);
+
+        if (filters?.eventId) query = query.eq('event_id', filters.eventId);
+        if (filters?.dateFrom) query = query.gte('paid_at', localDayBoundaryIso(filters.dateFrom));
+        if (filters?.dateTo) query = query.lt('paid_at', localDayBoundaryIso(filters.dateTo, 1)); // exclusivo: antes del día siguiente
+
+        const { data, error } = await query;
+        if (error) throw error;
+        const rows = (data ?? []) as any[];
+
+        const now = new Date();
+        let end: Date;
+        if (filters?.dateTo) {
+            const [y, m, d] = filters.dateTo.split('-').map(Number);
+            end = new Date(y, m - 1, d);
+        } else {
+            end = now;
+        }
+        let start: Date;
+        if (filters?.dateFrom) {
+            const [y, m, d] = filters.dateFrom.split('-').map(Number);
+            start = new Date(y, m - 1, d);
+        } else if (rows.length > 0) {
+            start = new Date(Math.min(...rows.map((r) => new Date(r.paid_at).getTime())));
+        } else {
+            start = end; // organización/evento sin ventas todavía — un bucket vacío, sin tronar
+        }
+
+        const spanDays = Math.max(0, (end.getTime() - start.getTime()) / 86400000);
+        const granularity: SalesGranularity = spanDays <= 31 ? 'day' : spanDays <= 180 ? 'week' : 'month';
+
+        const buckets: SalesBucket[] = [];
+        if (granularity === 'day') {
+            let cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            const last = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+            while (cur <= last) {
+                buckets.push({ key: dayKey(cur), bucketLabel: dayLabel(cur), bucketStart: cur.toISOString(), ticketsSold: 0, revenue: 0, breakdown: { online: 0, taquillaDirecto: 0, promotor: 0, cortesia: 0 } });
+                cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 1);
+            }
+        } else if (granularity === 'week') {
+            let cur = mondayOf(start);
+            const last = mondayOf(end);
+            while (cur <= last) {
+                buckets.push({ key: dayKey(cur), bucketLabel: weekLabel(cur), bucketStart: cur.toISOString(), ticketsSold: 0, revenue: 0, breakdown: { online: 0, taquillaDirecto: 0, promotor: 0, cortesia: 0 } });
+                cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
+            }
+        } else {
+            let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+            const last = new Date(end.getFullYear(), end.getMonth(), 1);
+            while (cur <= last) {
+                buckets.push({ key: monthKey(cur), bucketLabel: monthLabel(cur), bucketStart: cur.toISOString(), ticketsSold: 0, revenue: 0, breakdown: { online: 0, taquillaDirecto: 0, promotor: 0, cortesia: 0 } });
+                cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+            }
+        }
+        const byKey = new Map(buckets.map((b) => [b.key, b]));
+
+        let totalTicketsSold = 0, totalRevenue = 0, revenueOnline = 0, revenueTaquilla = 0;
+        const breakdown: OrganizationSalesDetail['breakdown'] = {
+            online: { count: 0, revenue: 0 },
+            taquillaDirecto: { count: 0, revenue: 0 },
+            promotor: { count: 0, revenue: 0 },
+            cortesia: { count: 0 },
+        };
+        const promoterRevenueById: Record<string, number> = {};
+        for (const order of rows) {
+            const paidAt = new Date(order.paid_at);
+            const key = granularity === 'day' ? dayKey(paidAt) : granularity === 'week' ? dayKey(mondayOf(paidAt)) : monthKey(paidAt);
+            const bucket = byKey.get(key);
+            // role del vendedor solo existe si sold_by no es null Y RLS
+            // permitió leer ese profile (migración 0039). Si el vendedor ya
+            // no es miembro de ninguna org que el caller administre, el
+            // embed vuelve null a propósito — la venta sigue contando, solo
+            // cae en taquillaDirecto por el fallback de abajo.
+            const sellerRole = (order as any).profiles?.role ?? null;
+            for (const ticket of order.tickets ?? []) {
+                if (ticket.status === 'cancelled') continue;
+                const price = Number(ticket.event_ticket_types?.price ?? 0);
+                totalTicketsSold += 1;
+                totalRevenue += price;
+                if (order.sales_channel === 'taquilla') revenueTaquilla += price; else revenueOnline += price;
+                if (bucket) { bucket.ticketsSold += 1; bucket.revenue += price; }
+
+                if (price === 0) {
+                    breakdown.cortesia.count += 1;
+                    if (bucket) bucket.breakdown.cortesia += 1;
+                } else if (order.sales_channel === 'online') {
+                    breakdown.online.count += 1;
+                    breakdown.online.revenue += price;
+                    if (bucket) bucket.breakdown.online += 1;
+                } else if (sellerRole === 'promotor') {
+                    breakdown.promotor.count += 1;
+                    breakdown.promotor.revenue += price;
+                    if (bucket) bucket.breakdown.promotor += 1;
+                    const sellerId = (order as any).sold_by as string;
+                    promoterRevenueById[sellerId] = (promoterRevenueById[sellerId] ?? 0) + price;
+                } else {
+                    breakdown.taquillaDirecto.count += 1;
+                    breakdown.taquillaDirecto.revenue += price;
+                    if (bucket) bucket.breakdown.taquillaDirecto += 1;
+                }
+            }
+        }
+
+        const peakBucket = buckets.reduce<SalesBucket | null>(
+            (max, b) => (b.ticketsSold > 0 && (!max || b.ticketsSold > max.ticketsSold) ? b : max), null
+        );
+
+        return {
+            series: buckets.map((b) => ({ bucketLabel: b.bucketLabel, bucketStart: b.bucketStart, ticketsSold: b.ticketsSold, revenue: b.revenue, breakdown: b.breakdown })),
+            totalTicketsSold, totalRevenue, revenueOnline, revenueTaquilla, breakdown, promoterRevenueById,
+            peak: peakBucket ? { bucketLabel: peakBucket.bucketLabel, ticketsSold: peakBucket.ticketsSold } : null,
+        };
     },
 
     // Seat map

@@ -4,6 +4,22 @@ import { dataService, Organization } from "../../services/dataService";
 import { useAuth } from "../../context/AuthContext";
 import { generateContractPdf } from "../../lib/pdf";
 
+function courtesyResolved(org: Organization): { value: string; caption: string } {
+    if (org.courtesyMode === 'percentage') {
+        if (org.courtesyPercentage == null) {
+            return { value: "Sin límite", caption: "Modo porcentaje sin valor configurado" };
+        }
+        return {
+            value: `${org.courtesyPercentage}%`,
+            caption: "Del aforo de cada evento (varía según la capacidad de cada uno — ve el detalle exacto en tu Panel de Control)",
+        };
+    }
+    return {
+        value: org.courtesyTicketsPerEvent != null ? String(org.courtesyTicketsPerEvent) : "Sin límite",
+        caption: "Boletos gratuitos permitidos por evento",
+    };
+}
+
 function formatHoldDuration(minutes: number): string {
     if (minutes % 1440 === 0) {
         const days = minutes / 1440;
@@ -29,6 +45,8 @@ export default function OrganizationContract() {
 
     if (!org) return <div>Cargando contrato...</div>;
 
+    const courtesy = courtesyResolved(org);
+
     const handleDownloadPdf = () => {
         generateContractPdf({
             orgName: org.name,
@@ -42,7 +60,8 @@ export default function OrganizationContract() {
             taquillaFeeLabel: `${org.taquillaFeePercentage ?? org.feePercentage}%`,
             taquillaFeeHint: org.taquillaFeePercentage != null ? "Fee específico para ventas en taquilla" : "Usa el mismo fee que la venta digital",
             maxEventsPerMonthLabel: org.maxEventsPerMonth != null ? String(org.maxEventsPerMonth) : "Sin límite",
-            courtesyTicketsLabel: org.courtesyTicketsPerEvent != null ? String(org.courtesyTicketsPerEvent) : "Sin límite",
+            courtesyTicketsLabel: courtesy.value,
+            courtesyTicketsHint: courtesy.caption,
             holdDurationLabel: formatHoldDuration(org.reservationHoldMinutes),
         });
     };
@@ -130,8 +149,8 @@ export default function OrganizationContract() {
                         </div>
                         <span className="text-sm font-bold text-muted-foreground">Cortesías por Evento</span>
                     </div>
-                    <span className="text-3xl font-bold">{org.courtesyTicketsPerEvent ?? "Sin límite"}</span>
-                    <p className="text-xs text-muted-foreground mt-2">Boletos gratuitos permitidos por evento</p>
+                    <span className="text-3xl font-bold">{courtesy.value}</span>
+                    <p className="text-xs text-muted-foreground mt-2">{courtesy.caption}</p>
                 </div>
             </div>
 

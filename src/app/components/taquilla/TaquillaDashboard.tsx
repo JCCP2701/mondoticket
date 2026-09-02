@@ -1,8 +1,10 @@
-import { Ticket, LogOut, Minus, Plus, ShoppingCart, CheckCircle2 } from "lucide-react";
+import { Ticket, LogOut, Minus, Plus, ShoppingCart, CheckCircle2, TicketCheck, PieChart, DollarSign } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import SeatMapPicker from "../user/SeatMapPicker";
 import OrgSwitcher from "../shared/OrgSwitcher";
 import { useTicketSaleFlow } from "../../lib/useTicketSaleFlow";
+import { StatCard } from "../shared/dashboard/StatCard";
+import { StatCardGrid } from "../shared/dashboard/StatCardGrid";
 
 export default function TaquillaDashboard() {
   const { user, logout, activeOrganizationId } = useAuth();
@@ -35,6 +37,16 @@ export default function TaquillaDashboard() {
   } = useTicketSaleFlow(activeOrganizationId, 'taquilla');
 
   if (loading) return <div className="p-8 text-muted-foreground">Cargando...</div>;
+
+  // At-a-glance strip for the selected event — all from data already
+  // fetched (event.ticketTypes carries capacity/sold/price per type), no
+  // new query. Scoped to the event, not "today"/shift, since there's no
+  // date-filtered sales query yet.
+  const eventSold = event ? event.ticketTypes.reduce((s, t) => s + t.sold, 0) : 0;
+  const eventCapacity = event ? event.ticketTypes.reduce((s, t) => s + t.capacity, 0) : 0;
+  const eventAvailable = Math.max(0, eventCapacity - eventSold);
+  const eventOccupancyPct = eventCapacity > 0 ? (eventSold / eventCapacity) * 100 : 0;
+  const eventRevenue = event ? event.ticketTypes.reduce((s, t) => s + t.sold * t.price, 0) : 0;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -77,6 +89,19 @@ export default function TaquillaDashboard() {
         </div>
 
         {event && (
+          <>
+          <StatCardGrid columns={4}>
+            <StatCard label="Boletos vendidos" value={eventSold.toLocaleString()} icon={TicketCheck} />
+            <StatCard label="Disponibles" value={eventAvailable.toLocaleString()} icon={Ticket} />
+            <StatCard
+              label="% de aforo"
+              value={`${eventOccupancyPct.toFixed(0)}%`}
+              icon={PieChart}
+              status={eventOccupancyPct >= 90 ? "good" : "neutral"}
+              statusLabel={eventOccupancyPct >= 90 ? "Casi agotado" : undefined}
+            />
+            <StatCard label="Ingresos del evento" value={`$${eventRevenue.toLocaleString()}`} icon={DollarSign} />
+          </StatCardGrid>
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               {event.imageUrl && (
@@ -185,6 +210,7 @@ export default function TaquillaDashboard() {
               </button>
             </div>
           </div>
+          </>
         )}
       </main>
     </div>

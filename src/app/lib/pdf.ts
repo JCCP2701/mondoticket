@@ -6,6 +6,20 @@ const GREEN: [number, number, number] = [50, 128, 34];
 const INK: [number, number, number] = [19, 18, 15];
 const MUTED: [number, number, number] = [120, 116, 105];
 const BORDER: [number, number, number] = [225, 219, 200];
+// Mismos tokens --chart-3/--chart-4/--chart-neutral (light) que usa el
+// dashboard para "Por promotor"/"Cortesías"/"Disponibles" — para que un
+// canal sea el mismo color en pantalla y en el PDF.
+const CHART_RED: [number, number, number] = [225, 29, 72];
+const CHART_BLUE: [number, number, number] = [59, 110, 165];
+
+// online/taquillaDirecto reusan GOLD/GREEN (ya definidos arriba, son
+// exactamente --chart-1/--chart-2) — evita declarar el mismo color dos veces.
+const CHANNEL_COLORS = {
+    online: GOLD,
+    taquillaDirecto: GREEN,
+    promotor: CHART_RED,
+    cortesia: CHART_BLUE,
+} as const;
 
 const MARGIN = 16;
 
@@ -124,6 +138,53 @@ function drawKeyValueList(doc: jsPDF, y: number, rows: { label: string; value: s
     return cursorY;
 }
 
+// Réplica impresa de la lista de barras de "Inventario en Tiempo Real"
+// (OrganizationDashboard.tsx): swatch + label + valor exacto + % + una
+// barra horizontal — nunca color solo, el número siempre está impreso.
+function drawBarList(
+    doc: jsPDF,
+    y: number,
+    rows: { label: string; value: string; pct: number; colorKey: keyof typeof CHANNEL_COLORS }[],
+): number {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const contentWidth = pageWidth - MARGIN * 2;
+    const barHeight = 2.4;
+    let cursorY = y;
+
+    rows.forEach((row) => {
+        const color = CHANNEL_COLORS[row.colorKey];
+
+        doc.setFillColor(...color);
+        doc.roundedRect(MARGIN, cursorY - 3, 3, 3, 0.6, 0.6, "F");
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9.5);
+        doc.setTextColor(...INK);
+        doc.text(row.label, MARGIN + 5.5, cursorY);
+
+        doc.text(row.value, pageWidth - MARGIN - 14, cursorY, { align: "right" });
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(...MUTED);
+        doc.text(`${row.pct}%`, pageWidth - MARGIN, cursorY, { align: "right" });
+
+        const trackY = cursorY + 2.4;
+        doc.setFillColor(...BORDER);
+        doc.roundedRect(MARGIN, trackY, contentWidth, barHeight, barHeight / 2, barHeight / 2, "F");
+
+        const fillWidth = Math.max(0, Math.min(contentWidth, (contentWidth * row.pct) / 100));
+        if (fillWidth > 1) {
+            doc.setFillColor(...color);
+            doc.roundedRect(MARGIN, trackY, fillWidth, barHeight, barHeight / 2, barHeight / 2, "F");
+        }
+
+        cursorY += 11.5;
+    });
+
+    return cursorY + 2;
+}
+
 export interface ContractPdfData {
     orgName: string;
     legalName: string;
@@ -137,6 +198,7 @@ export interface ContractPdfData {
     taquillaFeeHint: string;
     maxEventsPerMonthLabel: string;
     courtesyTicketsLabel: string;
+    courtesyTicketsHint: string;
     holdDurationLabel: string;
 }
 
@@ -161,7 +223,7 @@ export function generateContractPdf(data: ContractPdfData) {
         { label: "Plazo de pago", value: `${data.paymentTerms} días`, hint: "Días naturales posteriores al evento" },
         { label: "Fee en taquilla", value: data.taquillaFeeLabel, hint: data.taquillaFeeHint },
         { label: "Eventos por mes", value: data.maxEventsPerMonthLabel, hint: "Máximo de eventos nuevos por mes calendario" },
-        { label: "Cortesías por evento", value: data.courtesyTicketsLabel, hint: "Boletos gratuitos permitidos por evento" },
+        { label: "Cortesías por evento", value: data.courtesyTicketsLabel, hint: data.courtesyTicketsHint },
         { label: "Tiempo de reserva", value: data.holdDurationLabel, hint: "Antes de liberar boletos no pagados. No aplica a cortesías ni taquilla" },
     ]);
 
@@ -182,39 +244,80 @@ export function generateContractPdf(data: ContractPdfData) {
 export interface LiquidationPdfData {
     orgName: string;
     periodLabel: string;
-    activeEvents: number;
+    eventScopeLabel: string;
+    totalCapacity: number;
     totalSold: number;
+    soldPct: number;
+    totalAvailable: number;
+    availablePct: number;
+    occupiedPct: number;
     totalRevenue: number;
     feePercentage: number;
     totalProfit: number;
+    promoterCommissionTotal: number;
+    netMargin: number;
+    channelBreakdown: { label: string; count: number; colorKey: keyof typeof CHANNEL_COLORS }[];
+    cortesiaReservedCount: number;
+    cortesiaReservedPct: number;
+    peakLabel: string | null;
 }
 
 export function generateLiquidationSummaryPdf(data: LiquidationPdfData) {
     const doc = new jsPDF({ unit: "mm", format: "letter" });
-    let y = drawHeader(doc, "Resumen de Liquidación", `${data.orgName} · ${data.periodLabel}`);
+    let y = drawHeader(doc, "Resumen de Liquidación", `${data.orgName} · ${data.periodLabel} · ${data.eventScopeLabel}`);
 
-    y = sectionLabel(doc, y, "Resultados generales");
+    // Las 4 cifras suman siempre data.totalCapacity — mostrar cortesía
+    // reservada aparte evita que "vendidos + disponibles" no cuadre con
+    // "boletos totales" cuando el contrato reserva cortesías sin usar.
+    y = sectionLabel(doc, y, "Resumen de boletos");
     y = drawFieldGrid(doc, y, [
-        { label: "Eventos activos", value: String(data.activeEvents) },
-        { label: "Boletos vendidos", value: data.totalSold.toLocaleString("es-MX") },
-        { label: "Revenue total generado", value: `$${data.totalRevenue.toLocaleString("es-MX")}` },
-        {
-            label: `Fee de plataforma (${data.feePercentage}%)`,
-            value: `$${data.totalProfit.toLocaleString("es-MX")}`,
-            hint: "Suma de fee digital y de taquilla, según tu convenio",
-        },
-    ]);
+        { label: "Boletos totales", value: data.totalCapacity.toLocaleString("es-MX"), hint: "Capacidad de tus eventos" },
+        { label: "Vendidos", value: data.totalSold.toLocaleString("es-MX"), hint: `${data.soldPct}% del total` },
+        { label: "Cortesía reservada", value: data.cortesiaReservedCount.toLocaleString("es-MX"), hint: `${data.cortesiaReservedPct}% del total` },
+        { label: "Disponibles", value: data.totalAvailable.toLocaleString("es-MX"), hint: `${data.availablePct}% del total` },
+    ], 4);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(...MUTED);
+    doc.text(`% de cupo usado (vendido + cortesía reservada): ${data.occupiedPct}%`, MARGIN, y);
+    y += 10;
 
-    y += 8;
+    y = sectionLabel(doc, y, "Resultados financieros");
+    y = drawFieldGrid(doc, y, [
+        { label: "Monto bruto", value: `$${data.totalRevenue.toLocaleString("es-MX")}`, hint: "Total generado en el periodo" },
+        { label: "Fee de plataforma", value: `$${data.totalProfit.toLocaleString("es-MX")}`, hint: `${data.feePercentage}% · según tu convenio` },
+        { label: "Comisión promotores", value: `$${data.promoterCommissionTotal.toLocaleString("es-MX")}`, hint: "Según convenio de cada promotor" },
+        { label: "Margen neto", value: `$${data.netMargin.toLocaleString("es-MX")}`, hint: "Bruto - fee - comisión" },
+    ], 2);
+
+    y += 6;
+    y = sectionLabel(doc, y, "Ventas por canal en el periodo");
+    const channelTotal = data.channelBreakdown.reduce((s, r) => s + r.count, 0);
+    y = drawBarList(doc, y, data.channelBreakdown.map((row) => ({
+        label: row.label,
+        value: row.count.toLocaleString("es-MX"),
+        pct: channelTotal > 0 ? Math.round((row.count / channelTotal) * 100) : 0,
+        colorKey: row.colorKey,
+    })));
+
+    if (data.peakLabel) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(...MUTED);
+        doc.text(`Pico de ventas: ${data.peakLabel}`, MARGIN, y);
+        y += 6;
+    }
+
+    y += 2;
     doc.setFillColor(250, 249, 246);
     doc.setDrawColor(...BORDER);
-    doc.roundedRect(MARGIN, y, doc.internal.pageSize.getWidth() - MARGIN * 2, 18, 2, 2, "FD");
+    doc.roundedRect(MARGIN, y, doc.internal.pageSize.getWidth() - MARGIN * 2, 14, 2, 2, "FD");
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setTextColor(...INK);
     const note = "La plataforma cobra por cada boleto emitido, sin importar si el cliente pagó con transferencia o efectivo.";
     const noteLines = doc.splitTextToSize(note, doc.internal.pageSize.getWidth() - MARGIN * 2 - 8);
-    doc.text(noteLines, MARGIN + 4, y + 7);
+    doc.text(noteLines, MARGIN + 4, y + 6);
 
     drawFooter(doc);
     doc.save(`Liquidacion-${data.orgName.replace(/\s+/g, "-")}.pdf`);

@@ -3,6 +3,7 @@ import { Building2, Search, Plus, Users, X, UserPlus, Mail, FileEdit, Pencil } f
 import { Link } from "react-router";
 import { dataService, Organization } from "../../services/dataService";
 import { AuthUser } from "../../context/AuthContext";
+import { cn } from "../ui/utils";
 
 export default function AdminOrganizations() {
     const [orgs, setOrgs] = useState<Organization[]>([]);
@@ -292,6 +293,8 @@ function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: 
     const [contractNotes, setContractNotes] = useState(org.contractNotes ?? "");
     const [maxEventsPerMonth, setMaxEventsPerMonth] = useState(org.maxEventsPerMonth != null ? String(org.maxEventsPerMonth) : "");
     const [courtesyTicketsPerEvent, setCourtesyTicketsPerEvent] = useState(org.courtesyTicketsPerEvent != null ? String(org.courtesyTicketsPerEvent) : "");
+    const [courtesyMode, setCourtesyMode] = useState<'fixed' | 'percentage'>(org.courtesyMode);
+    const [courtesyPercentage, setCourtesyPercentage] = useState(org.courtesyPercentage != null ? String(org.courtesyPercentage) : "");
     const [taquillaFeePercentage, setTaquillaFeePercentage] = useState(org.taquillaFeePercentage != null ? String(org.taquillaFeePercentage) : "");
     const initialHold = minutesToValueUnit(org.reservationHoldMinutes);
     const [holdValue, setHoldValue] = useState(initialHold.value);
@@ -309,6 +312,10 @@ function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: 
             setError("El tiempo de reserva debe ser entre 5 minutos y 90 días.");
             return;
         }
+        if (courtesyMode === 'percentage' && !courtesyPercentage.trim()) {
+            setError("Ingresa el porcentaje de cortesías o cambia a modo fijo.");
+            return;
+        }
 
         setSaving(true);
         try {
@@ -318,6 +325,8 @@ function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: 
                 contractNotes: contractNotes.trim() || undefined,
                 maxEventsPerMonth: maxEventsPerMonth.trim() ? parseInt(maxEventsPerMonth, 10) : null,
                 courtesyTicketsPerEvent: courtesyTicketsPerEvent.trim() ? parseInt(courtesyTicketsPerEvent, 10) : null,
+                courtesyMode,
+                courtesyPercentage: courtesyPercentage.trim() ? parseFloat(courtesyPercentage) : null,
                 taquillaFeePercentage: taquillaFeePercentage.trim() ? parseFloat(taquillaFeePercentage) : null,
                 reservationHoldMinutes,
             });
@@ -408,12 +417,37 @@ function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: 
                         </div>
                         <div>
                             <label className="text-sm font-bold text-muted-foreground mb-2 block">Cortesías por Evento</label>
-                            <input
-                                type="number" min="0"
-                                value={courtesyTicketsPerEvent} onChange={(e) => setCourtesyTicketsPerEvent(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
-                                placeholder="Sin límite"
-                            />
+                            <div className="flex gap-2 mb-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setCourtesyMode('fixed')}
+                                    className={cn("px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors", courtesyMode === 'fixed' ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground")}
+                                >
+                                    Fijo
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCourtesyMode('percentage')}
+                                    className={cn("px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors", courtesyMode === 'percentage' ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground")}
+                                >
+                                    Porcentaje
+                                </button>
+                            </div>
+                            {courtesyMode === 'fixed' ? (
+                                <input
+                                    type="number" min="0"
+                                    value={courtesyTicketsPerEvent} onChange={(e) => setCourtesyTicketsPerEvent(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                                    placeholder="Sin límite"
+                                />
+                            ) : (
+                                <input
+                                    type="number" min="0" max="100" step="0.5"
+                                    value={courtesyPercentage} onChange={(e) => setCourtesyPercentage(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                                    placeholder="% del aforo"
+                                />
+                            )}
                         </div>
                     </div>
                     <div>

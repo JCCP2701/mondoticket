@@ -1,9 +1,14 @@
 import { Link, useNavigate } from "react-router";
-import { ArrowLeft, DollarSign, AlertCircle, TrendingUp, Plus, Users, Ticket, FileText, Gift, RotateCcw } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { useState, useEffect } from "react";
+import { DollarSign, AlertCircle, Plus, Users, Ticket, FileText, Gift, RotateCcw, ArrowRight } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { useMemo, useState, useEffect } from "react";
 import { dataService, Organization, EventRecord } from "../../services/dataService";
 import { AuthUser } from "../../context/AuthContext";
+import { StatCard } from "../shared/dashboard/StatCard";
+import { StatCardGrid } from "../shared/dashboard/StatCardGrid";
+import { ChartCard } from "../shared/dashboard/ChartCard";
+import { DashboardTableCard } from "../shared/dashboard/DashboardTableCard";
+import { ChartTooltip, ChartTooltipContent, type ChartConfig } from "../ui/chart";
 
 export default function SuperAdminDashboard() {
   const navigate = useNavigate();
@@ -34,6 +39,27 @@ export default function SuperAdminDashboard() {
   const normalUserCount = users.filter((u) => u.role === 'user').length;
   const orgUserCount = users.filter((u) => u.role === 'organization').length;
 
+  // Ranked revenue-by-organization for "Distribución de Ventas" — same
+  // per-org revenue calculation the partners table already does per row,
+  // just aggregated once and sorted, top 5 + an "Otras" bucket for the rest.
+  const revenueByOrg = useMemo(() => {
+    const rows = organizations.map((org) => {
+      const orgEvents = events.filter((e) => e.organizationId === org.id);
+      const revenue = orgEvents.reduce((sum, e) => sum + e.ticketTypes.reduce((s, t) => s + t.sold * t.price, 0), 0);
+      return { name: org.name, revenue };
+    }).filter((r) => r.revenue > 0).sort((a, b) => b.revenue - a.revenue);
+
+    const top = rows.slice(0, 5);
+    const rest = rows.slice(5);
+    if (rest.length > 0) {
+      top.push({ name: "Otras", revenue: rest.reduce((s, r) => s + r.revenue, 0) });
+    }
+    return top;
+  }, [organizations, events]);
+
+  const revenueByOrgConfig: ChartConfig = { revenue: { label: "Ingreso", color: "var(--chart-2)" } };
+  const monthlyRevenueConfig: ChartConfig = { revenue: { label: "Recaudación", color: "var(--chart-1)" } };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       {/* Page Header */}
@@ -52,107 +78,74 @@ export default function SuperAdminDashboard() {
       </div>
 
       <main>
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-card p-6 rounded-xl border border-border">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <DollarSign className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Ganancia Estimada (Fees)</p>
-            <p className="text-3xl font-bold tracking-tight">
-              ${stats.totalProfit.toLocaleString()}
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              De ${stats.totalRevenue.toLocaleString()} en ventas
-            </p>
-          </div>
-
-          <div className="bg-card p-6 rounded-xl border border-border">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-success/10 rounded-lg">
-                <Ticket className="w-6 h-6 text-success" />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Boletos Vendidos</p>
-            <p className="text-3xl font-bold tracking-tight">
-              {stats.totalSold.toLocaleString()}
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              {(stats.totalCapacity ? (stats.totalSold / stats.totalCapacity) * 100 : 0).toFixed(1)}% de ocupación total
-            </p>
-          </div>
-
-          <div className="bg-card p-6 rounded-xl border border-border">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-amber-500/10 rounded-lg">
-                <AlertCircle className="w-6 h-6 text-amber-500" />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Boletos por Vender</p>
-            <p className="text-3xl font-bold tracking-tight text-amber-600">
-              {(stats.totalCapacity - stats.totalSold).toLocaleString()}
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              En {stats.eventCount} eventos activos
-            </p>
-          </div>
-
-          <div className="bg-card p-6 rounded-xl border border-border">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <Users className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Organizaciones</p>
-            <p className="text-3xl font-bold tracking-tight">{organizations.length}</p>
-            <p className="text-xs text-muted-foreground mt-2">
-              Control de partners activos
-            </p>
-          </div>
+        {/* Resumen ejecutivo */}
+        <div className="mb-8">
+          <StatCardGrid columns={4}>
+            <StatCard
+              label="Ganancia Estimada (Fees)"
+              value={`$${stats.totalProfit.toLocaleString()}`}
+              icon={DollarSign}
+              caption={`De $${stats.totalRevenue.toLocaleString()} en ventas`}
+            />
+            <StatCard
+              label="Boletos Vendidos"
+              value={stats.totalSold.toLocaleString()}
+              icon={Ticket}
+              status="good"
+              caption={`${(stats.totalCapacity ? (stats.totalSold / stats.totalCapacity) * 100 : 0).toFixed(1)}% de ocupación total`}
+            />
+            <StatCard
+              label="Boletos por Vender"
+              value={(stats.totalCapacity - stats.totalSold).toLocaleString()}
+              icon={AlertCircle}
+              status="warning"
+              caption={`En ${stats.eventCount} eventos activos`}
+            />
+            <StatCard
+              label="Organizaciones"
+              value={String(organizations.length)}
+              icon={Users}
+              caption="Control de partners activos"
+            />
+          </StatCardGrid>
         </div>
 
         {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-card p-6 rounded-xl border border-border">
-            <h3 className="font-semibold mb-6">Recaudación Mensual</h3>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
-                <XAxis dataKey="month" stroke="#737373" fontSize={12} />
-                <YAxis stroke="#737373" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #e5e5e5",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Bar dataKey="revenue" fill="#d4af37" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartCard title="Recaudación Mensual" subtitle="Últimos 6 meses" config={monthlyRevenueConfig} empty={revenueData.length === 0}>
+            <BarChart data={revenueData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+              <XAxis dataKey="month" className="fill-muted-foreground" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis className="fill-muted-foreground" fontSize={12} tickLine={false} axisLine={false} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ChartCard>
 
-          <div className="bg-card p-6 rounded-xl border border-border">
-            <h3 className="font-semibold mb-6">Distribución de Ventas</h3>
-            <div className="h-[240px] flex items-center justify-center text-muted-foreground italic">
-              Ventas por categoría y organización disponible próximamente
-            </div>
-          </div>
+          <ChartCard
+            title="Distribución de Ventas"
+            subtitle="Ingreso por organización"
+            config={revenueByOrgConfig}
+            empty={revenueByOrg.length === 0}
+            emptyMessage="Todavía no hay ventas registradas."
+          >
+            <BarChart data={revenueByOrg} layout="vertical" margin={{ left: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-border" />
+              <XAxis type="number" className="fill-muted-foreground" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis type="category" dataKey="name" className="fill-muted-foreground" fontSize={12} tickLine={false} axisLine={false} width={90} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ChartCard>
         </div>
 
         {/* Partners Table */}
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
-          <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-            <div>
-              <h3 className="font-semibold">Control de Organizaciones</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Boletos comprados, por vender y control de recaudación
-              </p>
-            </div>
-          </div>
-
+        <DashboardTableCard
+          title="Control de Organizaciones"
+          subtitle="Boletos comprados, por vender y control de recaudación"
+          isEmpty={organizations.length === 0}
+          emptyMessage="Todavía no hay organizaciones registradas."
+        >
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-secondary/50">
@@ -261,7 +254,7 @@ export default function SuperAdminDashboard() {
               </tbody>
             </table>
           </div>
-        </div>
+        </DashboardTableCard>
 
         {/* Additional Management Sections */}
         <div className="grid md:grid-cols-2 gap-6 mt-8">
@@ -285,29 +278,22 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
 
-          <div className="bg-card p-6 rounded-xl border border-border">
+          <Link
+            to="/admin/finances"
+            className="bg-card p-6 rounded-xl border border-border hover:border-primary/40 transition-colors flex flex-col"
+          >
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <FileText className="w-5 h-5 text-primary" />
               Contratos & Convenios
             </h3>
             <p className="text-sm text-muted-foreground mb-6">
-              Analiza detalladamente el dinero a entregar y nuestras ganancias.
+              Analiza a detalle, por organización y evento, lo recaudado en línea vs. en taquilla, y cuánto le corresponde a cada quién.
             </p>
-            <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
-              <div className="flex justify-between mb-2">
-                <span className="text-sm">Total Recaudado:</span>
-                <span className="font-bold">${stats.totalRevenue.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm text-primary">Ganancia TicketFlow:</span>
-                <span className="font-bold text-primary">${stats.totalProfit.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-primary/10">
-                <span className="text-sm font-medium">Total a Entregar:</span>
-                <span className="font-bold text-success">${(stats.totalRevenue - stats.totalProfit).toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
+            <span className="mt-auto inline-flex items-center gap-2 text-sm font-bold text-primary">
+              Ver detalle financiero completo
+              <ArrowRight className="w-4 h-4" />
+            </span>
+          </Link>
         </div>
       </main>
     </div>

@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Handshake, LogOut, Wallet, Calendar, Building2, ChevronDown, ChevronRight, Receipt } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { useAuth } from "../../context/AuthContext";
 import { dataService, BrokerTransaction } from "../../services/dataService";
+import { StatCard } from "../shared/dashboard/StatCard";
+import { StatCardGrid } from "../shared/dashboard/StatCardGrid";
+import { ChartCard } from "../shared/dashboard/ChartCard";
+import { DashboardTableCard } from "../shared/dashboard/DashboardTableCard";
+import { ChartTooltip, ChartTooltipContent, type ChartConfig } from "../ui/chart";
 
 const BASIS_LABEL: Record<BrokerTransaction['commissionBasis'], string> = {
     ticket_revenue: 'venta de boletos',
@@ -50,6 +56,68 @@ export default function BrokerDashboard() {
 
     const eventCount = useMemo(() => new Set(transactions.map((t) => t.eventId)).size, [transactions]);
 
+    // Historial de transacciones: una fila por EVENTO (sumando todas las
+    // órdenes que lo componen), no una fila por orden/boleto individual.
+    // commissionBasis/commissionPercentage son iguales para todas las
+    // transacciones de un mismo evento (vienen del contrato por
+    // organización, no cambian orden a orden), así que basta con tomar el
+    // primer valor visto.
+    const transactionsByEvent = useMemo(() => {
+        const map = new Map<string, {
+            eventId: string;
+            eventName: string;
+            eventDate: string;
+            organizationName: string;
+            commissionBasis: BrokerTransaction['commissionBasis'];
+            commissionPercentage: number;
+            totalCommission: number;
+            orderCount: number;
+            lastPaidAt: string;
+        }>();
+        for (const t of transactions) {
+            if (!map.has(t.eventId)) {
+                map.set(t.eventId, {
+                    eventId: t.eventId,
+                    eventName: t.eventName,
+                    eventDate: t.eventDate,
+                    organizationName: t.organizationName,
+                    commissionBasis: t.commissionBasis,
+                    commissionPercentage: t.commissionPercentage,
+                    totalCommission: 0,
+                    orderCount: 0,
+                    lastPaidAt: t.paidAt,
+                });
+            }
+            const e = map.get(t.eventId)!;
+            e.totalCommission += t.commissionAmount;
+            e.orderCount += 1;
+            if (t.paidAt > e.lastPaidAt) e.lastPaidAt = t.paidAt;
+        }
+        return Array.from(map.values()).sort((a, b) => b.lastPaidAt.localeCompare(a.lastPaidAt));
+    }, [transactions]);
+
+    // Monthly commission — the one genuinely new chart in this dashboard,
+    // grouping the already-loaded transactions by month (last 6, zero-filled),
+    // mirroring the shape of getMonthlyRevenueSeries used elsewhere.
+    const monthlyCommission = useMemo(() => {
+        const buckets: { month: string; key: string; commission: number }[] = [];
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            buckets.push({
+                month: d.toLocaleDateString('es-MX', { month: 'short' }),
+                key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+                commission: 0,
+            });
+        }
+        for (const t of transactions) {
+            const bucket = buckets.find((b) => b.key === t.paidAt.slice(0, 7));
+            if (bucket) bucket.commission += t.commissionAmount;
+        }
+        return buckets;
+    }, [transactions]);
+
+    const monthlyCommissionConfig: ChartConfig = { commission: { label: "Comisión", color: "var(--chart-1)" } };
+
     if (loading) return <div className="min-h-screen bg-background text-foreground p-8 text-muted-foreground">Cargando...</div>;
 
     return (
@@ -77,49 +145,35 @@ export default function BrokerDashboard() {
                     <p className="text-muted-foreground mt-1">Tu comisión ya calculada por organización y evento. No incluye el ingreso real de cada evento.</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-primary/10 rounded-lg"><Wallet className="w-6 h-6 text-primary" /></div>
-                            <p className="text-sm font-bold text-muted-foreground">Ganado en total</p>
-                        </div>
-                        <p className="text-3xl font-bold text-primary">{money(totalAllTime)}</p>
-                    </div>
-                    <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-success/10 rounded-lg"><Calendar className="w-6 h-6 text-success" /></div>
-                            <p className="text-sm font-bold text-muted-foreground">Este mes</p>
-                        </div>
-                        <p className="text-3xl font-bold text-foreground">{money(totalThisMonth)}</p>
-                    </div>
-                    <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-teal-100 rounded-lg"><Building2 className="w-6 h-6 text-teal-700" /></div>
-                            <p className="text-sm font-bold text-muted-foreground">Organizaciones</p>
-                        </div>
-                        <p className="text-3xl font-bold text-foreground">{byOrg.length}</p>
-                    </div>
-                    <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-amber-100 rounded-lg"><Receipt className="w-6 h-6 text-amber-700" /></div>
-                            <p className="text-sm font-bold text-muted-foreground">Eventos</p>
-                        </div>
-                        <p className="text-3xl font-bold text-foreground">{eventCount}</p>
-                    </div>
-                </div>
+                <StatCardGrid columns={4}>
+                    <StatCard label="Ganado en total" value={money(totalAllTime)} icon={Wallet} />
+                    <StatCard label="Este mes" value={money(totalThisMonth)} icon={Calendar} status="good" />
+                    <StatCard label="Organizaciones" value={String(byOrg.length)} icon={Building2} />
+                    <StatCard label="Eventos" value={String(eventCount)} icon={Receipt} />
+                </StatCardGrid>
 
-                <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
-                    <div className="p-6 border-b border-border bg-secondary/10">
-                        <h3 className="font-bold text-lg flex items-center gap-2">
-                            <Building2 className="w-5 h-5 text-primary" /> Ganancias por organización
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">Haz clic en una organización para ver el desglose por evento</p>
-                    </div>
+                <ChartCard
+                    title="Comisión mensual"
+                    subtitle="Últimos 6 meses"
+                    config={monthlyCommissionConfig}
+                    empty={monthlyCommission.every((b) => b.commission === 0)}
+                    emptyMessage="Todavía no hay comisiones en este periodo."
+                >
+                    <BarChart data={monthlyCommission}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+                        <XAxis dataKey="month" className="fill-muted-foreground" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis className="fill-muted-foreground" fontSize={12} tickLine={false} axisLine={false} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="commission" fill="var(--color-commission)" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                </ChartCard>
 
-                    {byOrg.length === 0 && (
-                        <p className="p-6 text-sm text-muted-foreground italic">Todavía no tienes organizaciones bajo contrato, o no han tenido ventas.</p>
-                    )}
-
+                <DashboardTableCard
+                    title="Ganancias por organización"
+                    subtitle="Haz clic en una organización para ver el desglose por evento"
+                    isEmpty={byOrg.length === 0}
+                    emptyMessage="Todavía no tienes organizaciones bajo contrato, o no han tenido ventas."
+                >
                     <div className="divide-y divide-border">
                         {byOrg.map((org) => {
                             const expanded = expandedOrgId === org.organizationId;
@@ -168,45 +222,42 @@ export default function BrokerDashboard() {
                             );
                         })}
                     </div>
-                </div>
+                </DashboardTableCard>
 
-                <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
-                    <div className="p-6 border-b border-border bg-secondary/10">
-                        <h3 className="font-bold text-lg flex items-center gap-2">
-                            <Receipt className="w-5 h-5 text-primary" /> Historial de transacciones
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">Cada compra pagada que generó ganancia para ti, más reciente primero</p>
-                    </div>
-
-                    {transactions.length === 0 ? (
-                        <p className="p-6 text-sm text-muted-foreground italic">Todavía no hay transacciones.</p>
-                    ) : (
-                        <div className="overflow-x-auto">
+                <DashboardTableCard
+                    title="Historial de transacciones"
+                    subtitle="Una fila por evento, sumando todas sus ventas — más reciente primero"
+                    isEmpty={transactionsByEvent.length === 0}
+                    emptyMessage="Todavía no hay transacciones."
+                >
+                    <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="bg-secondary/10">
-                                        <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Fecha</th>
                                         <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Evento</th>
                                         <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Organización</th>
                                         <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Base</th>
+                                        <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground text-right">Ventas</th>
                                         <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground text-right">Comisión</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
-                                    {transactions.map((t) => (
-                                        <tr key={t.orderId}>
-                                            <td className="px-6 py-3 text-sm text-muted-foreground">{new Date(t.paidAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                                            <td className="px-6 py-3 text-sm font-medium">{t.eventName}</td>
-                                            <td className="px-6 py-3 text-sm text-muted-foreground">{t.organizationName}</td>
-                                            <td className="px-6 py-3 text-xs text-muted-foreground">{t.commissionPercentage}% · {BASIS_LABEL[t.commissionBasis]}</td>
-                                            <td className="px-6 py-3 text-right text-sm font-bold text-primary">{money(t.commissionAmount)}</td>
+                                    {transactionsByEvent.map((e) => (
+                                        <tr key={e.eventId}>
+                                            <td className="px-6 py-3">
+                                                <p className="text-sm font-medium">{e.eventName}</p>
+                                                <p className="text-xs text-muted-foreground">{new Date(e.eventDate + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                                            </td>
+                                            <td className="px-6 py-3 text-sm text-muted-foreground">{e.organizationName}</td>
+                                            <td className="px-6 py-3 text-xs text-muted-foreground">{e.commissionPercentage}% · {BASIS_LABEL[e.commissionBasis]}</td>
+                                            <td className="px-6 py-3 text-right text-sm text-muted-foreground">{e.orderCount}</td>
+                                            <td className="px-6 py-3 text-right text-sm font-bold text-primary">{money(e.totalCommission)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
-                        </div>
-                    )}
-                </div>
+                    </div>
+                </DashboardTableCard>
             </main>
         </div>
     );

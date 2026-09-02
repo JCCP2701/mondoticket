@@ -334,7 +334,7 @@
             <li><strong>Plazo de Pago (días)</strong> — cuántos días tiene la organización para pagar el fee.</li>
             <li><strong>Tiempo de Reserva antes de Liberar Boletos</strong> — cuánto tiempo se mantiene apartado un boleto que un comprador seleccionó pero todavía no ha pagado (por ejemplo, si eligió pagar en efectivo o SPEI y ese pago tarda en confirmarse). Se configura en minutos, horas o días (de 5 minutos a 90 días; por defecto 72 horas). Si el tiempo se cumple sin que se confirme el pago, el boleto vuelve a estar disponible para que alguien más lo compre, en línea o en taquilla. <strong>No aplica a cortesías ni a ventas de taquilla</strong> — esas nunca quedan "pendientes de pago", se confirman al instante.</li>
             <li><strong>Eventos por Mes</strong> — opcional; límite de eventos nuevos que puede crear por mes calendario. Si se deja vacío, no hay límite.</li>
-            <li><strong>Cortesías por Evento</strong> — opcional; límite de boletos gratuitos que puede emitir por evento. Si se deja vacío, no hay límite.</li>
+            <li><strong>Cortesías por Evento</strong> — opcional; elige el modo: un <strong>número fijo</strong> de boletos gratuitos por evento, o un <strong>% del aforo</strong> de cada evento (se recalcula automáticamente según la capacidad de cada uno). Si se deja vacío, no hay límite. La organización nunca puede cambiar este número — solo lo ve, en "Mi Contrato" y en su Panel de Control.</li>
             <li><strong>Notas del Convenio</strong> — cualquier condición especial por escrito.</li>
           </ul>
         </li>
@@ -382,7 +382,14 @@
       <p>Menú lateral: <strong>Dashboard</strong>, <strong>Mis Eventos</strong>, <strong>Mi Contrato</strong>, <strong>Promotores</strong>, <strong>Configuración</strong>. Si tu cuenta pertenece a más de una organización, verás un selector arriba del menú para cambiar entre ellas.</p>
 
       <h3>Dashboard</h3>
-      <p>Resumen de tu organización: eventos activos, boletos vendidos, revenue total, cuánto fee le debes a la plataforma ("Fee a Liquidar"), y un gráfico de tu inventario disponible vs. vendido. El botón <strong>"Descargar Resumen"</strong> genera y descarga directamente un archivo PDF con estos datos (no depende del diálogo de impresión del navegador).</p>
+      <p>Arriba de todo puedes filtrar todo el panel por <strong>evento</strong> y por <strong>periodo</strong> (Todo / Este mes / Últimos 30 días / Personalizado) con un solo botón, junto a <strong>"Descargar Resumen"</strong> (genera un PDF con el mismo desglose que ves en pantalla) y <strong>"Crear Evento"</strong>.</p>
+      <p>Debajo verás:</p>
+      <ul>
+        <li><strong>Tarjetas de resumen</strong>: Boletos Totales (la capacidad de tus eventos), Boletos Vendidos (con el % que representa del total), Disponibles, y Monto Bruto — estas dos últimas ya respetan el evento/periodo que hayas filtrado.</li>
+        <li><strong>Resumen de Liquidación</strong>: Monto Bruto Generado, Fee de Plataforma, <strong>Comisión de Promotores</strong> (según el convenio de cada uno) y <strong>Margen Neto</strong> (lo que te queda después de restar el fee y las comisiones).</li>
+        <li><strong>Ventas en el periodo</strong>: gráfica de barras por canal (En línea / Taquilla directo / Por promotor / Cortesías), con el <strong>pico de ventas</strong> señalado como dato explícito debajo de la gráfica.</li>
+        <li><strong>Inventario en Tiempo Real</strong>: capacidad total, <strong>% de cupo usado</strong> (vendido + cortesía reservada, aunque todavía no se haya emitido el boleto), y el desglose exacto de cada categoría con su propia barra — este bloque siempre refleja el estado completo de tus eventos, sin importar el filtro de fecha.</li>
+      </ul>
 
       <h3>Mis Eventos</h3>
       <p>Lista de tus eventos con ocupación, estado de preventa, revenue, cortesías y reembolsos. Botón <strong>"Nuevo Evento"</strong> para crear uno, o <strong>"Detalles"</strong> para entrar a la gestión de uno existente.</p>
@@ -391,26 +398,34 @@
       <ol>
         <li>Completa nombre, categoría, descripción, sede, dirección, fecha y hora.</li>
         <li>Puedes subir una imagen real para el evento (se mostrará en el sitio y en el checkout).</li>
-        <li>Agrega uno o varios <strong>tipos de boleto</strong> (por ejemplo General, VIP) con su precio y aforo. Un tipo de boleto con precio $0 funciona como boleto de cortesía.</li>
+        <li>Agrega uno o varios <strong>tipos de boleto</strong> (por ejemplo General, VIP) con su precio y aforo, y elige si es de <strong>aforo general</strong> (solo un número de boletos disponibles, sin lugar asignado — pensado para eventos al aire libre o sin butacas) o <strong>con asientos asignados</strong> (se diseña la distribución exacta después, en el Mapa de Asientos).</li>
         <li>Da clic en <strong>"Publicar Evento"</strong>.</li>
       </ol>
       <div class="callout">Si tu organización tiene un límite de "Eventos por Mes" en su convenio y ya lo alcanzaste ese mes, el sistema no dejará crear uno nuevo hasta el siguiente mes.</div>
+      <div class="callout">Para las cortesías del contrato de tu organización ya no hace falta crear tú un tipo de boleto a $0 — se administran solas, ver <a href="#organizacion">Mapa de Asientos</a> más abajo.</div>
 
       <h4>Detalle de un evento</h4>
+      <p>Arriba verás: <strong>Boletos Totales</strong> (la capacidad configurada del evento, no solo lo ya vendido), <strong>Monto Bruto</strong>, <strong>Válidos</strong> (vendidos + cortesías, sin usar todavía), <strong>Check-in</strong> (boletos vendidos ya escaneados), <strong>Cortesías</strong> (cortesías ya escaneadas) y <strong>Reembolsados</strong>.</p>
       <p>Desde aquí puedes:</p>
       <ul>
         <li><strong>Editar Evento</strong>: cambiar nombre, categoría, descripción o la imagen del evento en cualquier momento.</li>
-        <li><strong>Mapa de Asientos</strong>: diseñar el mapa de asientos para los tipos de boleto que lo requieran (ver siguiente sección).</li>
-        <li><strong>Asignar Cortesía</strong>: dar un boleto gratuito a alguien (solo visible si el evento tiene algún tipo de boleto con precio $0).</li>
+        <li><strong>Mapa de Asientos</strong>: gestionar los tipos de boleto de este evento y diseñar la distribución para los que tengan asientos asignados (ver siguiente sección).</li>
+        <li><strong>Asignar Cortesía</strong>: dar un boleto gratuito a alguien (solo visible si el evento tiene algún tipo de boleto con precio $0, incluido el tipo "Cortesía" automático).</li>
         <li>Ver la lista de boletos vendidos, buscarlos, filtrarlos por estado (Válido / Usado / Reembolsado), y <strong>seleccionar boletos para reembolsar</strong>.</li>
       </ul>
       <div class="callout">Si tu convenio tiene un límite de "Cortesías por Evento" y ya lo alcanzaste, el sistema no dejará asignar más cortesías para ese evento.</div>
 
       <h4>Mapa de Asientos</h4>
-      <p>Diseña la distribución de asientos con las herramientas de Selector, Bloque y Borrador, elige a qué tipo de boleto pertenece cada asiento pintado, y da clic en <strong>"Guardar Mapa de Asientos"</strong>. Una vez que un tipo de boleto tiene asientos, los compradores eligen su asiento exacto en vez de solo la cantidad.</p>
+      <p>Aquí gestionas los tipos de boleto de este evento (incluso después de haberlo creado) y, para los que tengan asientos asignados, diseñas su distribución.</p>
+      <ul>
+        <li><strong>Agregar Tipo de Boleto</strong>: crea un tipo nuevo en cualquier momento — por ejemplo, si necesitas ampliar tu oferta con un precio distinto. Elige si es de aforo general o con asientos. Solo acepta precios mayores a $0 (para cortesías, ver el aviso de abajo).</li>
+        <li><strong>Boletos de Aforo General</strong>: cada tipo sin asientos aparece con su capacidad, que puedes editar cuando quieras (respetando lo que ya se haya vendido).</li>
+        <li><strong>Tipo de Boleto a Pintar</strong>: los tipos con asientos aparecen aquí como pincel — elige uno y pinta el grid con las herramientas de Selector, Bloque y Borrador. Da clic en <strong>"Guardar Mapa de Asientos"</strong> al terminar. Una vez que un tipo de boleto tiene asientos, los compradores eligen su asiento exacto en vez de solo la cantidad.</li>
+      </ul>
+      <div class="callout"><strong>Las cortesías del contrato se administran solas:</strong> en cuanto entras al Mapa de Asientos, MondoTicket crea (si todavía no existe) un tipo de boleto llamado "Cortesía" con precio $0 y la cantidad exacta que permite tu convenio (fijo o % de la capacidad del evento, según lo haya configurado el Super Administrador). Esa cantidad <strong>se resta de tus tipos pagados</strong>, nunca se suma aparte — así el total de boletos de tu evento no cambia. Si tu evento tiene asientos, puedes elegir "Cortesía" como pincel para marcar específicamente cuáles asientos regalas, sin poder pasarte del límite de tu contrato (el sistema avisa y detiene el pintado si llegas al tope). Si es de aforo general, la cantidad ya viene fija según tu convenio y no se puede aumentar desde aquí.</div>
 
       <h3>Mi Contrato</h3>
-      <p>Consulta (sin poder editar) tu convenio comercial vigente: fee digital, fee en taquilla, plazo de pago, <strong>tiempo de reserva antes de liberar boletos no pagados</strong>, límite de eventos por mes, límite de cortesías por evento, y los datos legales de tu organización. Solo el Super Administrador puede modificar estos valores. El botón <strong>"Descargar PDF"</strong> genera y descarga directamente un archivo PDF con estos datos (no depende del diálogo de impresión del navegador).</p>
+      <p>Consulta (sin poder editar) tu convenio comercial vigente: fee digital, fee en taquilla, plazo de pago, <strong>tiempo de reserva antes de liberar boletos no pagados</strong>, límite de eventos por mes, límite de cortesías por evento (fijo o como % del aforo de cada evento), y los datos legales de tu organización. Solo el Super Administrador puede modificar estos valores. El botón <strong>"Descargar PDF"</strong> genera y descarga directamente un archivo PDF con estos datos (no depende del diálogo de impresión del navegador).</p>
 
       <h3>Promotores</h3>
       <p>Aquí das de alta e integras a tus promotores:</p>
@@ -487,7 +502,7 @@
       <ul>
         <li><strong>Tarjetas de resumen</strong>: cuánto has ganado en total, cuánto este mes, con cuántas organizaciones tienes contrato, y en cuántos eventos.</li>
         <li><strong>Ganancias por organización</strong>: da clic en una organización para ver el desglose por evento.</li>
-        <li><strong>Historial de transacciones</strong>: cada compra pagada que generó ganancia para ti, con fecha, evento, organización, y tu comisión — ordenadas de la más reciente a la más antigua.</li>
+        <li><strong>Historial de transacciones</strong>: una fila por evento (sumando todas las ventas de ese evento), con la organización, tu base de comisión, cuántas ventas contribuyeron y tu comisión total — ordenado del evento con venta más reciente primero.</li>
       </ul>
       <div class="callout warn"><strong>Importante:</strong> en ningún lugar del panel se muestra el ingreso real del evento (lo que realmente se vendió), ni el detalle de compradores u órdenes — solo tu ganancia, ya calculada según tu contrato. Si tu contrato es "% de venta de boletos", tu ganancia sube y baja junto con las ventas reales del evento, pero el número que ves siempre es tu comisión, nunca la venta completa.</div>
       <p class="muted">Si un contrato se elimina o se ajusta, los cambios se reflejan de inmediato la próxima vez que entres — no hay que hacer nada de tu parte.</p>
@@ -586,6 +601,34 @@
     <section id="changelog">
       <h2>Historial de cambios</h2>
 
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-09-02</div>
+        <div class="changelog-body"><p><strong>Comisión de broker corregida y el historial ahora es por evento:</strong> la comisión que ve el broker ahora refleja correctamente el % configurado sobre el fee de la plataforma (no sobre el total vendido) cuando el contrato así lo especifica. El "Historial de transacciones" ahora muestra una fila por evento (sumando todas las ventas de ese evento y cuántas fueron), en vez de una fila por cada venta individual.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-09-02</div>
+        <div class="changelog-body"><p><strong>Diseñador de Asientos: aforo general y cortesía automática:</strong> al crear un tipo de boleto ahora eliges si es de <strong>aforo general</strong> (solo un número de boletos) o <strong>con asientos asignados</strong>. En el Mapa de Asientos ahora puedes agregar tipos de boleto nuevos en cualquier momento (antes solo se podía al crear el evento) y editar la capacidad de los tipos de aforo general. Las cortesías del contrato ahora se administran solas: MondoTicket crea automáticamente un tipo "Cortesía" con la cantidad exacta que permite tu convenio, restándola de tus tipos pagados (nunca se suma aparte, para que el total del evento no cambie) — si tu evento tiene asientos, puedes elegir específicamente cuáles regalas sin poder pasarte del límite de tu contrato.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-09-02</div>
+        <div class="changelog-body"><p><strong>Cortesías por contrato: fijas o por porcentaje, definidas solo por el Super Administrador:</strong> en el Convenio de cada organización, el límite de "Cortesías por Evento" ahora puede ser un número fijo o un % del aforo de cada evento (se recalcula según la capacidad de cada uno). La organización solo puede verlo (en "Mi Contrato" y en su Panel de Control), nunca cambiarlo.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-09-02</div>
+        <div class="changelog-body"><p><strong>Panel de Control de Organización, mucho más completo:</strong> ahora se puede filtrar todo el panel por evento y por periodo (Todo / Este mes / Últimos 30 días / Personalizado) desde un solo botón junto a "Crear Evento". Se agregaron tarjetas de Boletos Totales, Vendidos y Disponibles; la gráfica de ventas ahora se desglosa por canal (en línea, taquilla directo, por promotor, cortesías) y señala el pico de ventas como dato explícito; el "Resumen de Liquidación" ahora incluye Comisión de Promotores y Margen Neto, además del Monto Bruto y el Fee de Plataforma; y "Inventario en Tiempo Real" muestra el % de cupo usado (vendido + cortesía reservada) y el desglose exacto de cada categoría. El botón "Descargar Resumen" (PDF) se movió junto a "Crear Evento" y ahora incluye todo este detalle.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-09-02</div>
+        <div class="changelog-body"><p><strong>Corrección de sesión: recargar la página ya no cierra la sesión:</strong> había una condición de carrera donde, justo al recargar cualquier pantalla del sistema, se te sacaba a la pantalla de inicio de sesión por una fracción de segundo antes de que se terminara de restaurar tu sesión real. Ya no pasa.</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-09-02</div>
+        <div class="changelog-body"><p><strong>Corrección en el detalle de evento (Organización):</strong> "Boletos Totales" ahora muestra la capacidad configurada del evento (antes mostraba 0 en un evento sin ventas todavía, aunque sí tuviera boletos configurados). Se renombró "Revenue Total" a "Monto Bruto", y "Check-in"/"Cortesías" ahora cuentan boletos ya escaneados (antes "Cortesías" contaba todas las cortesías asignadas, se hubieran usado o no).</p></div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-date">2026-09-02</div>
+        <div class="changelog-body"><p><strong>Rediseño ejecutivo de los 6 paneles:</strong> los dashboards de Super Administrador, Organización, Taquilla, Validador, Broker y Promotor se rediseñaron para dar más información de un vistazo, con tarjetas de KPI, gráficas y tablas más claras y consistentes entre sí.</p></div>
+      </div>
       <div class="changelog-entry">
         <div class="changelog-date">2026-08-27</div>
         <div class="changelog-body"><p>Se agregó la cuenta de demostración de <strong>Promotor</strong> (<code>promotor@demo.com</code>), con una meta y una comisión de ejemplo ya configuradas en "Organización Demo".</p></div>

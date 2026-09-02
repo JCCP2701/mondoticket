@@ -120,11 +120,19 @@ export default function EventDetail() {
   const freeTicketTypes = (event?.ticketTypes ?? []).filter((t) => t.price === 0);
 
   const stats = {
-    total: tickets.length,
+    // Capacidad total del evento (todos los tipos de boleto, cortesía
+    // incluida) — no cuántos boletos ya se emitieron, que era lo que
+    // mostraba antes y por eso siempre arrancaba en 0 en un evento nuevo.
+    total: (event?.ticketTypes ?? []).reduce((s, t) => s + t.capacity, 0),
+    // Válido = vigente sin usar, sin importar si fue vendido o cortesía
+    // (tickets.status='valid' no distingue precio).
     valid: tickets.filter((t) => t.status === 'valid').length,
-    checkedIn: tickets.filter((t) => t.status === 'used').length,
+    // Check-in = vendidos YA escaneados (precio > 0); Cortesías = cortesías
+    // YA escaneadas (precio = 0) — antes "Cortesías" contaba TODAS las
+    // cortesías asignadas sin importar si ya se usaron.
+    checkedIn: tickets.filter((t) => t.status === 'used' && t.unitPrice > 0).length,
     refunded: tickets.filter((t) => t.status === 'cancelled').length,
-    courtesy: tickets.filter((t) => t.unitPrice === 0).length,
+    courtesy: tickets.filter((t) => t.status === 'used' && t.unitPrice === 0).length,
     revenue: tickets.filter((t) => t.status !== 'cancelled').reduce((sum, t) => sum + t.unitPrice, 0),
   };
 
@@ -249,26 +257,30 @@ export default function EventDetail() {
           <div className="p-3 bg-primary/5 rounded-xl mb-4"><TicketIcon className="w-6 h-6 text-primary" /></div>
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Boletos Totales</p>
           <p className="text-3xl font-black mt-1">{stats.total}</p>
+          <p className="text-xs text-muted-foreground mt-1">capacidad de este evento</p>
         </div>
         <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
           <div className="p-3 bg-primary/5 rounded-xl mb-4"><TrendingUp className="w-6 h-6 text-primary" /></div>
-          <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Revenue Total</p>
+          <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Monto Bruto</p>
           <p className="text-3xl font-black mt-1 text-primary">${stats.revenue.toLocaleString()}</p>
         </div>
         <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
           <div className="p-3 bg-success/10 rounded-xl mb-4"><CheckCircle2 className="w-6 h-6 text-success" /></div>
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Válidos</p>
           <p className="text-3xl font-black mt-1 text-success">{stats.valid}</p>
+          <p className="text-xs text-muted-foreground mt-1">vendidos + cortesías, sin usar</p>
         </div>
         <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
           <div className="p-3 bg-blue-500/5 rounded-xl mb-4"><TicketIcon className="w-6 h-6 text-blue-600" /></div>
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Check-in</p>
           <p className="text-3xl font-black mt-1 text-blue-600">{stats.checkedIn}</p>
+          <p className="text-xs text-muted-foreground mt-1">vendidos escaneados</p>
         </div>
         <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
           <div className="p-3 bg-primary/5 rounded-xl mb-4"><Gift className="w-6 h-6 text-primary" /></div>
           <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Cortesías</p>
           <p className="text-3xl font-black mt-1 text-primary">{stats.courtesy}</p>
+          <p className="text-xs text-muted-foreground mt-1">cortesías escaneadas</p>
         </div>
         <div className="bg-card p-6 rounded-2xl border border-border flex flex-col items-center text-center shadow-sm">
           <div className="p-3 bg-amber-500/5 rounded-xl mb-4"><AlertCircle className="w-6 h-6 text-amber-600" /></div>
