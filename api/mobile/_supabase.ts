@@ -104,6 +104,18 @@ const STATUS_BY_CODE: Record<string, number> = {
   DEVICE_REVOKED: 403,
   NOT_FOUND: 404,
   INVALID_STATUS: 409,
+  // Raised by create_order_and_tickets/hold_event_seats/release_event_seats
+  // (migration 0043, taquilla sales) — none of these were reachable through
+  // /api/mobile/* before, so none were mapped here yet.
+  AUTH_MISMATCH: 403,
+  EVENT_CANCELLED: 409,
+  NOT_ON_SALE: 409,
+  INVALID_ARGS: 400,
+  NO_SEATS: 400,
+  SOLD_OUT: 409,
+  HOLD_EXPIRED: 409,
+  SEATS_UNAVAILABLE: 409,
+  COURTESY_LIMIT: 409,
 };
 
 export function mapRpcError(error: { message: string }): { status: number; errorCode: string; message: string } {
@@ -172,6 +184,20 @@ export const GATE_STAFF_ROLES = ['organization', 'taquilla', 'validador'];
 
 export function isGateStaff(profile: Pick<StaffProfile, 'role'>): boolean {
   return GATE_STAFF_ROLES.includes(profile.role) || profile.role === 'superadmin';
+}
+
+// Roles allowed to sell tickets at the counter (taquilla). Deliberately
+// narrower than what create_order_and_tickets itself accepts in SQL
+// (organization, taquilla, promotor, superadmin) — 'promotor' has its own
+// separate dashboard/flow that was never in scope for this mobile API, and
+// 'validador' (in GATE_STAFF_ROLES above) has no business selling. The SQL
+// RPC remains the real backstop either way (AUTH_MISMATCH for anyone this
+// check would have let through by mistake), same "API 403 mirrors the RPC's
+// own authorization" principle as GATE_STAFF_ROLES.
+export const SALES_STAFF_ROLES = ['organization', 'taquilla'];
+
+export function isSalesStaff(profile: Pick<StaffProfile, 'role'>): boolean {
+  return SALES_STAFF_ROLES.includes(profile.role) || profile.role === 'superadmin';
 }
 
 // Same rule as mfaRequired() in src/app/context/AuthContext.tsx: every role
