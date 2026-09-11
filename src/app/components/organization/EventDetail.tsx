@@ -392,10 +392,20 @@ export default function EventDetail() {
   );
 }
 
+// Convierte un timestamptz ISO (UTC) al formato que espera un input
+// datetime-local ("YYYY-MM-DDTHH:mm", hora LOCAL del navegador).
+function isoToDatetimeLocal(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function EditEventModal({ event, onClose, onSaved }: { event: EventRecord; onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState(event.name);
   const [category, setCategory] = useState(event.category ?? "");
   const [description, setDescription] = useState(event.description ?? "");
+  const [generalSaleDate, setGeneralSaleDate] = useState(isoToDatetimeLocal(event.generalSaleDate));
   const [imageUrl, setImageUrl] = useState<string | null>(event.imageUrl);
   const [imagePreview, setImagePreview] = useState<string | null>(event.imageUrl);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -423,7 +433,10 @@ function EditEventModal({ event, onClose, onSaved }: { event: EventRecord; onClo
     setSaving(true);
     setError("");
     try {
-      await dataService.updateEvent(event.id, { name, category, description, imageUrl });
+      await dataService.updateEvent(event.id, {
+        name, category, description, imageUrl,
+        generalSaleDate: generalSaleDate ? new Date(generalSaleDate).toISOString() : null,
+      });
       onSaved();
       onClose();
     } catch (err: any) {
@@ -488,6 +501,18 @@ function EditEventModal({ event, onClose, onSaved }: { event: EventRecord; onClo
               rows={4}
               className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none resize-none"
             />
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-muted-foreground mb-2 block">Inicio de Venta General</label>
+            <input
+              type="datetime-local"
+              value={generalSaleDate} onChange={(e) => setGeneralSaleDate(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Opcional. Si tu convenio tiene preventa configurada, la ventana de preventa se calcula automáticamente antes de esta fecha.
+            </p>
           </div>
 
           {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}

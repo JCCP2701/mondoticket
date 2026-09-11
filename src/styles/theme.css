@@ -37,6 +37,7 @@
   --chart-2: #328022;
   --chart-3: #e11d48;
   --chart-4: #3b6ea5;
+  --chart-5: #7c3aed;
   --chart-neutral: #938c78;
   --radius: 0.875rem;
   --sidebar: #0a0a0a;
@@ -86,6 +87,7 @@
   --chart-2: #328022;
   --chart-3: #e11d48;
   --chart-4: #3b6ea5;
+  --chart-5: #a78bfa;
   --chart-neutral: #6b6558;
   --sidebar: #050505;
   --sidebar-foreground: #faf9f6;
@@ -127,6 +129,7 @@
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
   --color-chart-neutral: var(--chart-neutral);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

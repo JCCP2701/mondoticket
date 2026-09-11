@@ -11,6 +11,8 @@ const BORDER: [number, number, number] = [225, 219, 200];
 // canal sea el mismo color en pantalla y en el PDF.
 const CHART_RED: [number, number, number] = [225, 29, 72];
 const CHART_BLUE: [number, number, number] = [59, 110, 165];
+// Mismo --chart-5 (violeta) que el dashboard usa para "Preventa".
+const CHART_VIOLET: [number, number, number] = [124, 58, 237];
 
 // online/taquillaDirecto reusan GOLD/GREEN (ya definidos arriba, son
 // exactamente --chart-1/--chart-2) — evita declarar el mismo color dos veces.
@@ -19,6 +21,7 @@ const CHANNEL_COLORS = {
     taquillaDirecto: GREEN,
     promotor: CHART_RED,
     cortesia: CHART_BLUE,
+    preventa: CHART_VIOLET,
 } as const;
 
 const MARGIN = 16;
@@ -196,6 +199,9 @@ export interface ContractPdfData {
     paymentTerms: string;
     taquillaFeeLabel: string;
     taquillaFeeHint: string;
+    preventaFeeLabel: string;
+    preventaFeeHint: string;
+    preventaDurationLabel: string;
     maxEventsPerMonthLabel: string;
     courtesyTicketsLabel: string;
     courtesyTicketsHint: string;
@@ -222,6 +228,8 @@ export function generateContractPdf(data: ContractPdfData) {
         { label: "Comisión (fee)", value: `${data.feePercentage}%`, hint: "Sobre el valor bruto de cada ticket emitido" },
         { label: "Plazo de pago", value: `${data.paymentTerms} días`, hint: "Días naturales posteriores al evento" },
         { label: "Fee en taquilla", value: data.taquillaFeeLabel, hint: data.taquillaFeeHint },
+        { label: "Fee en preventa", value: data.preventaFeeLabel, hint: data.preventaFeeHint },
+        { label: "Duración de preventa", value: data.preventaDurationLabel, hint: "Antes de la fecha de inicio de venta general de cada evento" },
         { label: "Eventos por mes", value: data.maxEventsPerMonthLabel, hint: "Máximo de eventos nuevos por mes calendario" },
         { label: "Cortesías por evento", value: data.courtesyTicketsLabel, hint: data.courtesyTicketsHint },
         { label: "Tiempo de reserva", value: data.holdDurationLabel, hint: "Antes de liberar boletos no pagados. No aplica a cortesías ni taquilla" },
@@ -259,6 +267,13 @@ export interface LiquidationPdfData {
     channelBreakdown: { label: string; count: number; colorKey: keyof typeof CHANNEL_COLORS }[];
     cortesiaReservedCount: number;
     cortesiaReservedPct: number;
+    // Informativo, NO se mezcla en channelBreakdown: preventa es una capa
+    // superpuesta (un boleto de preventa en línea ya está contado dentro
+    // de "En línea" en channelBreakdown) — sumarlo ahí duplicaría el total
+    // y corrompería los porcentajes de drawBarList.
+    preventaCount: number;
+    preventaOnlineCount: number;
+    preventaTaquillaCount: number;
     peakLabel: string | null;
 }
 
@@ -299,6 +314,19 @@ export function generateLiquidationSummaryPdf(data: LiquidationPdfData) {
         pct: channelTotal > 0 ? Math.round((row.count / channelTotal) * 100) : 0,
         colorKey: row.colorKey,
     })));
+
+    if (data.preventaCount > 0) {
+        doc.setFillColor(...CHART_VIOLET);
+        doc.roundedRect(MARGIN, y - 3, 3, 3, 0.6, 0.6, "F");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(...MUTED);
+        doc.text(
+            `De estas ventas, ${data.preventaCount.toLocaleString("es-MX")} fueron en preventa (${data.preventaOnlineCount.toLocaleString("es-MX")} en línea · ${data.preventaTaquillaCount.toLocaleString("es-MX")} taquilla)`,
+            MARGIN + 5.5, y
+        );
+        y += 8;
+    }
 
     if (data.peakLabel) {
         doc.setFont("helvetica", "normal");

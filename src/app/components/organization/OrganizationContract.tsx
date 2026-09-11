@@ -1,4 +1,4 @@
-import { FileText, CheckCircle, ShieldCheck, Download, Calendar, DollarSign, Wallet, Ticket, Gift, Clock } from "lucide-react";
+import { FileText, CheckCircle, ShieldCheck, Download, Calendar, DollarSign, Wallet, Ticket, Gift, Clock, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { dataService, Organization } from "../../services/dataService";
 import { useAuth } from "../../context/AuthContext";
@@ -18,6 +18,22 @@ function courtesyResolved(org: Organization): { value: string; caption: string }
         value: org.courtesyTicketsPerEvent != null ? String(org.courtesyTicketsPerEvent) : "Sin límite",
         caption: "Boletos gratuitos permitidos por evento",
     };
+}
+
+const PREVENTA_UNIT_LABEL: Record<'hours' | 'days' | 'weeks' | 'months', { one: string; many: string }> = {
+    hours: { one: "hora", many: "horas" },
+    days: { one: "día", many: "días" },
+    weeks: { one: "semana", many: "semanas" },
+    months: { one: "mes", many: "meses" },
+};
+
+function formatPreventaDuration(org: Organization): { label: string; caption: string } {
+    if (org.preventaDurationValue == null || org.preventaDurationUnit == null) {
+        return { label: "No configurada", caption: "Esta organización no tiene preventa activa" };
+    }
+    const unit = PREVENTA_UNIT_LABEL[org.preventaDurationUnit];
+    const label = `${org.preventaDurationValue} ${org.preventaDurationValue === 1 ? unit.one : unit.many}`;
+    return { label, caption: 'Antes de la "fecha de inicio de venta general" de cada evento' };
 }
 
 function formatHoldDuration(minutes: number): string {
@@ -46,6 +62,7 @@ export default function OrganizationContract() {
     if (!org) return <div>Cargando contrato...</div>;
 
     const courtesy = courtesyResolved(org);
+    const preventaDuration = formatPreventaDuration(org);
 
     const handleDownloadPdf = () => {
         generateContractPdf({
@@ -59,6 +76,9 @@ export default function OrganizationContract() {
             paymentTerms: String(org.paymentTerms),
             taquillaFeeLabel: `${org.taquillaFeePercentage ?? org.feePercentage}%`,
             taquillaFeeHint: org.taquillaFeePercentage != null ? "Fee específico para ventas en taquilla" : "Usa el mismo fee que la venta digital",
+            preventaFeeLabel: `${org.preventaFeePercentage ?? org.feePercentage}%`,
+            preventaFeeHint: org.preventaFeePercentage != null ? "Fee específico para preventa" : "Usa el mismo fee que la venta general",
+            preventaDurationLabel: preventaDuration.label,
             maxEventsPerMonthLabel: org.maxEventsPerMonth != null ? String(org.maxEventsPerMonth) : "Sin límite",
             courtesyTicketsLabel: courtesy.value,
             courtesyTicketsHint: courtesy.caption,
@@ -151,6 +171,32 @@ export default function OrganizationContract() {
                     </div>
                     <span className="text-3xl font-bold">{courtesy.value}</span>
                     <p className="text-xs text-muted-foreground mt-2">{courtesy.caption}</p>
+                </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-violet-50 rounded-lg text-violet-600">
+                            <Tag className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-bold text-muted-foreground">Fee en Preventa</span>
+                    </div>
+                    <span className="text-3xl font-bold text-violet-600">{org.preventaFeePercentage ?? org.feePercentage}%</span>
+                    <p className="text-xs text-muted-foreground mt-2">
+                        {org.preventaFeePercentage != null ? "Fee específico para preventa" : "Usa el mismo fee que la venta general"}
+                    </p>
+                </div>
+
+                <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-violet-50 rounded-lg text-violet-600">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <span className="text-sm font-bold text-muted-foreground">Duración de Preventa</span>
+                    </div>
+                    <span className="text-3xl font-bold text-violet-600">{preventaDuration.label}</span>
+                    <p className="text-xs text-muted-foreground mt-2">{preventaDuration.caption}</p>
                 </div>
             </div>
 

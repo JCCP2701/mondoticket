@@ -24,6 +24,7 @@ export default function CreateEvent() {
     description: "",
     category: "concierto",
     instructions: "",
+    generalSaleDate: "",
   });
   const [ticketTypes, setTicketTypes] = useState<TicketTypeForm[]>([
     { name: "General", price: "", capacity: "", hasSeatMap: false },
@@ -87,6 +88,7 @@ export default function CreateEvent() {
         venueAddress: formData.address,
         date: formData.date,
         instructions: formData.instructions,
+        generalSaleDate: formData.generalSaleDate ? new Date(formData.generalSaleDate).toISOString() : null,
         imageUrl,
         ticketTypes: validTicketTypes.map((t) => ({
           name: t.name,
@@ -219,6 +221,21 @@ export default function CreateEvent() {
                   </label>
                   <input type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background" />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-muted-foreground mb-2 flex items-center gap-2">
+                  <Clock className="w-4 h-4" /> Inicio de Venta General
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.generalSaleDate}
+                  onChange={(e) => setFormData({ ...formData, generalSaleDate: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Opcional. Si tu convenio tiene preventa configurada, la ventana de preventa se calcula automáticamente antes de esta fecha.
+                </p>
               </div>
 
               <div>

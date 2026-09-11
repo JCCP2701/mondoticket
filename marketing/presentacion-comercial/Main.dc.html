@@ -1,0 +1,510 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #d4af37; text-decoration: none; }
+    a:hover { color: #e8c766; }
+    ::selection { background: #d4af37; color: #0a0a0a; }
+
+    .btn-primary { transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(212,175,55,0.3); background: #e8c766; }
+    .btn-secondary { transition: border-color .15s ease, color .15s ease, background .15s ease; }
+    .btn-secondary:hover { border-color: #d4af37; color: #d4af37; background: rgba(212,175,55,0.06); }
+    .nav-link { transition: color .15s ease; }
+    .nav-link:hover { color: #f5f2ea; }
+    .feature-card, .pain-card { transition: border-color .2s ease, transform .2s ease; }
+    .feature-card:hover, .pain-card:hover { border-color: rgba(212,175,55,0.45); transform: translateY(-3px); }
+
+    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .marquee-track { animation: marquee 30s linear infinite; width: max-content; display: flex; }
+
+    @keyframes floatSlow { 0%,100% { transform: translateY(0px) rotate(-2.2deg); } 50% { transform: translateY(-14px) rotate(-2.2deg); } }
+    @keyframes floatSlow2 { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(12px); } }
+    .float-ticket { animation: floatSlow 7s ease-in-out infinite; }
+    .float-dash { animation: floatSlow2 6s ease-in-out infinite; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-1 { animation: fadeUp .7s ease both; animation-delay: .05s; }
+    .fade-2 { animation: fadeUp .7s ease both; animation-delay: .2s; }
+
+    .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+    .grid-problem { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 20px; }
+    .grid-features { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px; }
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; }
+    .steps-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 24px; }
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .px-section { padding-left: 64px; padding-right: 64px; }
+    .py-section { padding-top: 120px; padding-bottom: 120px; }
+
+    @media (max-width: 1000px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .grid-problem { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .grid-features { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .steps-row { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .px-section { padding-left: 40px; padding-right: 40px; }
+    }
+    @media (max-width: 640px) {
+      .grid-problem { grid-template-columns: 1fr; }
+      .grid-features { grid-template-columns: 1fr; }
+      .steps-row { grid-template-columns: 1fr; }
+      .compare-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      .px-section { padding-left: 20px; padding-right: 20px; }
+      .py-section { padding-top: 64px; padding-bottom: 64px; }
+      .hero-headline { font-size: 40px !important; }
+      .section-h2 { font-size: 28px !important; }
+    }
+  </style>
+</helmet>
+<div style="position:relative; background:#0a0a0a; width:100%; min-height:100vh; overflow-x:hidden; font-family:'Inter',sans-serif;">
+
+  <div style="position:fixed; inset:0; z-index:5; pointer-events:none; opacity:0.035; mix-blend-mode:overlay; background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22></feTurbulence></filter><rect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22></rect></svg>');"></div>
+
+  <div class="px-section" style="position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between; padding-top:18px; padding-bottom:18px; background:rgba(10,10,10,0.75); backdrop-filter:blur(12px); border-bottom:1px solid rgba(212,175,55,0.14);">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+        <rect x="2" y="6" width="24" height="16" rx="4" fill="#d4af37"></rect>
+        <circle cx="2" cy="14" r="4" fill="#0a0a0a"></circle>
+        <circle cx="26" cy="14" r="4" fill="#0a0a0a"></circle>
+        <line x1="14" y1="8" x2="14" y2="20" stroke="#0a0a0a" stroke-width="1.6" stroke-dasharray="2.5 3"></line>
+      </svg>
+      <span style="font-family:'Outfit',sans-serif; font-weight:700; font-size:20px; letter-spacing:-0.02em; color:#f5f2ea;">Mondo<span style="color:#d4af37;">Ticket</span></span>
+    </div>
+    <div class="nav-links">
+      <a href="#problema" class="nav-link" style="font-family:'Inter',sans-serif; font-size:14px; color:#a8a29e; font-weight:500;">El problema</a>
+      <a href="#funcionalidades" class="nav-link" style="font-family:'Inter',sans-serif; font-size:14px; color:#a8a29e; font-weight:500;">Funcionalidades</a>
+      <a href="#como-funciona" class="nav-link" style="font-family:'Inter',sans-serif; font-size:14px; color:#a8a29e; font-weight:500;">Cómo funciona</a>
+      <a href="#contacto" class="btn-primary" style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; color:#0a0a0a; background:#d4af37; padding:10px 20px; border-radius:8px;">Agenda una demo</a>
+    </div>
+  </div>
+
+  <div class="px-section" style="position:relative; padding-top:96px; padding-bottom:80px; overflow:hidden;">
+    <div style="position:absolute; top:-200px; right:-160px; width:560px; height:560px; border-radius:50%; background:radial-gradient(circle, rgba(212,175,55,0.10), transparent 70%); pointer-events:none;"></div>
+    <div class="hero-grid" style="position:relative; max-width:1280px; margin:0 auto;">
+      <div class="fade-1">
+        <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border:1px solid rgba(212,175,55,0.3); border-radius:999px; margin-bottom:24px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#4f9e3a;"></span>
+          <span style="font-family:'Inter',sans-serif; font-size:12px; letter-spacing:0.08em; color:#c9c4ba; text-transform:uppercase;">Plataforma de boletaje para organizadores</span>
+        </div>
+        <h1 class="hero-headline" style="font-family:'Outfit',sans-serif; font-weight:800; font-size:60px; line-height:1.04; letter-spacing:-0.02em; color:#f5f2ea; margin:0 0 24px;">Todo tu boletaje.<br>Bajo tu control.</h1>
+        <p style="font-family:'Inter',sans-serif; font-size:18px; line-height:1.6; color:#a8a29e; max-width:520px; margin:0 0 36px;">MondoTicket es la plataforma con la que organizadores, recintos y festivales venden boletos, cobran de verdad y controlan el acceso — sin ceder sus datos ni sus comisiones a un intermediario opaco.</p>
+        <div style="display:flex; gap:16px; flex-wrap:wrap;">
+          <a href="#contacto" class="btn-primary" style="font-family:'Outfit',sans-serif; font-weight:600; font-size:15px; color:#0a0a0a; background:#d4af37; padding:16px 28px; border-radius:10px;">Agenda una demo</a>
+          <a href="#funcionalidades" class="btn-secondary" style="font-family:'Outfit',sans-serif; font-weight:600; font-size:15px; color:#e5e0d5; background:transparent; border:1px solid rgba(245,242,234,0.22); padding:16px 28px; border-radius:10px;">Ver funcionalidades</a>
+        </div>
+      </div>
+
+      <div class="fade-2" style="position:relative; min-height:460px;">
+        <div class="float-ticket" style="position:relative; width:360px; max-width:100%; margin:0 auto; background:#141311; border:1px solid rgba(212,175,55,0.28); border-radius:20px; box-shadow:0 30px 70px rgba(0,0,0,0.55); overflow:hidden;">
+          <div style="padding:24px 24px 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px;">
+              <div>
+                <div style="font-family:'Inter',sans-serif; font-size:11px; letter-spacing:0.1em; color:#8a8580; text-transform:uppercase; margin-bottom:6px;">Evento</div>
+                <div style="font-family:'Outfit',sans-serif; font-weight:700; font-size:20px; color:#f5f2ea;">Festival Sonora MX</div>
+                <div style="font-family:'Inter',sans-serif; font-size:13px; color:#a8a29e; margin-top:4px;">Zona General · 14 Nov · Foro Astral</div>
+              </div>
+              <div style="width:8px;height:8px;border-radius:50%;background:#4f9e3a; margin-top:6px;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline;">
+              <span style="font-family:'Outfit',sans-serif; font-weight:700; font-size:26px; color:#d4af37;">$650<span style="font-size:14px; color:#8a8580;"> MXN</span></span>
+              <span style="font-family:'Inter',sans-serif; font-size:12px; color:#8a8580;">Fila 12 · Asiento 4</span>
+            </div>
+          </div>
+          <div style="position:relative; height:0; border-top:2px dashed rgba(245,242,234,0.14);">
+            <div style="position:absolute; left:-11px; top:-11px; width:22px; height:22px; border-radius:50%; background:#0a0a0a;"></div>
+            <div style="position:absolute; right:-11px; top:-11px; width:22px; height:22px; border-radius:50%; background:#0a0a0a;"></div>
+          </div>
+          <div style="padding:22px 24px 26px; display:flex; align-items:center; gap:18px; background:rgba(212,175,55,0.04);">
+            <svg width="72" height="72" viewBox="0 0 72 72" style="flex-shrink:0;">
+              <rect width="72" height="72" rx="8" fill="#f5f2ea"></rect>
+              <rect x="6" y="6" width="16" height="16" fill="#0a0a0a"></rect>
+              <rect x="10" y="10" width="8" height="8" fill="#f5f2ea"></rect>
+              <rect x="50" y="6" width="16" height="16" fill="#0a0a0a"></rect>
+              <rect x="54" y="10" width="8" height="8" fill="#f5f2ea"></rect>
+              <rect x="6" y="50" width="16" height="16" fill="#0a0a0a"></rect>
+              <rect x="10" y="54" width="8" height="8" fill="#f5f2ea"></rect>
+              <rect x="30" y="8" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="38" y="8" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="30" y="16" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="44" y="16" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="30" y="24" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="38" y="24" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="52" y="28" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="30" y="32" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="60" y="32" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="8" y="30" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="16" y="34" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="8" y="40" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="30" y="44" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="38" y="44" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="46" y="44" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="30" y="52" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="44" y="56" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="52" y="52" width="5" height="5" fill="#0a0a0a"></rect>
+              <rect x="60" y="46" width="5" height="5" fill="#0a0a0a"></rect>
+            </svg>
+            <div>
+              <div style="font-family:'Inter',sans-serif; font-size:11px; letter-spacing:0.08em; color:#8a8580; text-transform:uppercase; margin-bottom:4px;">Código único</div>
+              <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:13px; color:#e5e0d5;">Se invalida al primer escaneo</div>
+              <div style="font-family:'Inter',sans-serif; font-size:12px; color:#4f9e3a; margin-top:4px;">✓ Funciona sin internet</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="float-dash" style="position:absolute; left:-16px; bottom:8px; width:220px; background:#141311; border:1px solid rgba(212,175,55,0.22); border-radius:16px; box-shadow:0 24px 50px rgba(0,0,0,0.5); padding:18px;">
+          <div style="font-family:'Inter',sans-serif; font-size:11px; letter-spacing:0.08em; color:#8a8580; text-transform:uppercase; margin-bottom:12px;">Panel ejecutivo · en vivo</div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
+            <span style="font-family:'Inter',sans-serif; font-size:13px; color:#a8a29e;">Ventas hoy</span>
+            <span style="font-family:'Outfit',sans-serif; font-weight:700; font-size:15px; color:#f5f2ea;">$128,430</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px;">
+            <span style="font-family:'Inter',sans-serif; font-size:13px; color:#a8a29e;">Ocupación</span>
+            <span style="font-family:'Outfit',sans-serif; font-weight:700; font-size:15px; color:#4f9e3a;">87%</span>
+          </div>
+          <div style="width:100%; height:6px; border-radius:999px; background:rgba(245,242,234,0.08); overflow:hidden;">
+            <div style="width:87%; height:100%; background:#4f9e3a; border-radius:999px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="border-top:1px solid rgba(212,175,55,0.14); border-bottom:1px solid rgba(212,175,55,0.14); padding:16px 0; overflow:hidden; white-space:nowrap;">
+    <div class="marquee-track">
+      <div style="display:flex; align-items:center; gap:0;">
+        <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.06em; color:#c9c4ba; text-transform:uppercase; margin:0 24px;">Sin comisiones ocultas</span>
+        <span style="color:#d4af37;">◆</span>
+        <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.06em; color:#c9c4ba; text-transform:uppercase; margin:0 24px;">Validación offline con sincronización</span>
+        <span style="color:#d4af37;">◆</span>
+        <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.06em; color:#c9c4ba; text-transform:uppercase; margin:0 24px;">Pagos con tarjeta, SPEI y efectivo</span>
+        <span style="color:#d4af37;">◆</span>
+        <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.06em; color:#c9c4ba; text-transform:uppercase; margin:0 24px;">Tus datos, tu marca</span>
+        <span style="color:#d4af37;">◆</span>
+        <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.06em; color:#c9c4ba; text-transform:uppercase; margin:0 24px;">Multi-evento y multi-organización</span>
+        <span style="color:#d4af37;">◆</span>
+        <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.06em; color:#c9c4ba; text-transform:uppercase; margin:0 24px;">Google Wallet integrado</span>
+        <span style="color:#d4af37;">◆</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:0;">
+        <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.06em; color:#c9c4ba; text-transform:uppercase; margin:0 24px;">Sin comisiones ocultas</span>
+        <span style="color:#d4af37;">◆</span>
+        <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.06em; color:#c9c4ba; text-transform:uppercase; margin:0 24px;">Validación offline con sincronización</span>
+        <span style="color:#d4af37;">◆</span>
+        <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.06em; color:#c9c4ba; text-transform:uppercase; margin:0 24px;">Pagos con tarjeta, SPEI y efectivo</span>
+        <span style="color:#d4af37;">◆</span>
+        <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.06em; color:#c9c4ba; text-transform:uppercase; margin:0 24px;">Tus datos, tu marca</span>
+        <span style="color:#d4af37;">◆</span>
+        <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.06em; color:#c9c4ba; text-transform:uppercase; margin:0 24px;">Multi-evento y multi-organización</span>
+        <span style="color:#d4af37;">◆</span>
+        <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.06em; color:#c9c4ba; text-transform:uppercase; margin:0 24px;">Google Wallet integrado</span>
+        <span style="color:#d4af37;">◆</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="problema" class="px-section py-section" style="max-width:1280px; margin:0 auto;">
+    <div style="max-width:640px; margin:0 0 56px;">
+      <div style="font-family:'Inter',sans-serif; font-size:13px; letter-spacing:0.1em; color:#d4af37; text-transform:uppercase; margin-bottom:14px;">El problema</div>
+      <h2 class="section-h2" style="font-family:'Outfit',sans-serif; font-weight:700; font-size:38px; line-height:1.15; color:#f5f2ea; margin:0;">Rentar tu boletera te está costando más de lo que ves en el estado de cuenta.</h2>
+    </div>
+    <div class="grid-problem">
+      <div class="pain-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+        <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <circle cx="7" cy="7" r="2.5" stroke="#d4af37" stroke-width="1.6"></circle>
+            <circle cx="17" cy="17" r="2.5" stroke="#d4af37" stroke-width="1.6"></circle>
+            <line x1="18" y1="6" x2="6" y2="18" stroke="#d4af37" stroke-width="1.6" stroke-linecap="round"></line>
+          </svg>
+        </div>
+        <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Comisiones que se comen tu margen</div>
+        <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Porcentajes que no negociaste, aplicados en cada boleto, sin que sepas exactamente a dónde va ese dinero.</div>
+      </div>
+      <div class="pain-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+        <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <ellipse cx="12" cy="6" rx="7" ry="3" stroke="#d4af37" stroke-width="1.6"></ellipse>
+            <path d="M5 6V18C5 19.66 8.13 21 12 21C15.87 21 19 19.66 19 18V6" stroke="#d4af37" stroke-width="1.6"></path>
+            <path d="M19 12C19 13.66 15.87 15 12 15C8.13 15 5 13.66 5 12" stroke="#d4af37" stroke-width="1.6"></path>
+          </svg>
+        </div>
+        <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Tus datos no son tuyos</div>
+        <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">El comprador termina siendo cliente de la ticketera, no de tu marca. No queda una base de datos que puedas usar de nuevo.</div>
+      </div>
+      <div class="pain-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+        <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3L19 6V11C19 15.5 16 19 12 21C8 19 5 15.5 5 11V6L12 3Z" stroke="#d4af37" stroke-width="1.6" stroke-linejoin="round"></path>
+            <line x1="12" y1="8" x2="12" y2="13" stroke="#d4af37" stroke-width="1.6" stroke-linecap="round"></line>
+            <circle cx="12" cy="16" r="0.9" fill="#d4af37"></circle>
+          </svg>
+        </div>
+        <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Fraude y boletos duplicados</div>
+        <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">QR reciclados, reventa sin control y gente rechazada en la puerta el día del evento.</div>
+      </div>
+      <div class="pain-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+        <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="8" stroke="#d4af37" stroke-width="1.6"></circle>
+            <path d="M12 7.5V12L15 14" stroke="#d4af37" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </div>
+        <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Te enteras tarde de cómo te fue</div>
+        <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Taquilla en papel, conciliación manual y reportes que llegan hasta el día siguiente, si acaso.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="funcionalidades" class="px-section py-section" style="background:#0c0b09; border-top:1px solid rgba(245,242,234,0.06); border-bottom:1px solid rgba(245,242,234,0.06);">
+    <div style="max-width:1280px; margin:0 auto;">
+      <div style="max-width:640px; margin:0 0 56px;">
+        <div style="font-family:'Inter',sans-serif; font-size:13px; letter-spacing:0.1em; color:#d4af37; text-transform:uppercase; margin-bottom:14px;">La plataforma</div>
+        <h2 class="section-h2" style="font-family:'Outfit',sans-serif; font-weight:700; font-size:38px; line-height:1.15; color:#f5f2ea; margin:0;">Todo lo que necesitas para operar tu propia boletera, en un solo lugar.</h2>
+      </div>
+      <div class="grid-features">
+        <div class="feature-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+          <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="4" width="5" height="5" rx="1.2" stroke="#d4af37" stroke-width="1.5"></rect>
+              <rect x="10" y="4" width="5" height="5" rx="1.2" stroke="#d4af37" stroke-width="1.5"></rect>
+              <rect x="17" y="4" width="4" height="5" rx="1.2" stroke="#d4af37" stroke-width="1.5"></rect>
+              <rect x="3" y="12" width="5" height="5" rx="1.2" stroke="#d4af37" stroke-width="1.5"></rect>
+              <rect x="10" y="12" width="5" height="5" rx="1.2" fill="#d4af37"></rect>
+              <rect x="17" y="12" width="4" height="5" rx="1.2" stroke="#d4af37" stroke-width="1.5"></rect>
+            </svg>
+          </div>
+          <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Mapa de asientos o aforo general</div>
+          <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Vende butaca por butaca con un mapa visual interactivo, o aforo general para festivales. Tú decides cómo se vende cada evento.</div>
+        </div>
+        <div class="feature-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+          <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="6" width="18" height="13" rx="2" stroke="#d4af37" stroke-width="1.6"></rect>
+              <line x1="3" y1="10.5" x2="21" y2="10.5" stroke="#d4af37" stroke-width="1.6"></line>
+              <line x1="6.5" y1="15" x2="10.5" y2="15" stroke="#d4af37" stroke-width="1.6" stroke-linecap="round"></line>
+            </svg>
+          </div>
+          <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Cobra de verdad, sin fricciones</div>
+          <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Tarjeta, SPEI y efectivo con OrkestaPay. Reembolsos parciales sin depender de soporte externo.</div>
+        </div>
+        <div class="feature-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+          <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="3" width="7" height="7" rx="1" stroke="#d4af37" stroke-width="1.6"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1" stroke="#d4af37" stroke-width="1.6"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1" stroke="#d4af37" stroke-width="1.6"></rect>
+              <rect x="15.5" y="15.5" width="4" height="4" rx="0.5" fill="#d4af37"></rect>
+            </svg>
+          </div>
+          <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Validación que no depende del wifi</div>
+          <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Cada boleto es un QR único que se invalida al primer escaneo. La app de validador funciona offline y sincroniza sola.</div>
+        </div>
+        <div class="feature-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+          <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <rect x="6" y="2.5" width="12" height="19" rx="2.5" stroke="#d4af37" stroke-width="1.6"></rect>
+              <line x1="10" y1="19" x2="14" y2="19" stroke="#d4af37" stroke-width="1.6" stroke-linecap="round"></line>
+              <path d="M9.5 11.5L11.3 13.3L14.5 9.5" stroke="#d4af37" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </div>
+          <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Tres apps, un solo sistema</div>
+          <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Comprador, taquilla y validador en apps móviles nativas, conectadas en tiempo real a tu panel.</div>
+        </div>
+        <div class="feature-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+          <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <line x1="4" y1="21" x2="4" y2="3" stroke="#d4af37" stroke-width="1.6" stroke-linecap="round"></line>
+              <rect x="7" y="14" width="4" height="7" rx="1" fill="#d4af37"></rect>
+              <rect x="13" y="9" width="4" height="12" rx="1" fill="#d4af37"></rect>
+              <rect x="19" y="5" width="2.2" height="16" rx="1" fill="#d4af37"></rect>
+            </svg>
+          </div>
+          <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Panel ejecutivo en vivo</div>
+          <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Ventas por canal, ocupación y liquidaciones de comisiones. Sabes cómo vas mientras vas, no al día siguiente.</div>
+        </div>
+        <div class="feature-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+          <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle cx="8" cy="8" r="3" stroke="#d4af37" stroke-width="1.6"></circle>
+              <path d="M2.5 20C2.5 16 5 14 8 14C11 14 13.5 16 13.5 20" stroke="#d4af37" stroke-width="1.6" stroke-linecap="round"></path>
+              <circle cx="17.5" cy="7" r="2.2" stroke="#d4af37" stroke-width="1.5"></circle>
+              <path d="M15 14.2C15.9 13.9 16.6 13.8 17.5 13.8C20 13.8 21.8 15.6 21.8 18.8" stroke="#d4af37" stroke-width="1.5" stroke-linecap="round"></path>
+            </svg>
+          </div>
+          <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Equipos y terceros, bajo control</div>
+          <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Roles para taquilla, validadores, brokers con comisión por referido y promotores con metas. Cada quien ve solo lo que debe ver.</div>
+        </div>
+        <div class="feature-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+          <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3L19 6V11C19 15.5 16 19 12 21C8 19 5 15.5 5 11V6L12 3Z" stroke="#d4af37" stroke-width="1.6" stroke-linejoin="round"></path>
+              <path d="M9 11.5L11.2 13.7L15 9.5" stroke="#d4af37" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </div>
+          <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Seguridad de verdad</div>
+          <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">MFA obligatorio para todo tu staff y boletos que no se pueden duplicar ni revender por fuera del sistema.</div>
+        </div>
+        <div class="feature-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+          <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <rect x="4" y="3" width="10" height="18" stroke="#d4af37" stroke-width="1.6"></rect>
+              <rect x="14" y="9" width="6" height="12" stroke="#d4af37" stroke-width="1.6"></rect>
+              <line x1="7" y1="7" x2="7" y2="7.01" stroke="#d4af37" stroke-width="2" stroke-linecap="round"></line>
+              <line x1="11" y1="7" x2="11" y2="7.01" stroke="#d4af37" stroke-width="2" stroke-linecap="round"></line>
+              <line x1="7" y1="11" x2="7" y2="11.01" stroke="#d4af37" stroke-width="2" stroke-linecap="round"></line>
+              <line x1="11" y1="11" x2="11" y2="11.01" stroke="#d4af37" stroke-width="2" stroke-linecap="round"></line>
+            </svg>
+          </div>
+          <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Multi-organización</div>
+          <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Administra varios eventos, marcas o recintos desde una sola cuenta, sin mezclar operaciones.</div>
+        </div>
+        <div class="feature-card" style="border:1px solid rgba(245,242,234,0.10); border-radius:16px; padding:28px 24px; background:rgba(255,255,255,0.015);">
+          <div style="width:40px; height:40px; border-radius:10px; background:rgba(212,175,55,0.10); display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="6" width="18" height="14" rx="2.5" stroke="#d4af37" stroke-width="1.6"></rect>
+              <path d="M3 10H21" stroke="#d4af37" stroke-width="1.6"></path>
+              <rect x="14" y="13" width="6" height="4" rx="1" fill="#d4af37"></rect>
+            </svg>
+          </div>
+          <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Google Wallet integrado</div>
+          <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Tu comprador guarda su boleto en el celular sin instalar ninguna app.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="como-funciona" class="px-section py-section" style="max-width:1280px; margin:0 auto;">
+    <div style="max-width:640px; margin:0 0 56px;">
+      <div style="font-family:'Inter',sans-serif; font-size:13px; letter-spacing:0.1em; color:#d4af37; text-transform:uppercase; margin-bottom:14px;">Cómo funciona</div>
+      <h2 class="section-h2" style="font-family:'Outfit',sans-serif; font-weight:700; font-size:38px; line-height:1.15; color:#f5f2ea; margin:0;">De configurar tu evento a controlar la puerta, en cuatro pasos.</h2>
+    </div>
+    <div class="steps-row">
+      <div style="position:relative; padding:32px 22px 24px; border-top:2px solid rgba(212,175,55,0.35);">
+        <div style="font-family:'Outfit',sans-serif; font-weight:800; font-size:52px; color:rgba(212,175,55,0.14); line-height:1; margin-bottom:8px;">01</div>
+        <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Configura tu evento</div>
+        <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Sube tu evento, define aforo o mapa de asientos, precios y cortesías en minutos.</div>
+      </div>
+      <div style="position:relative; padding:32px 22px 24px; border-top:2px solid rgba(212,175,55,0.35);">
+        <div style="font-family:'Outfit',sans-serif; font-weight:800; font-size:52px; color:rgba(212,175,55,0.14); line-height:1; margin-bottom:8px;">02</div>
+        <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Conecta tu cobro</div>
+        <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Activa pagos con tarjeta, SPEI y efectivo. El dinero fluye con comisiones que tú puedes ver y explicar.</div>
+      </div>
+      <div style="position:relative; padding:32px 22px 24px; border-top:2px solid rgba(212,175,55,0.35);">
+        <div style="font-family:'Outfit',sans-serif; font-weight:800; font-size:52px; color:rgba(212,175,55,0.14); line-height:1; margin-bottom:8px;">03</div>
+        <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Vende por todos tus canales</div>
+        <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">En línea, en taquilla física o a través de tus brokers y promotores — un solo inventario, sin sobreventa.</div>
+      </div>
+      <div style="position:relative; padding:32px 22px 24px; border-top:2px solid rgba(212,175,55,0.35);">
+        <div style="font-family:'Outfit',sans-serif; font-weight:800; font-size:52px; color:rgba(212,175,55,0.14); line-height:1; margin-bottom:8px;">04</div>
+        <div style="font-family:'Outfit',sans-serif; font-weight:600; font-size:17px; color:#f5f2ea; margin-bottom:10px;">Controla el acceso</div>
+        <div style="font-family:'Inter',sans-serif; font-size:14px; line-height:1.55; color:#8a8580;">Valida en la puerta con la app, incluso sin internet, y sigue tus KPIs en tiempo real desde el panel.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="diferenciadores" class="px-section py-section" style="background:#0c0b09; border-top:1px solid rgba(245,242,234,0.06); border-bottom:1px solid rgba(245,242,234,0.06);">
+    <div style="max-width:900px; margin:0 auto;">
+      <div style="max-width:640px; margin:0 auto 56px; text-align:center;">
+        <div style="font-family:'Inter',sans-serif; font-size:13px; letter-spacing:0.1em; color:#d4af37; text-transform:uppercase; margin-bottom:14px;">Por qué cambiarte</div>
+        <h2 class="section-h2" style="font-family:'Outfit',sans-serif; font-weight:700; font-size:38px; line-height:1.15; color:#f5f2ea; margin:0;">No es una ticketera más. Es la que trabaja para ti.</h2>
+      </div>
+      <div style="border:1px solid rgba(245,242,234,0.10); border-radius:20px; overflow:hidden;">
+        <div class="compare-grid">
+          <div style="padding:20px 28px; background:rgba(255,255,255,0.02);">
+            <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:13px; color:#8a8580; text-transform:uppercase; letter-spacing:0.06em;">Como lo haces hoy</span>
+          </div>
+          <div style="padding:20px 28px; background:rgba(212,175,55,0.08); border-left:1px solid rgba(212,175,55,0.25);">
+            <span style="font-family:'Outfit',sans-serif; font-weight:600; font-size:13px; color:#d4af37; text-transform:uppercase; letter-spacing:0.06em;">Con MondoTicket</span>
+          </div>
+        </div>
+        <div class="compare-grid" style="border-top:1px solid rgba(245,242,234,0.08);">
+          <div style="padding:22px 28px; display:flex; align-items:center; gap:12px;">
+            <span style="width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(168,162,158,0.4); flex-shrink:0; display:flex; align-items:center; justify-content:center;"><span style="width:8px;height:1.5px;background:#8a8580;"></span></span>
+            <span style="font-family:'Inter',sans-serif; font-size:14.5px; color:#8a8580;">Comisiones que no controlas</span>
+          </div>
+          <div style="padding:22px 28px; display:flex; align-items:center; gap:12px; background:rgba(212,175,55,0.03); border-left:1px solid rgba(212,175,55,0.25);">
+            <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0;"><path d="M4 9.5L7.2 12.5L14 5.5" stroke="#4f9e3a" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <span style="font-family:'Inter',sans-serif; font-size:14.5px; color:#e5e0d5; font-weight:500;">Comisiones que tú defines y ves claras</span>
+          </div>
+        </div>
+        <div class="compare-grid" style="border-top:1px solid rgba(245,242,234,0.08);">
+          <div style="padding:22px 28px; display:flex; align-items:center; gap:12px;">
+            <span style="width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(168,162,158,0.4); flex-shrink:0; display:flex; align-items:center; justify-content:center;"><span style="width:8px;height:1.5px;background:#8a8580;"></span></span>
+            <span style="font-family:'Inter',sans-serif; font-size:14.5px; color:#8a8580;">Tus compradores son de la ticketera</span>
+          </div>
+          <div style="padding:22px 28px; display:flex; align-items:center; gap:12px; background:rgba(212,175,55,0.03); border-left:1px solid rgba(212,175,55,0.25);">
+            <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0;"><path d="M4 9.5L7.2 12.5L14 5.5" stroke="#4f9e3a" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <span style="font-family:'Inter',sans-serif; font-size:14.5px; color:#e5e0d5; font-weight:500;">Tu base de clientes, siempre tuya</span>
+          </div>
+        </div>
+        <div class="compare-grid" style="border-top:1px solid rgba(245,242,234,0.08);">
+          <div style="padding:22px 28px; display:flex; align-items:center; gap:12px;">
+            <span style="width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(168,162,158,0.4); flex-shrink:0; display:flex; align-items:center; justify-content:center;"><span style="width:8px;height:1.5px;background:#8a8580;"></span></span>
+            <span style="font-family:'Inter',sans-serif; font-size:14.5px; color:#8a8580;">La validación depende de tener internet</span>
+          </div>
+          <div style="padding:22px 28px; display:flex; align-items:center; gap:12px; background:rgba(212,175,55,0.03); border-left:1px solid rgba(212,175,55,0.25);">
+            <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0;"><path d="M4 9.5L7.2 12.5L14 5.5" stroke="#4f9e3a" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <span style="font-family:'Inter',sans-serif; font-size:14.5px; color:#e5e0d5; font-weight:500;">Validación offline con sincronización automática</span>
+          </div>
+        </div>
+        <div class="compare-grid" style="border-top:1px solid rgba(245,242,234,0.08);">
+          <div style="padding:22px 28px; display:flex; align-items:center; gap:12px;">
+            <span style="width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(168,162,158,0.4); flex-shrink:0; display:flex; align-items:center; justify-content:center;"><span style="width:8px;height:1.5px;background:#8a8580;"></span></span>
+            <span style="font-family:'Inter',sans-serif; font-size:14.5px; color:#8a8580;">Un canal de venta, procesos separados</span>
+          </div>
+          <div style="padding:22px 28px; display:flex; align-items:center; gap:12px; background:rgba(212,175,55,0.03); border-left:1px solid rgba(212,175,55,0.25);">
+            <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0;"><path d="M4 9.5L7.2 12.5L14 5.5" stroke="#4f9e3a" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <span style="font-family:'Inter',sans-serif; font-size:14.5px; color:#e5e0d5; font-weight:500;">En línea, taquilla, brokers y promotores en un mismo inventario</span>
+          </div>
+        </div>
+        <div class="compare-grid" style="border-top:1px solid rgba(245,242,234,0.08);">
+          <div style="padding:22px 28px; display:flex; align-items:center; gap:12px;">
+            <span style="width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(168,162,158,0.4); flex-shrink:0; display:flex; align-items:center; justify-content:center;"><span style="width:8px;height:1.5px;background:#8a8580;"></span></span>
+            <span style="font-family:'Inter',sans-serif; font-size:14.5px; color:#8a8580;">Te enteras de tus números al otro día</span>
+          </div>
+          <div style="padding:22px 28px; display:flex; align-items:center; gap:12px; background:rgba(212,175,55,0.03); border-left:1px solid rgba(212,175,55,0.25);">
+            <svg width="18" height="18" viewBox="0 0 18 18" style="flex-shrink:0;"><path d="M4 9.5L7.2 12.5L14 5.5" stroke="#4f9e3a" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <span style="font-family:'Inter',sans-serif; font-size:14.5px; color:#e5e0d5; font-weight:500;">KPIs y liquidaciones en tiempo real</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="contacto" class="px-section py-section" style="text-align:center; position:relative; overflow:hidden;">
+    <div style="position:absolute; top:-180px; left:50%; transform:translateX(-50%); width:640px; height:640px; border-radius:50%; background:radial-gradient(circle, rgba(212,175,55,0.08), transparent 70%); pointer-events:none;"></div>
+    <div style="position:relative; max-width:640px; margin:0 auto;">
+      <h2 class="section-h2" style="font-family:'Outfit',sans-serif; font-weight:800; font-size:42px; line-height:1.15; color:#f5f2ea; margin:0 0 20px;">Deja de rentarle tu boletaje a alguien más.</h2>
+      <p style="font-family:'Inter',sans-serif; font-size:17px; line-height:1.6; color:#a8a29e; margin:0 0 40px;">Agenda una demo y te mostramos, con tu próximo evento, cómo se ve vender con MondoTicket.</p>
+      <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-bottom:28px;">
+        <a href="mailto:ventas@mondoticket.com?subject=Quiero%20una%20demo%20de%20MondoTicket" class="btn-primary" style="font-family:'Outfit',sans-serif; font-weight:600; font-size:15px; color:#0a0a0a; background:#d4af37; padding:16px 32px; border-radius:10px;">Agenda tu demo</a>
+      </div>
+      <div style="font-family:'Inter',sans-serif; font-size:14px; color:#8a8580;">O escríbenos directo a <a href="mailto:ventas@mondoticket.com" style="color:#d4af37; font-weight:500;">ventas@mondoticket.com</a></div>
+    </div>
+  </div>
+
+  <div class="px-section" style="padding-top:40px; padding-bottom:40px; border-top:1px solid rgba(245,242,234,0.08); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
+        <rect x="2" y="6" width="24" height="16" rx="4" fill="#8a8580"></rect>
+        <circle cx="2" cy="14" r="4" fill="#0a0a0a"></circle>
+        <circle cx="26" cy="14" r="4" fill="#0a0a0a"></circle>
+        <line x1="14" y1="8" x2="14" y2="20" stroke="#0a0a0a" stroke-width="1.6" stroke-dasharray="2.5 3"></line>
+      </svg>
+      <span style="font-family:'Outfit',sans-serif; font-weight:700; font-size:15px; color:#8a8580;">Mondo<span style="color:#d4af37;">Ticket</span></span>
+    </div>
+    <span style="font-family:'Inter',sans-serif; font-size:13px; color:#6b6660;">© 2026 MondoTicket. Plataforma de boletaje para organizadores de eventos.</span>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

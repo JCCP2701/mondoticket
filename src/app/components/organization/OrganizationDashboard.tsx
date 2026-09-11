@@ -27,6 +27,7 @@ export default function OrganizationDashboard() {
   const [orgName, setOrgName] = useState("");
   const [feePercentage, setFeePercentage] = useState(10);
   const [taquillaFeePercentage, setTaquillaFeePercentage] = useState<number | null>(null);
+  const [preventaFeePercentage, setPreventaFeePercentage] = useState<number | null>(null);
   const [courtesyMode, setCourtesyMode] = useState<'fixed' | 'percentage'>('fixed');
   const [courtesyTicketsPerEvent, setCourtesyTicketsPerEvent] = useState<number | null>(null);
   const [courtesyPercentage, setCourtesyPercentage] = useState<number | null>(null);
@@ -73,6 +74,7 @@ export default function OrganizationDashboard() {
       if (org) {
         setFeePercentage(org.feePercentage);
         setTaquillaFeePercentage(org.taquillaFeePercentage ?? null);
+        setPreventaFeePercentage(org.preventaFeePercentage ?? null);
         setCourtesyMode(org.courtesyMode);
         setCourtesyTicketsPerEvent(org.courtesyTicketsPerEvent ?? null);
         setCourtesyPercentage(org.courtesyPercentage ?? null);
@@ -153,22 +155,28 @@ export default function OrganizationDashboard() {
   const occupiedPct = totalCapacity > 0 ? Math.round((occupiedCount / totalCapacity) * 100) : 0;
 
   // Orden fijo (nunca por magnitud) y misma escala (count / totalCapacity)
-  // en las 5 filas, para que las barras sean comparables entre sí.
-  const breakdownRows = [
+  // en las 4 filas, para que las barras sean comparables entre sí. Cortesía
+  // se muestra en su propia tarjeta aparte (no genera ingreso, no compite
+  // por el mismo cupo de venta real en esta lista).
+  const ventasRows = [
     { key: "online", label: "En línea", color: "var(--chart-1)", count: breakdown?.online.count ?? 0 },
     { key: "taquillaDirecto", label: "Taquilla directo", color: "var(--chart-2)", count: breakdown?.taquillaDirecto.count ?? 0 },
     { key: "promotor", label: "Por promotor", color: "var(--chart-3)", count: breakdown?.promotor.count ?? 0 },
-    { key: "cortesia", label: "Cortesías", color: "var(--chart-4)", count: cortesiaOccupied },
     { key: "disponible", label: "Disponibles", color: "var(--chart-neutral)", count: totalAvailable },
   ].map((row) => ({ ...row, pct: totalCapacity > 0 ? Math.round((row.count / totalCapacity) * 100) : 0 }));
+  // Capa informativa: un boleto de preventa YA está contado arriba dentro
+  // de "En línea"/"Taquilla directo" — esto solo permite ver cuánto de eso
+  // fue preventa, sin inventar una 5ta categoría que reste de las otras.
+  const preventaInfo = breakdown?.preventa;
 
   const dateRangeInvalid = datePreset === "custom" && !!customDateFrom && !!customDateTo && customDateFrom > customDateTo;
 
   const periodButtonLabel = useMemo(() => {
     if (datePreset === "custom") {
       if (customDateFrom && customDateTo && !dateRangeInvalid) {
-        const from = new Date(`${customDateFrom}T00:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "short" });
-        const to = new Date(`${customDateTo}T00:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+        const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" };
+        const from = new Date(customDateFrom).toLocaleString("es-MX", opts);
+        const to = new Date(customDateTo).toLocaleString("es-MX", opts);
         return `${from} – ${to}`;
       }
       return "Personalizado";
@@ -211,8 +219,10 @@ export default function OrganizationDashboard() {
   const totalSold = salesDetail?.totalTicketsSold ?? 0;
   const totalRevenue = salesDetail?.totalRevenue ?? 0;
   const effectiveTaquillaFeePct = taquillaFeePercentage ?? feePercentage;
+  const effectivePreventaFeePct = preventaFeePercentage ?? feePercentage;
   const totalProfit = ((salesDetail?.revenueOnline ?? 0) * feePercentage) / 100
-    + ((salesDetail?.revenueTaquilla ?? 0) * effectiveTaquillaFeePct) / 100;
+    + ((salesDetail?.revenueTaquilla ?? 0) * effectiveTaquillaFeePct) / 100
+    + ((salesDetail?.revenuePreventa ?? 0) * effectivePreventaFeePct) / 100;
 
   // Comisión total a promotores: cada promotor puede tener su propio % de
   // comisión (promoter_terms), así que se calcula por promotor individual
@@ -244,6 +254,18 @@ export default function OrganizationDashboard() {
     promotor: b.breakdown.promotor,
     cortesia: b.breakdown.cortesia,
   }));
+  // Preventa NO se agrega como 5ta barra apilada: es una capa informativa
+  // superpuesta (un boleto de preventa en línea ya está contado dentro de
+  // la barra "online") — apilarla también inflaría el total visible de la
+  // gráfica. Se muestra como nota de texto aparte, junto al pico de ventas.
+  const preventaBreakdown = salesDetail?.breakdown.preventa;
+  const preventaFootnote = preventaBreakdown && preventaBreakdown.count > 0
+    ? `Preventa: ${preventaBreakdown.count.toLocaleString()} boletos (${preventaBreakdown.online.toLocaleString()} en línea · ${preventaBreakdown.taquilla.toLocaleString()} taquilla)`
+    : null;
+  const salesChartFootnote = [
+    salesDetail?.peak ? `Pico de ventas: ${salesDetail.peak.bucketLabel} (${salesDetail.peak.ticketsSold} boletos)` : null,
+    preventaFootnote,
+  ].filter(Boolean).join(' · ') || undefined;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -295,7 +317,7 @@ export default function OrganizationDashboard() {
                     <div className="flex items-center gap-2">
                       <label className="text-xs text-muted-foreground w-12 shrink-0">Desde</label>
                       <input
-                        type="date"
+                        type="datetime-local"
                         value={customDateFrom}
                         onChange={(e) => setCustomDateFrom(e.target.value)}
                         className="flex-1 px-3 py-2 rounded-lg border-2 border-border bg-background text-sm outline-none"
@@ -304,7 +326,7 @@ export default function OrganizationDashboard() {
                     <div className="flex items-center gap-2">
                       <label className="text-xs text-muted-foreground w-12 shrink-0">Hasta</label>
                       <input
-                        type="date"
+                        type="datetime-local"
                         value={customDateTo}
                         onChange={(e) => setCustomDateTo(e.target.value)}
                         className="flex-1 px-3 py-2 rounded-lg border-2 border-border bg-background text-sm outline-none"
@@ -345,6 +367,9 @@ export default function OrganizationDashboard() {
               ],
               cortesiaReservedCount: cortesiaOccupied,
               cortesiaReservedPct: cortesiaPct,
+              preventaCount: salesDetail?.breakdown.preventa.count ?? 0,
+              preventaOnlineCount: salesDetail?.breakdown.preventa.online ?? 0,
+              preventaTaquillaCount: salesDetail?.breakdown.preventa.taquilla ?? 0,
               peakLabel: salesDetail?.peak ? `${salesDetail.peak.bucketLabel} (${salesDetail.peak.ticketsSold} boletos)` : null,
             })}
             className="flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-border bg-background font-bold hover:bg-secondary/30 transition-colors disabled:opacity-60"
@@ -476,7 +501,7 @@ export default function OrganizationDashboard() {
             height={300}
             empty={!salesLoading && totalSold === 0}
             emptyMessage="No se registraron ventas en el periodo o evento seleccionado."
-            footnote={salesDetail?.peak ? `Pico de ventas: ${salesDetail.peak.bucketLabel} (${salesDetail.peak.ticketsSold} boletos)` : undefined}
+            footnote={salesChartFootnote}
           >
             <BarChart data={salesChartData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
@@ -492,9 +517,12 @@ export default function OrganizationDashboard() {
           </ChartCard>
         </div>
 
-        {/* Inventario en Tiempo Real */}
+        {/* Ventas — todo lo que compite por el mismo cupo y sí genera
+            ingreso (en línea, taquilla directo, por promotor). Cortesías se
+            muestra aparte, en su propia tarjeta más abajo, porque no genera
+            ingreso y no debe mezclarse con la venta real. */}
         <div className="mb-8 bg-card p-6 rounded-xl border border-border">
-          <h3 className="font-bold mb-6">Inventario en Tiempo Real</h3>
+          <h3 className="font-bold mb-6">Ventas</h3>
           {totalCapacity === 0 ? (
             <p className="text-sm text-muted-foreground italic">Todavía no hay boletos configurados en tus eventos.</p>
           ) : (
@@ -528,7 +556,7 @@ export default function OrganizationDashboard() {
               </div>
 
               <div className="pt-6 space-y-4">
-                {breakdownRows.map((row) => (
+                {ventasRows.map((row) => (
                   <div key={row.key}>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -546,6 +574,56 @@ export default function OrganizationDashboard() {
                   </div>
                 ))}
               </div>
+
+              {/* Preventa: informativa, no exclusiva — un boleto de preventa
+                  ya está contado arriba dentro de "En línea"/"Taquilla
+                  directo", así que no lleva barra a la misma escala (sumaría
+                  más de 100%). Solo aparece si hay al menos 1 venta de
+                  preventa registrada. */}
+              {preventaInfo && preventaInfo.count > 0 && (
+                <div className="mt-6 pt-6 border-t border-border flex items-center justify-between flex-wrap gap-2">
+                  <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: "var(--chart-5)" }} />
+                    De las cuales, en preventa
+                  </span>
+                  <span className="flex items-baseline gap-2">
+                    <span className="text-sm font-bold tabular-nums text-foreground">{preventaInfo.count.toLocaleString()}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({preventaInfo.online.toLocaleString()} en línea · {preventaInfo.taquilla.toLocaleString()} taquilla)
+                    </span>
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Cortesías — aparte de la venta real: no genera ingreso. */}
+        <div className="mb-8 bg-card p-6 rounded-xl border border-border">
+          <h3 className="font-bold mb-1">Cortesías</h3>
+          <p className="text-xs text-muted-foreground mb-6">Boletos $0 — no generan ingreso, se muestran aparte de la venta real.</p>
+          {totalCapacity === 0 ? (
+            <p className="text-sm text-muted-foreground italic">Todavía no hay boletos configurados en tus eventos.</p>
+          ) : (
+            <>
+              <div className="grid sm:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 bg-secondary/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Emitidas</p>
+                  <p className="text-2xl font-bold mt-1">{cortesiaCount.toLocaleString()}</p>
+                </div>
+                <div className="p-4 bg-secondary/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Reservadas por contrato</p>
+                  <p className="text-2xl font-bold mt-1">{courtesyReservedTotal > 0 ? courtesyReservedTotal.toLocaleString() : "Sin reserva"}</p>
+                </div>
+                <div className="p-4 bg-secondary/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Ocupando cupo</p>
+                  <p className="text-2xl font-bold mt-1">{cortesiaOccupied.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${cortesiaPct}%`, backgroundColor: "var(--chart-4)" }} />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5">{cortesiaPct}% de la capacidad total ({cortesiaOccupied.toLocaleString()} boletos)</p>
             </>
           )}
         </div>

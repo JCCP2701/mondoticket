@@ -24,6 +24,15 @@ export interface Organization {
     courtesyMode: 'fixed' | 'percentage';
     courtesyPercentage: number | null;
     taquillaFeePercentage?: number | null;
+    // Fee de plataforma (%) para boletos vendidos dentro de la ventana de
+    // preventa de cada evento, sin importar el canal. null = usa
+    // feePercentage general (mismo patrón que taquillaFeePercentage).
+    // preventaDurationValue/Unit definen esa ventana (hacia atrás desde
+    // events.generalSaleDate) — ambos van siempre juntos, null+null o los
+    // dos con valor (ver CHECK preventa_duration_consistent en la BD).
+    preventaFeePercentage?: number | null;
+    preventaDurationValue?: number | null;
+    preventaDurationUnit?: 'hours' | 'days' | 'weeks' | 'months' | null;
     // Minutes a pending online order keeps seats/inventory reserved before
     // being lazily released back to public sale. Never applies to courtesy
     // or taquilla orders — those never enter a pending state.
@@ -55,6 +64,12 @@ export interface EventRecord {
     ticketTypes: TicketType[];
     hasSeatMap: boolean;
     imageUrl: string | null;
+    // Fecha en que arranca la venta general (fee normal). Si el contrato
+    // de la organización tiene preventa configurada (Organization.preventaDuration*),
+    // la ventana [generalSaleDate - duración, generalSaleDate) es preventa
+    // (fee de preventa, cualquier canal). null = sin restricción, venta
+    // abierta siempre.
+    generalSaleDate: string | null;
 }
 
 export interface SeatRecord {
@@ -211,6 +226,9 @@ function mapOrganization(row: any): Organization {
         courtesyMode: row.courtesy_mode ?? 'fixed',
         courtesyPercentage: row.courtesy_percentage != null ? Number(row.courtesy_percentage) : null,
         taquillaFeePercentage: row.taquilla_fee_percentage != null ? Number(row.taquilla_fee_percentage) : null,
+        preventaFeePercentage: row.preventa_fee_percentage != null ? Number(row.preventa_fee_percentage) : null,
+        preventaDurationValue: row.preventa_duration_value ?? null,
+        preventaDurationUnit: row.preventa_duration_unit ?? null,
         reservationHoldMinutes: row.reservation_hold_minutes ?? 4320,
         status: row.status,
         createdAt: row.created_at,
@@ -243,6 +261,7 @@ function mapEvent(row: any): EventRecord {
         // since a single event can mix seat-mapped and quantity-based types.
         hasSeatMap: (row.event_ticket_types ?? []).some((t: any) => t.has_seat_map),
         imageUrl: row.image_url ?? null,
+        generalSaleDate: row.general_sale_date ?? null,
     };
 }
 
@@ -259,7 +278,7 @@ function mapSeat(row: any): SeatRecord {
     };
 }
 
-const EVENT_SELECT = 'id, organization_id, name, description, category, venue_id, event_date, status, image_url, venues(name), event_ticket_types(id, name, description, price, capacity, sold, has_seat_map)';
+const EVENT_SELECT = 'id, organization_id, name, description, category, venue_id, event_date, status, image_url, general_sale_date, venues(name), event_ticket_types(id, name, description, price, capacity, sold, has_seat_map)';
 
 // ─── Sales time-series bucketing helpers (getOrganizationSalesDetail) ─────────
 // A bare `new Date('2026-08-30')` parses as UTC midnight per the ECMAScript
@@ -270,6 +289,18 @@ const EVENT_SELECT = 'id, organization_id, name, description, category, venue_id
 function localDayBoundaryIso(dateStr: string, offsetDays = 0): string {
     const [y, m, d] = dateStr.split('-').map(Number);
     return new Date(y, m - 1, d + offsetDays, 0, 0, 0, 0).toISOString();
+}
+// dateFrom/dateTo llegan en dos formatos posibles: "YYYY-MM-DD" (los presets
+// "Este mes"/"Últimos 30 días", que nunca llevan hora) o
+// "YYYY-MM-DDTHH:mm" (el filtro "Personalizado", un <input type="datetime-local">
+// que sí la lleva). Un string con 'T' ya es un instante exacto — a diferencia
+// del caso solo-fecha, aquí no se redondea a límite de día: se usa tal cual,
+// como hora local (mismo comportamiento del constructor Date con time
+// component presente, a diferencia de un date-only que el spec trata como UTC).
+function parseFilterBoundary(dateStr: string): Date {
+    if (dateStr.includes('T')) return new Date(dateStr);
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d);
 }
 function dayKey(d: Date): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -299,11 +330,11 @@ function monthLabel(d: Date): string {
 }
 
 type SalesGranularity = 'day' | 'week' | 'month';
-interface BucketBreakdown { online: number; taquillaDirecto: number; promotor: number; cortesia: number; }
+interface BucketBreakdown { online: number; taquillaDirecto: number; promotor: number; preventa: number; cortesia: number; }
 interface SalesBucket { key: string; bucketLabel: string; bucketStart: string; ticketsSold: number; revenue: number; breakdown: BucketBreakdown; }
 
 export interface OrganizationSalesDetail {
-    // breakdown por bucket: mismas 4 categorías que el total (ver abajo),
+    // breakdown por bucket: mismas categorías que el total (ver abajo),
     // para poder graficar barras apiladas por canal en el tiempo — sin esto
     // la gráfica de "Ventas en el periodo" no puede distinguir taquilla
     // directo de promotor dentro de un mismo periodo.
@@ -312,14 +343,31 @@ export interface OrganizationSalesDetail {
     totalRevenue: number;
     revenueOnline: number;
     revenueTaquilla: number;
+    // Revenue de órdenes marcadas is_preventa=true (snapshot fijado por el
+    // RPC al momento de la venta) — YA EXCLUIDO de revenueOnline/revenueTaquilla
+    // (ver getOrganizationSalesDetail) para que totalProfit pueda aplicar el
+    // fee de preventa sin duplicar el fee online/taquilla sobre ese mismo
+    // revenue. Invariante: totalRevenue === revenueOnline + revenueTaquilla + revenuePreventa.
+    revenuePreventa: number;
     peak: { bucketLabel: string; ticketsSold: number } | null;
-    // Mutuamente excluyente, precedencia cortesía > online > promotor >
-    // taquillaDirecto (ver clasificación en getOrganizationSalesDetail).
-    // cortesia no lleva revenue: por definición price===0, siempre sería 0.
+    // online/taquillaDirecto/promotor/cortesia son mutuamente excluyentes
+    // (precedencia cortesía > online > promotor > taquillaDirecto, sin
+    // cambios respecto a antes de preventa — ver clasificación en
+    // getOrganizationSalesDetail). cortesia no lleva revenue: por
+    // definición price===0, siempre sería 0.
+    // breakdown.preventa es una CAPA INFORMATIVA SUPERPUESTA, no una 5ta
+    // categoría exclusiva: un boleto de preventa vendido en línea cuenta
+    // TANTO en breakdown.online como en breakdown.preventa (con
+    // breakdown.preventa.online incrementado) — así un promotor que vende
+    // durante la ventana de preventa se sigue contando en breakdown.promotor
+    // y en promoterRevenueById (su comisión no depende de si hubo preventa),
+    // y además queda reflejado en breakdown.preventa para saber cuánto de
+    // "en línea"/"taquilla directo" fue en realidad preventa.
     breakdown: {
         online: { count: number; revenue: number };
         taquillaDirecto: { count: number; revenue: number };
         promotor: { count: number; revenue: number };
+        preventa: { count: number; revenue: number; online: number; taquilla: number };
         cortesia: { count: number };
     };
     // Revenue de canal "promotor" desglosado por profile_id individual (no
@@ -402,6 +450,12 @@ export const dataService = {
         courtesyMode: 'fixed' | 'percentage';
         courtesyPercentage?: number | null;
         taquillaFeePercentage?: number | null;
+        // preventaDurationValue/Unit deben ir siempre juntos (null+null o
+        // ambos con valor) — replica en el frontend el mismo criterio que
+        // el CHECK preventa_duration_consistent de la BD.
+        preventaFeePercentage?: number | null;
+        preventaDurationValue?: number | null;
+        preventaDurationUnit?: 'hours' | 'days' | 'weeks' | 'months' | null;
         reservationHoldMinutes: number;
     }): Promise<void> {
         const { error } = await supabase
@@ -415,6 +469,9 @@ export const dataService = {
                 courtesy_mode: input.courtesyMode,
                 courtesy_percentage: input.courtesyPercentage ?? null,
                 taquilla_fee_percentage: input.taquillaFeePercentage ?? null,
+                preventa_fee_percentage: input.preventaFeePercentage ?? null,
+                preventa_duration_value: input.preventaDurationValue ?? null,
+                preventa_duration_unit: input.preventaDurationUnit ?? null,
                 reservation_hold_minutes: input.reservationHoldMinutes,
             })
             .eq('id', id);
@@ -454,6 +511,12 @@ export const dataService = {
         date: string;
         instructions?: string;
         imageUrl?: string | null;
+        // Opcional: fecha en que arranca la venta general. Si el contrato
+        // de la organización tiene preventa configurada, la ventana previa
+        // se calcula automáticamente a partir de esta fecha (ver RPCs
+        // create_order_and_tickets/reserve_order). null = venta abierta sin
+        // restricción, igual que hoy.
+        generalSaleDate?: string | null;
         ticketTypes: { name: string; description?: string; price: number; capacity: number; hasSeatMap: boolean }[];
     }): Promise<EventRecord> {
         const { data: venue, error: venueError } = await supabase
@@ -474,6 +537,7 @@ export const dataService = {
                 event_date: input.date,
                 instructions: input.instructions,
                 image_url: input.imageUrl ?? null,
+                general_sale_date: input.generalSaleDate ?? null,
             })
             .select('*')
             .single();
@@ -558,12 +622,13 @@ export const dataService = {
         return data.publicUrl;
     },
 
-    async updateEvent(id: string, input: { name?: string; description?: string; category?: string; imageUrl?: string | null }): Promise<void> {
+    async updateEvent(id: string, input: { name?: string; description?: string; category?: string; imageUrl?: string | null; generalSaleDate?: string | null }): Promise<void> {
         const patch: Record<string, unknown> = {};
         if (input.name !== undefined) patch.name = input.name;
         if (input.description !== undefined) patch.description = input.description;
         if (input.category !== undefined) patch.category = input.category;
         if (input.imageUrl !== undefined) patch.image_url = input.imageUrl;
+        if (input.generalSaleDate !== undefined) patch.general_sale_date = input.generalSaleDate;
         const { error } = await supabase.from('events').update(patch).eq('id', id);
         if (error) throw error;
     },
@@ -626,35 +691,45 @@ export const dataService = {
     // separately from the digital fee.
     async getFinanceSummaryByOrganization(): Promise<{
         organization: Organization;
-        events: { event: EventRecord; revenueOnline: number; revenueTaquilla: number; profit: number }[];
+        events: { event: EventRecord; revenueOnline: number; revenueTaquilla: number; revenuePreventa: number; profit: number }[];
         totalRevenue: number;
         totalProfit: number;
     }[]> {
         const [orgs, events, ticketsRes] = await Promise.all([
             dataService.getOrganizations(),
             dataService.getEvents(),
-            supabase.from('tickets').select('event_id, status, event_ticket_types(price), orders(organization_id, sales_channel)'),
+            supabase.from('tickets').select('event_id, status, event_ticket_types(price), orders(organization_id, sales_channel, is_preventa)'),
         ]);
         if (ticketsRes.error) throw ticketsRes.error;
 
-        const perEvent: Record<string, { online: number; taquilla: number }> = {};
+        const perEvent: Record<string, { online: number; taquilla: number; preventa: number }> = {};
         for (const row of (ticketsRes.data ?? []) as any[]) {
             if (row.status === 'cancelled') continue;
             const price = Number(row.event_ticket_types?.price ?? 0);
-            const channel: 'online' | 'taquilla' = row.orders?.sales_channel === 'taquilla' ? 'taquilla' : 'online';
-            const bucket = perEvent[row.event_id] ?? (perEvent[row.event_id] = { online: 0, taquilla: 0 });
-            bucket[channel] += price;
+            const bucket = perEvent[row.event_id] ?? (perEvent[row.event_id] = { online: 0, taquilla: 0, preventa: 0 });
+            // Igual que en getOrganizationSalesDetail: una venta de
+            // preventa nunca suma también a online/taquilla, para no
+            // aplicar el fee normal Y el de preventa sobre el mismo dinero.
+            if (row.orders?.is_preventa) {
+                bucket.preventa += price;
+            } else {
+                const channel: 'online' | 'taquilla' = row.orders?.sales_channel === 'taquilla' ? 'taquilla' : 'online';
+                bucket[channel] += price;
+            }
         }
 
         return orgs.map((organization) => {
             const orgEvents = events.filter((e) => e.organizationId === organization.id);
             const taquillaFeePct = organization.taquillaFeePercentage ?? organization.feePercentage;
+            const preventaFeePct = organization.preventaFeePercentage ?? organization.feePercentage;
             const eventSummaries = orgEvents.map((event) => {
-                const bucket = perEvent[event.id] ?? { online: 0, taquilla: 0 };
-                const profit = (bucket.online * organization.feePercentage) / 100 + (bucket.taquilla * taquillaFeePct) / 100;
-                return { event, revenueOnline: bucket.online, revenueTaquilla: bucket.taquilla, profit };
+                const bucket = perEvent[event.id] ?? { online: 0, taquilla: 0, preventa: 0 };
+                const profit = (bucket.online * organization.feePercentage) / 100
+                    + (bucket.taquilla * taquillaFeePct) / 100
+                    + (bucket.preventa * preventaFeePct) / 100;
+                return { event, revenueOnline: bucket.online, revenueTaquilla: bucket.taquilla, revenuePreventa: bucket.preventa, profit };
             });
-            const totalRevenue = eventSummaries.reduce((s, e) => s + e.revenueOnline + e.revenueTaquilla, 0);
+            const totalRevenue = eventSummaries.reduce((s, e) => s + e.revenueOnline + e.revenueTaquilla + e.revenuePreventa, 0);
             const totalProfit = eventSummaries.reduce((s, e) => s + e.profit, 0);
             return { organization, events: eventSummaries, totalRevenue, totalProfit };
         });
@@ -703,14 +778,22 @@ export const dataService = {
     ): Promise<OrganizationSalesDetail> {
         let query = supabase
             .from('orders')
-            .select('paid_at, event_id, sales_channel, sold_by, profiles!sold_by(role), tickets(status, event_ticket_types(price))')
+            .select('paid_at, event_id, sales_channel, sold_by, is_preventa, profiles!sold_by(role), tickets(status, event_ticket_types(price))')
             .eq('organization_id', organizationId)
             .in('status', ['paid', 'refunded'])
             .not('paid_at', 'is', null);
 
         if (filters?.eventId) query = query.eq('event_id', filters.eventId);
-        if (filters?.dateFrom) query = query.gte('paid_at', localDayBoundaryIso(filters.dateFrom));
-        if (filters?.dateTo) query = query.lt('paid_at', localDayBoundaryIso(filters.dateTo, 1)); // exclusivo: antes del día siguiente
+        if (filters?.dateFrom) {
+            query = query.gte('paid_at', filters.dateFrom.includes('T')
+                ? new Date(filters.dateFrom).toISOString() // instante exacto elegido en "Desde"
+                : localDayBoundaryIso(filters.dateFrom));
+        }
+        if (filters?.dateTo) {
+            query = filters.dateTo.includes('T')
+                ? query.lte('paid_at', new Date(filters.dateTo).toISOString()) // instante exacto elegido en "Hasta"
+                : query.lt('paid_at', localDayBoundaryIso(filters.dateTo, 1)); // exclusivo: antes del día siguiente
+        }
 
         const { data, error } = await query;
         if (error) throw error;
@@ -719,15 +802,13 @@ export const dataService = {
         const now = new Date();
         let end: Date;
         if (filters?.dateTo) {
-            const [y, m, d] = filters.dateTo.split('-').map(Number);
-            end = new Date(y, m - 1, d);
+            end = parseFilterBoundary(filters.dateTo);
         } else {
             end = now;
         }
         let start: Date;
         if (filters?.dateFrom) {
-            const [y, m, d] = filters.dateFrom.split('-').map(Number);
-            start = new Date(y, m - 1, d);
+            start = parseFilterBoundary(filters.dateFrom);
         } else if (rows.length > 0) {
             start = new Date(Math.min(...rows.map((r) => new Date(r.paid_at).getTime())));
         } else {
@@ -742,31 +823,32 @@ export const dataService = {
             let cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
             const last = new Date(end.getFullYear(), end.getMonth(), end.getDate());
             while (cur <= last) {
-                buckets.push({ key: dayKey(cur), bucketLabel: dayLabel(cur), bucketStart: cur.toISOString(), ticketsSold: 0, revenue: 0, breakdown: { online: 0, taquillaDirecto: 0, promotor: 0, cortesia: 0 } });
+                buckets.push({ key: dayKey(cur), bucketLabel: dayLabel(cur), bucketStart: cur.toISOString(), ticketsSold: 0, revenue: 0, breakdown: { online: 0, taquillaDirecto: 0, promotor: 0, preventa: 0, cortesia: 0 } });
                 cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 1);
             }
         } else if (granularity === 'week') {
             let cur = mondayOf(start);
             const last = mondayOf(end);
             while (cur <= last) {
-                buckets.push({ key: dayKey(cur), bucketLabel: weekLabel(cur), bucketStart: cur.toISOString(), ticketsSold: 0, revenue: 0, breakdown: { online: 0, taquillaDirecto: 0, promotor: 0, cortesia: 0 } });
+                buckets.push({ key: dayKey(cur), bucketLabel: weekLabel(cur), bucketStart: cur.toISOString(), ticketsSold: 0, revenue: 0, breakdown: { online: 0, taquillaDirecto: 0, promotor: 0, preventa: 0, cortesia: 0 } });
                 cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
             }
         } else {
             let cur = new Date(start.getFullYear(), start.getMonth(), 1);
             const last = new Date(end.getFullYear(), end.getMonth(), 1);
             while (cur <= last) {
-                buckets.push({ key: monthKey(cur), bucketLabel: monthLabel(cur), bucketStart: cur.toISOString(), ticketsSold: 0, revenue: 0, breakdown: { online: 0, taquillaDirecto: 0, promotor: 0, cortesia: 0 } });
+                buckets.push({ key: monthKey(cur), bucketLabel: monthLabel(cur), bucketStart: cur.toISOString(), ticketsSold: 0, revenue: 0, breakdown: { online: 0, taquillaDirecto: 0, promotor: 0, preventa: 0, cortesia: 0 } });
                 cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
             }
         }
         const byKey = new Map(buckets.map((b) => [b.key, b]));
 
-        let totalTicketsSold = 0, totalRevenue = 0, revenueOnline = 0, revenueTaquilla = 0;
+        let totalTicketsSold = 0, totalRevenue = 0, revenueOnline = 0, revenueTaquilla = 0, revenuePreventa = 0;
         const breakdown: OrganizationSalesDetail['breakdown'] = {
             online: { count: 0, revenue: 0 },
             taquillaDirecto: { count: 0, revenue: 0 },
             promotor: { count: 0, revenue: 0 },
+            preventa: { count: 0, revenue: 0, online: 0, taquilla: 0 },
             cortesia: { count: 0 },
         };
         const promoterRevenueById: Record<string, number> = {};
@@ -780,14 +862,33 @@ export const dataService = {
             // embed vuelve null a propósito — la venta sigue contando, solo
             // cae en taquillaDirecto por el fallback de abajo.
             const sellerRole = (order as any).profiles?.role ?? null;
+            const isPreventa = (order as any).is_preventa === true;
             for (const ticket of order.tickets ?? []) {
                 if (ticket.status === 'cancelled') continue;
                 const price = Number(ticket.event_ticket_types?.price ?? 0);
                 totalTicketsSold += 1;
                 totalRevenue += price;
-                if (order.sales_channel === 'taquilla') revenueTaquilla += price; else revenueOnline += price;
                 if (bucket) { bucket.ticketsSold += 1; bucket.revenue += price; }
 
+                // Fee de plataforma: 3 baldes mutuamente excluyentes por
+                // revenue (online/taquilla "normal" vs. preventa) — una
+                // venta preventa NUNCA suma también a revenueOnline/
+                // revenueTaquilla, para que totalProfit no aplique el fee
+                // normal Y el de preventa sobre el mismo dinero.
+                if (price > 0 && isPreventa) {
+                    revenuePreventa += price;
+                } else if (order.sales_channel === 'taquilla') {
+                    revenueTaquilla += price;
+                } else {
+                    revenueOnline += price;
+                }
+
+                // Desglose de pantalla: online/taquillaDirecto/promotor/
+                // cortesia son mutuamente excluyentes, SIN cambios respecto
+                // a antes de preventa (así un promotor que vende durante la
+                // ventana de preventa se sigue contando en breakdown.promotor
+                // y en promoterRevenueById — su comisión no depende de si
+                // hubo preventa).
                 if (price === 0) {
                     breakdown.cortesia.count += 1;
                     if (bucket) bucket.breakdown.cortesia += 1;
@@ -806,6 +907,17 @@ export const dataService = {
                     breakdown.taquillaDirecto.revenue += price;
                     if (bucket) bucket.breakdown.taquillaDirecto += 1;
                 }
+
+                // Capa informativa de preventa: se suma APARTE, sin quitar
+                // nada de los conteos de arriba (un boleto de preventa
+                // vendido en línea ya cuenta en breakdown.online — esto solo
+                // permite saber cuánto de eso fue preventa).
+                if (price > 0 && isPreventa) {
+                    breakdown.preventa.count += 1;
+                    breakdown.preventa.revenue += price;
+                    if (order.sales_channel === 'taquilla') breakdown.preventa.taquilla += 1; else breakdown.preventa.online += 1;
+                    if (bucket) bucket.breakdown.preventa += 1;
+                }
             }
         }
 
@@ -815,7 +927,7 @@ export const dataService = {
 
         return {
             series: buckets.map((b) => ({ bucketLabel: b.bucketLabel, bucketStart: b.bucketStart, ticketsSold: b.ticketsSold, revenue: b.revenue, breakdown: b.breakdown })),
-            totalTicketsSold, totalRevenue, revenueOnline, revenueTaquilla, breakdown, promoterRevenueById,
+            totalTicketsSold, totalRevenue, revenueOnline, revenueTaquilla, revenuePreventa, breakdown, promoterRevenueById,
             peak: peakBucket ? { bucketLabel: peakBucket.bucketLabel, ticketsSold: peakBucket.ticketsSold } : null,
         };
     },

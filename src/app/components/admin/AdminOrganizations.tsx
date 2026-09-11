@@ -281,6 +281,8 @@ type HoldUnit = keyof typeof HOLD_UNIT_MINUTES;
 const HOLD_MIN_MINUTES = 5;
 const HOLD_MAX_MINUTES = 129600; // 90 days
 
+type PreventaUnit = 'hours' | 'days' | 'weeks' | 'months';
+
 function minutesToValueUnit(mins: number): { value: string; unit: HoldUnit } {
     if (mins % 1440 === 0) return { value: String(mins / 1440), unit: 'days' };
     if (mins % 60 === 0) return { value: String(mins / 60), unit: 'hours' };
@@ -296,6 +298,9 @@ function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: 
     const [courtesyMode, setCourtesyMode] = useState<'fixed' | 'percentage'>(org.courtesyMode);
     const [courtesyPercentage, setCourtesyPercentage] = useState(org.courtesyPercentage != null ? String(org.courtesyPercentage) : "");
     const [taquillaFeePercentage, setTaquillaFeePercentage] = useState(org.taquillaFeePercentage != null ? String(org.taquillaFeePercentage) : "");
+    const [preventaFeePercentage, setPreventaFeePercentage] = useState(org.preventaFeePercentage != null ? String(org.preventaFeePercentage) : "");
+    const [preventaDurationValue, setPreventaDurationValue] = useState(org.preventaDurationValue != null ? String(org.preventaDurationValue) : "");
+    const [preventaDurationUnit, setPreventaDurationUnit] = useState<PreventaUnit>(org.preventaDurationUnit ?? 'days');
     const initialHold = minutesToValueUnit(org.reservationHoldMinutes);
     const [holdValue, setHoldValue] = useState(initialHold.value);
     const [holdUnit, setHoldUnit] = useState<HoldUnit>(initialHold.unit);
@@ -328,6 +333,9 @@ function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: 
                 courtesyMode,
                 courtesyPercentage: courtesyPercentage.trim() ? parseFloat(courtesyPercentage) : null,
                 taquillaFeePercentage: taquillaFeePercentage.trim() ? parseFloat(taquillaFeePercentage) : null,
+                preventaFeePercentage: preventaFeePercentage.trim() ? parseFloat(preventaFeePercentage) : null,
+                preventaDurationValue: preventaDurationValue.trim() ? parseInt(preventaDurationValue, 10) : null,
+                preventaDurationUnit: preventaDurationValue.trim() ? preventaDurationUnit : null,
                 reservationHoldMinutes,
             });
             setSaved(true);
@@ -383,6 +391,39 @@ function ContractModal({ org, onClose, onSaved }: { org: Organization; onClose: 
                             placeholder={`Vacío = usa el fee general (${feePercentage}%)`}
                         />
                         <p className="text-xs text-muted-foreground mt-1">Si se deja vacío, se aplica el mismo fee que a la venta digital.</p>
+                    </div>
+                    <div>
+                        <label className="text-sm font-bold text-muted-foreground mb-2 block">Fee de Preventa (%)</label>
+                        <input
+                            type="number" min="0" max="100" step="0.5"
+                            value={preventaFeePercentage} onChange={(e) => setPreventaFeePercentage(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                            placeholder={`Vacío = usa el fee general (${feePercentage}%)`}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Aplica a cualquier venta (en línea o taquilla) dentro de la ventana de preventa del evento, sin importar el canal.</p>
+                    </div>
+                    <div>
+                        <label className="text-sm font-bold text-muted-foreground mb-2 block">Duración de Preventa</label>
+                        <div className="flex gap-3">
+                            <input
+                                type="number" min="1" step="1"
+                                value={preventaDurationValue} onChange={(e) => setPreventaDurationValue(e.target.value)}
+                                className="flex-1 px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                                placeholder="Sin preventa"
+                            />
+                            <select
+                                value={preventaDurationUnit} onChange={(e) => setPreventaDurationUnit(e.target.value as PreventaUnit)}
+                                className="px-4 py-3 rounded-xl border-2 border-border bg-background outline-none"
+                            >
+                                <option value="hours">Horas</option>
+                                <option value="days">Días</option>
+                                <option value="weeks">Semanas</option>
+                                <option value="months">Meses</option>
+                            </select>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Cuánto dura la ventana de preventa antes de la "fecha de inicio de venta general" que se configura en cada evento. Vacío = esta organización no tiene preventa.
+                        </p>
                     </div>
                     <div>
                         <label className="text-sm font-bold text-muted-foreground mb-2 block">Tiempo de Reserva antes de Liberar Boletos</label>
