@@ -54,11 +54,20 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
   return json.access_token as string;
 }
 
-async function upsertWalletResource(kind: 'eventTicketClass' | 'eventTicketObject', id: string, body: Record<string, unknown>, accessToken: string): Promise<void> {
+async function upsertWalletResource(
+  kind: 'eventTicketClass' | 'eventTicketObject',
+  id: string,
+  body: Record<string, unknown>,
+  accessToken: string,
+  insertOnlyFields: Record<string, unknown> = {}
+): Promise<void> {
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` };
   const getRes = await fetch(`${WALLET_API}/${kind}/${id}`, { headers });
   if (getRes.status === 404) {
-    const insertRes = await fetch(`${WALLET_API}/${kind}`, { method: 'POST', headers, body: JSON.stringify(body) });
+    // reviewStatus (and any other insert-only field) is only sent on the
+    // first create — resending it on every update would reset the class
+    // back to under-review even after Google approves the issuer account.
+    const insertRes = await fetch(`${WALLET_API}/${kind}`, { method: 'POST', headers, body: JSON.stringify({ ...body, ...insertOnlyFields }) });
     if (!insertRes.ok) throw new Error(`Failed to create ${kind}: ${await insertRes.text()}`);
   } else if (getRes.ok) {
     const updateRes = await fetch(`${WALLET_API}/${kind}/${id}`, { method: 'PUT', headers, body: JSON.stringify(body) });
@@ -85,6 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID;
   const clientEmail = process.env.GOOGLE_WALLET_CLIENT_EMAIL;
   const privateKey = process.env.GOOGLE_WALLET_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const publicSiteUrl = process.env.PUBLIC_SITE_URL || 'https://ticketblessing.vercel.app';
   if (!supabaseUrl || !serviceRoleKey || !issuerId || !clientEmail || !privateKey) {
     res.status(500).json({ error: 'Server misconfigured: missing Supabase or Google Wallet env vars' });
     return;
@@ -163,7 +173,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       {
         id: classId,
         issuerName: 'MondoTicket',
-        reviewStatus: 'UNDER_REVIEW',
         eventName: { defaultValue: { language: 'es-MX', value: event.name } },
         venue: {
           name: { defaultValue: { language: 'es-MX', value: venue?.name || 'Recinto por confirmar' } },
@@ -172,15 +181,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         dateTime: { start: `${event.event_date}T${eventTime || '00:00:00'}-06:00` },
         hexBackgroundColor: '#7c3aed',
         logo: {
-          sourceUri: { uri: 'https://ticketblessing.vercel.app/wallet/logo.png' },
+          sourceUri: { uri: `${publicSiteUrl}/wallet/logo.png` },
           contentDescription: { defaultValue: { language: 'es-MX', value: 'MondoTicket' } },
         },
         heroImage: {
-          sourceUri: { uri: 'https://ticketblessing.vercel.app/wallet/hero.png' },
+          sourceUri: { uri: `${publicSiteUrl}/wallet/hero.png` },
           contentDescription: { defaultValue: { language: 'es-MX', value: 'MondoTicket' } },
         },
       },
-      accessToken
+      accessToken,
+      { reviewStatus: 'UNDER_REVIEW' }
     );
 
     const seat = (ticket as any).event_seats;
@@ -215,6 +225,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(200).json({ saveUrl: `https://pay.google.com/gp/v/save/${saveJwt}` });
   } catch (err: any) {
-    res.status(502).json({ error: err?.message || 'Failed to build Google Wallet pass' });
+    console.error('Google Wallet pass generation failed', ticketId, err);
+    res.status(502).json({ error: 'No se pudo generar el pase de Google Wallet, intenta de nuevo' });
   }
 }
