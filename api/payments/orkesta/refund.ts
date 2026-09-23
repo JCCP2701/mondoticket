@@ -124,7 +124,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       orkestaRefunds.push({ orderId, paymentId: entry.paymentId, amount });
     } catch (err: any) {
       console.error('OrkestaPay refund failed', orderId, entry.paymentId, err);
-      orkestaRefunds.push({ orderId, paymentId: entry.paymentId, amount, error: err?.message || 'Refund request failed' });
+      orkestaRefunds.push({ orderId, paymentId: entry.paymentId, amount, error: 'No se pudo procesar el reembolso con la pasarela de pago, intenta de nuevo' });
     }
   }
 

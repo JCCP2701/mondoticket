@@ -115,12 +115,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { error } = await serviceClient.rpc('do_release_order', { p_order_id: order.id });
         if (error) throw error;
       }
+    } else if (event.event_type === 'payment.refund') {
+      // A refund issued outside our own refund flow (e.g. a dispute/chargeback
+      // resolved directly in the OrkestaPay dashboard) — cancel the tickets so
+      // they stop being scannable now that the money's been returned. Guarded
+      // on 'paid' so this never re-fires for an order our own
+      // api/payments/orkesta/refund.ts already refunded, or one that never paid.
+      if (order.status === 'paid') {
+        const { error } = await serviceClient.rpc('cancel_order_tickets_for_gateway_refund', { p_order_id: order.id });
+        if (error) throw error;
+      }
     }
-    // payment.authorize / payment.refund: acknowledged, no action. Our
-    // hosted checkout is one-shot purchase (auto-capture), so an
-    // authorize-only event with no matching capture shouldn't mint
-    // tickets; refunds are driven synchronously by
-    // api/payments/orkesta/refund.ts, not this async echo.
+    // payment.authorize: acknowledged, no action. Our hosted checkout is
+    // one-shot purchase (auto-capture), so an authorize-only event with no
+    // matching capture shouldn't mint tickets.
   } catch (err: any) {
     console.error('OrkestaPay webhook processing failed', order.id, event.event_type, err);
     res.status(500).json({ error: 'Failed to process webhook' });

@@ -82,16 +82,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  // Already has a checkout (retry/duplicate click) — reuse it instead of
-  // minting a second one for the same reservation.
-  if ((order as any).orkesta_checkout_id) {
-    try {
-      const existing = await orkestaFetch(`/v1/checkouts/${(order as any).orkesta_checkout_id}`, { method: 'GET' });
-      res.status(200).json({ checkoutRedirectUrl: existing.checkout_redirect_url });
+  // Atomically claim the right to create a checkout for this order, so two
+  // concurrent invocations (double click past the button's own `disabled`,
+  // a network retry after a client-side timeout, two tabs) can never both
+  // create a checkout at OrkestaPay and then both "win" the final UPDATE —
+  // the previous version's final UPDATE only guarded against a race with
+  // the webhook (`status='pending'`), not against a second invocation of
+  // this same endpoint, which could silently overwrite the first one's
+  // orkesta_checkout_id and leave the buyer's actual paid-for checkout
+  // orphaned (webhook 404s forever on its orkesta_order_id).
+  const claimToken = `__claiming__:${orderId}:${Date.now()}`;
+  const { data: claimed, error: claimError } = await serviceClient
+    .from('orders')
+    .update({ orkesta_checkout_id: claimToken })
+    .eq('id', orderId)
+    .eq('status', 'pending')
+    .is('orkesta_checkout_id', null)
+    .select('id');
+
+  if (claimError) {
+    console.error('OrkestaPay checkout claim failed', orderId, claimError);
+    res.status(500).json({ error: 'No se pudo procesar el pago, intenta de nuevo' });
+    return;
+  }
+
+  if (!claimed || claimed.length === 0) {
+    // Someone else already claimed or finished creating a checkout between
+    // our SELECT above and now — figure out what to do from the latest row.
+    const { data: latest } = await serviceClient.from('orders').select('status, orkesta_checkout_id').eq('id', orderId).single();
+
+    if (!latest || latest.status !== 'pending') {
+      res.status(409).json({ error: 'Este pedido ya no está pendiente de pago' });
       return;
-    } catch {
-      // fall through and create a fresh one if the lookup fails
     }
+    if (latest.orkesta_checkout_id && !latest.orkesta_checkout_id.startsWith('__claiming__:')) {
+      // A checkout already exists for real (retry/duplicate click) — reuse
+      // it instead of minting a second one for the same reservation.
+      try {
+        const existing = await orkestaFetch(`/v1/checkouts/${latest.orkesta_checkout_id}`, { method: 'GET' });
+        res.status(200).json({ checkoutRedirectUrl: existing.checkout_redirect_url });
+      } catch (err: any) {
+        console.error('OrkestaPay checkout lookup failed', orderId, err);
+        res.status(502).json({ error: 'No se pudo procesar el pago, intenta de nuevo' });
+      }
+      return;
+    }
+    // Another invocation is creating the checkout right now.
+    res.status(409).json({ error: 'Ya hay un intento de pago en curso para este pedido, espera unos segundos e intenta de nuevo' });
+    return;
   }
 
   const items = ((order as any).order_items ?? []) as Array<{ quantity: number; unit_price: number; ticket_type_id: string; event_ticket_types: { name: string } | null }>;
@@ -143,17 +181,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     });
   } catch (err: any) {
-    res.status(502).json({ error: err?.message || 'No se pudo crear el checkout con la pasarela de pago' });
+    console.error('OrkestaPay checkout creation failed', orderId, err);
+    await serviceClient.from('orders').update({ orkesta_checkout_id: null }).eq('id', orderId).eq('orkesta_checkout_id', claimToken);
+    res.status(502).json({ error: 'No se pudo procesar el pago, intenta de nuevo' });
     return;
   }
 
-  // Guard against a race with the webhook: only persist if the order is
-  // still the one we just read as 'pending'.
+  // Confirm with the real IDs, but only if we're still the owner of the
+  // claim — guards against a race with the webhook (status changed) and
+  // against the edge case where this invocation's own claim was somehow
+  // superseded in between.
   const { data: updated } = await serviceClient
     .from('orders')
     .update({ orkesta_checkout_id: checkout.checkout_id, orkesta_order_id: checkout.order.order_id })
     .eq('id', orderId)
     .eq('status', 'pending')
+    .eq('orkesta_checkout_id', claimToken)
     .select('id');
 
   if (!updated || updated.length === 0) {
