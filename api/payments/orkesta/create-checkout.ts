@@ -129,7 +129,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           subtotal_amount: subtotal,
           products,
           customer: { email: (order as any).customer_email, first_name: firstName, last_name: lastName },
-          expires_at: new Date((order as any).expires_at).getTime(), // OrkestaPay expects Unix milliseconds here, despite other timestamp fields in its docs being seconds
+          // Fixed 5-minute checkout session window, per OrkestaPay support
+          // (Sept 2026): this is the interactive checkout UI's own lifetime,
+          // unrelated to organizations.reservation_hold_minutes (which
+          // governs how long WE keep inventory reserved, independently, and
+          // can be hours/days to accommodate SPEI/efectivo settlement).
+          // Previously this reused order.expires_at directly, which sent an
+          // absolute timestamp up to 72h+ out instead of a short session
+          // window — likely why some card payments never resolved out of
+          // PAYMENT_ACTION_REQUIRED.
+          expires_at: 300000,
         },
       }),
     });
