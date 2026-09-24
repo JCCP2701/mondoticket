@@ -101,8 +101,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (event.event_type === 'payment.purchase' || event.event_type === 'payment.capture') {
-      if (order.status === 'pending') {
-        const amount = Number(payment.amount?.captured ?? payment.amount?.authorized);
+      // payment.purchase also fires for PAYMENT_ACTION_REQUIRED (3DS pending)
+      // and FAILED attempts, which carry only amount.requested — only a
+      // COMPLETED payment with a real captured amount means money moved.
+      const amount = Number(payment.amount?.captured);
+      if (order.status === 'pending' && payment.status === 'COMPLETED' && Number.isFinite(amount)) {
         const { error } = await serviceClient.rpc('confirm_order_paid', {
           p_order_id: order.id,
           p_orkesta_payment_id: payment.payment_id,
