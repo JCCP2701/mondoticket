@@ -175,8 +175,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Previously this reused order.expires_at directly, which sent an
           // absolute timestamp up to 72h+ out instead of a short session
           // window — likely why some card payments never resolved out of
-          // PAYMENT_ACTION_REQUIRED.
-          expires_at: 300000,
+          // PAYMENT_ACTION_REQUIRED. The field is an absolute Unix-ms
+          // timestamp, not a duration — a bare 300000 (1970) is rejected
+          // with "La fecha de vencimiento de la orden no es válida".
+          expires_at: Date.now() + 5 * 60 * 1000,
         },
       }),
     });
