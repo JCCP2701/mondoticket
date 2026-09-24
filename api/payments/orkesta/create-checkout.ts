@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .select(
       'id, user_id, organization_id, status, total, subtotal, currency, event_id, customer_name, customer_email, ' +
         'expires_at, orkesta_checkout_id, orkesta_order_id, ' +
-        'order_items(quantity, unit_price, ticket_type_id, event_ticket_types(name))'
+        'order_items(quantity, unit_price, ticket_type_id, event_ticket_types(name)), events(name, image_url)'
     )
     .eq('id', orderId)
     .single();
@@ -133,11 +133,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const items = ((order as any).order_items ?? []) as Array<{ quantity: number; unit_price: number; ticket_type_id: string; event_ticket_types: { name: string } | null }>;
-  const products = items.map((item) => ({
+  // Shown on OrkestaPay's hosted page next to each line — without a
+  // thumbnail it renders a generic box icon.
+  const event = (order as any).events as { name: string; image_url: string | null } | null;
+  const thumbnailUrl = event?.image_url?.startsWith('https://') ? event.image_url : undefined;
+  const products: Array<Record<string, unknown>> = items.map((item) => ({
     product_id: item.ticket_type_id,
     name: item.event_ticket_types?.name || 'Boleto',
+    description: event?.name,
     quantity: item.quantity,
     unit_price: Number(item.unit_price),
+    is_digital: true,
+    thumbnail_url: thumbnailUrl,
+    url: `${publicSiteUrl}/checkout/${(order as any).event_id}`,
   }));
   // A synthetic line for the service fee, computed as the remainder rather
   // than the stored service_fee column, so the line items always sum to
@@ -145,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // subtotal*0.08 land on different cents.
   const serviceFeeLine = Math.round((total - subtotal) * 100) / 100;
   if (serviceFeeLine > 0) {
-    products.push({ product_id: 'service_fee', name: 'Cargo por servicio', quantity: 1, unit_price: serviceFeeLine });
+    products.push({ product_id: 'service_fee', name: 'Cargo por servicio', quantity: 1, unit_price: serviceFeeLine, is_digital: true, thumbnail_url: `${publicSiteUrl}/wallet/logo.png` });
   }
 
   const [firstName, ...rest] = ((order as any).customer_name || 'Cliente').trim().split(/\s+/);
