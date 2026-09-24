@@ -1,6 +1,6 @@
 # API móvil de validación de boletos (`/api/mobile/*`)
 
-Contrato para la app Android de validador (staff de puerta). Son funciones serverless de Vercel bajo `/api/mobile/**` — mismo dominio que el resto del sitio (`https://<tu-dominio>/api/mobile/...`), sin servidor propio: cada endpoint es un thin proxy hacia funciones SQL de Supabase que ya usa el validador web (`check_in_ticket`, `get_event_gate_manifest`, `sync_ticket_scans`). No es necesario conocer Supabase para integrarse — solo este documento.
+Contrato para la app Android de validador (staff de puerta). Son funciones serverless de Vercel bajo `/api/mobile/**` — mismo dominio que el resto del sitio (`https://mondoticket.com/api/mobile/...`), sin servidor propio: cada endpoint es un thin proxy hacia funciones SQL de Supabase que ya usa el validador web (`check_in_ticket`, `get_event_gate_manifest`, `sync_ticket_scans`). No es necesario conocer Supabase para integrarse — solo este documento.
 
 Todas las respuestas son JSON. Los cuerpos de request son JSON (`Content-Type: application/json`).
 

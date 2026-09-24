@@ -62,7 +62,7 @@ Nuevas variables de entorno (mismo patrón ya usado para Google Wallet — `.env
 ## Qué necesito de ti para poder probarlo
 
 1. En el portal de OrkestaPay, en modo **Sandbox**: copiar `client_id`/`client_secret` (Developers/API keys).
-2. En el mismo portal, **Developers → Webhooks → Add endpoint**, URL `https://ticketblessing.vercel.app/api/payments/orkesta/webhook`, suscribir a `payment.purchase`, `payment.capture`, `payment.cancel` — copiar el `whsec_...` generado.
+2. En el mismo portal, **Developers → Webhooks → Add endpoint**, URL `https://mondoticket.com/api/payments/orkesta/webhook`, suscribir a `payment.purchase`, `payment.capture`, `payment.cancel` — copiar el `whsec_...` generado.
 
 Con esos dos datos yo configuro las variables de entorno (igual que hicimos con Google Wallet) y hago todas las pruebas end-to-end (compra con tarjeta de prueba, cancelación, reembolso) antes de dejarlo listo para que tú también pruebes.
 

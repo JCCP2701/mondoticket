@@ -1,6 +1,6 @@
 # API móvil de venta en taquilla (`/api/mobile/*`)
 
-Contrato para la app Android de taquilla (staff de mostrador que vende boletos en persona). Mismo dominio y mismas funciones serverless de Vercel que la API del validador (`https://<tu-dominio>/api/mobile/...`) — de hecho, **el login es exactamente el mismo endpoint**: si ya integraste `docs/mobile-api.md` para el validador, la autenticación no cambia en nada. Este documento cubre solo lo nuevo: los endpoints de venta.
+Contrato para la app Android de taquilla (staff de mostrador que vende boletos en persona). Mismo dominio y mismas funciones serverless de Vercel que la API del validador (`https://mondoticket.com/api/mobile/...`) — de hecho, **el login es exactamente el mismo endpoint**: si ya integraste `docs/mobile-api.md` para el validador, la autenticación no cambia en nada. Este documento cubre solo lo nuevo: los endpoints de venta.
 
 Todas las respuestas son JSON. Los cuerpos de request son JSON (`Content-Type: application/json`).
 

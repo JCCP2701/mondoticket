@@ -1,6 +1,6 @@
 # API móvil del comprador (`/api/mobile/buyer/*`)
 
-Contrato para la app Android del comprador final — navegar eventos, comprar boletos (efectivo cuando el total es $0, o pago real con tarjeta/SPEI/efectivo vía OrkestaPay) y ver los boletos ya comprados. Mismo dominio que el resto del sitio (`https://<tu-dominio>/api/mobile/buyer/...`), funciones serverless de Vercel — no confundir con `docs/mobile-api.md` (validador) ni `docs/taquilla-mobile-api.md` (venta en mostrador): esta es una API **separada**, con su propio login, pensada para el público en general, no para staff.
+Contrato para la app Android del comprador final — navegar eventos, comprar boletos (efectivo cuando el total es $0, o pago real con tarjeta/SPEI/efectivo vía OrkestaPay) y ver los boletos ya comprados. Mismo dominio que el resto del sitio (`https://mondoticket.com/api/mobile/buyer/...`), funciones serverless de Vercel — no confundir con `docs/mobile-api.md` (validador) ni `docs/taquilla-mobile-api.md` (venta en mostrador): esta es una API **separada**, con su propio login, pensada para el público en general, no para staff.
 
 Todas las respuestas son JSON. Los cuerpos de request son JSON (`Content-Type: application/json`).
 

@@ -94,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID;
   const clientEmail = process.env.GOOGLE_WALLET_CLIENT_EMAIL;
   const privateKey = process.env.GOOGLE_WALLET_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  const publicSiteUrl = process.env.PUBLIC_SITE_URL || 'https://ticketblessing.vercel.app';
+  const publicSiteUrl = process.env.PUBLIC_SITE_URL || 'https://mondoticket.com';
   if (!supabaseUrl || !serviceRoleKey || !issuerId || !clientEmail || !privateKey) {
     res.status(500).json({ error: 'Server misconfigured: missing Supabase or Google Wallet env vars' });
     return;
